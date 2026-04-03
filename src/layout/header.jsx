@@ -1,6 +1,6 @@
 import { Bell, User } from "lucide-react";
 import { useAuthStore } from "@/auth/authStore";
-import { UserX2 } from "lucide-react";
+
 export default function Header() {
      const logout = useAuthStore((state) => state.logout);
   return (
@@ -15,7 +15,7 @@ export default function Header() {
         {/* <Bell className="cursor-pointer" /> */}
         <div className="flex items-center gap-2 cursor-pointer">
             <div className="bg-blue-500 text-white w-8 h-8 flex items-center justify-center rounded-full">
-            <UserX2 />
+            <User />
             </div>
           <span>Admin</span>
           <button
