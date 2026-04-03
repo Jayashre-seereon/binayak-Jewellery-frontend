@@ -128,3 +128,12 @@
     @apply font-sans;
     }
 }
+
+@theme {
+  --font-sans: "Geist", sans-serif;
+}
+
+/* Global ERP style */
+body {
+  @apply text-sm bg-gray-100;
+}
