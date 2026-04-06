@@ -70,7 +70,7 @@ export default function CategoryMaster()  {
               onDelete={handleDelete}
             />
       {/* form */}
-      <CategoryForm open={open}setOpen={setOpen}
+      <CategoryForm open={open} setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}/>
         </div>
