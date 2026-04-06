@@ -4,6 +4,7 @@ import Dashboard from "@/features/dashboard/dashboard";
 import LoginPage from "@/pages/loginPage";
 import ProtectedRoute from "@/auth/protectedRoute";
 import BrandPage from "@/features/masters/brand/brand-page";
+import CategoryMaster from "@/features/masters/category/category-page";
 
 export const router = createBrowserRouter([
   {
@@ -21,6 +22,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard" /> },
       { path: "dashboard", element: <Dashboard /> },
       {path:"masters/brand",element:<BrandPage/>},
+      {path:"masters/category",element:<CategoryMaster/>}
     ],
   },
 ]);
