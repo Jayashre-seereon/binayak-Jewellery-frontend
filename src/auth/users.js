@@ -14,5 +14,6 @@ export const users = [
     password: "123456",
     role: "staff",
     token: "staff-token-456",
+    assignedStoreId: 1, // Assigned to rasulgarh store
   },
 ];

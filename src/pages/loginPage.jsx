@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/auth/authStore";
 import { useNavigate } from "react-router-dom";
 import { users } from "@/auth/users";
+import { getStores } from "@/features/store/store-api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const navigate = useNavigate();
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     const user = users.find(
       (u) =>
         (u.username === data.username || u.email === data.username) &&
@@ -20,7 +21,20 @@ export default function LoginPage() {
 
     if (user) {
       login(user);
-      navigate("/dashboard");
+
+      if (user.role === "admin") {
+        navigate("/select-store");
+      } else if (user.role === "staff" && user.assignedStoreId) {
+        // For staff users, get their assigned store and set it
+        const stores = await getStores();
+        const assignedStore = stores.find(store => store.id === user.assignedStoreId);
+        if (assignedStore) {
+          localStorage.setItem("selectedStore", JSON.stringify(assignedStore));
+        }
+        navigate("/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } else {
       alert("Invalid credentials");
     }

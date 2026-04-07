@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { useAuthStore } from "@/auth/authStore";
 import DashboardLayout from "@/layout/dashboard-layout";
 import Dashboard from "@/features/dashboard/dashboard";
 import LoginPage from "@/pages/loginPage";
+import StoreSelectionPage from "@/pages/storeSelectionPage";
 import ProtectedRoute from "@/auth/protectedRoute";
 import BrandPage from "@/features/masters/brand/brand-page";
 import CategoryMaster from "@/features/masters/category/category-page";
@@ -9,11 +11,23 @@ import MetalPage from "@/features/masters/metal/metal-page";
 import PurityPage from "@/features/masters/purity/purity-page";
 import GradePage from "@/features/masters/grade/grade-page";
 import DesignPage from "@/features/masters/design/design-page";
+import StorePage from "@/features/store/store-page";
+
 export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
   },
+
+  {
+    path: "/select-store",
+    element: (
+      <ProtectedRoute>
+        <StoreSelectionPage />
+      </ProtectedRoute>
+    ),
+  },
+
   {
     path: "/",
     element: (
@@ -21,7 +35,7 @@ export const router = createBrowserRouter([
         <DashboardLayout />
       </ProtectedRoute>
     ),
-    children: [
+    children: [ 
       { index: true, element: <Navigate to="/dashboard" /> },
       { path: "dashboard", element: <Dashboard /> },
       {path:"masters/brand",element:<BrandPage/>},
