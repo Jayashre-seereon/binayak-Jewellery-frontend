@@ -21,6 +21,15 @@ export default function Sidebar() {
         { name: "Purity Master", path: "/masters/purity" },
         { name: "Grade Master", path: "/masters/grade" },
         { name: "Design Master", path: "/masters/design" },
+        { name: "Product Master", path: "/masters/product"},
+        { name: "Item Master", path: "/masters/item"},
+        { name: "Stone Master", path: "/masters/stone" },
+        { name: "Employee Master", path: "/masters/employee"},
+        { name: "Party Type Master", path: "/masters/partytype"},
+        { name: "Party Master", path: "/masters/party"},
+        { name: "Party Opening Bal.", path: "/masters/openingbalance"},
+        { name: "Design Master", path: "/masters/design" },
+        
       ],
     },
     {
@@ -45,10 +54,10 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-slate-900 text-white h-screen p-4">
-      <div className="text-xl font-bold mb-6">JewelERP</div>
+    <div className="w-64 bg-slate-900 text-white h-screen flex flex-col p-4 overflow-hidden">
+      <div className="text-xl font-bold mb-6 flex-shrink-0">JewelERP</div>
 
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
         {menuItems.map((item) => (
           <div key={item.name}>
             {/* Main Menu */}
@@ -56,13 +65,13 @@ export default function Sidebar() {
               <div>
                 <div
                   onClick={() => toggleMenu(item.name)}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 cursor-pointer"
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 cursor-pointer flex-shrink-0"
                 >
-                  <div className="flex items-center gap-3">
-                    <item.icon size={18} />
-                    {item.name}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <item.icon size={18} className="flex-shrink-0" />
+                    <span className="truncate">{item.name}</span>
                   </div>
-                  <ChevronDown size={16} />
+                  <ChevronDown size={16} className="flex-shrink-0" />
                 </div>
 
                 {/* Sub Menu */}
@@ -73,12 +82,12 @@ export default function Sidebar() {
                         key={sub.name}
                         to={sub.path}
                         className={({ isActive }) =>
-                          `p-2 rounded hover:bg-slate-800 ${
+                          `p-2 rounded hover:bg-slate-800 flex-shrink-0 ${
                             isActive ? "bg-slate-800" : ""
                           }`
                         }
                       >
-                        {sub.name}
+                        <span className="truncate">{sub.name}</span>
                       </NavLink>
                     ))}
                   </div>
@@ -88,13 +97,13 @@ export default function Sidebar() {
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 ${
+                  `flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 flex-shrink-0 ${
                     isActive ? "bg-slate-800" : ""
                   }`
                 }
               >
-                <item.icon size={18} />
-                {item.name}
+                <item.icon size={18} className="flex-shrink-0" />
+                <span className="truncate">{item.name}</span>
               </NavLink>
             )}
           </div>

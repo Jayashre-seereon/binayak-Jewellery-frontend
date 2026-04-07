@@ -12,6 +12,7 @@ import PurityPage from "@/features/masters/purity/purity-page";
 import GradePage from "@/features/masters/grade/grade-page";
 import DesignPage from "@/features/masters/design/design-page";
 import StorePage from "@/features/store/store-page";
+import ProductPage from "@/features/masters/product/product-page";
 
 export const router = createBrowserRouter([
   {
@@ -43,7 +44,9 @@ export const router = createBrowserRouter([
       {path:"masters/metal",element:<MetalPage/>},
       { path: "masters/purity", element: <PurityPage /> },
      { path: "masters/grade", element: <GradePage/> },
-     { path: "masters/design", element: <DesignPage /> }
+     { path: "masters/design", element: <DesignPage /> },
+     { path: "masters/product", element: <ProductPage /> }
+
     ],
   },
 ]);
