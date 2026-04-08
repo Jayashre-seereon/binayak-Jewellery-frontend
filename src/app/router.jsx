@@ -15,6 +15,7 @@ import StorePage from "@/features/store/store-page";
 import ProductPage from "@/features/masters/product/product-page";
 import ItemPage from "@/features/masters/item/item-page";
 import StonePage from "@/features/masters/stone/stone-page";
+import EmployeePage from "@/features/masters/employee/employee-page";
 
 export const router = createBrowserRouter([
   {
@@ -45,11 +46,12 @@ export const router = createBrowserRouter([
       {path:"masters/category",element:<CategoryMaster/>},
       {path:"masters/metal",element:<MetalPage/>},
       { path: "masters/purity", element: <PurityPage /> },
-     { path: "masters/grade", element: <GradePage/> },
-     { path: "masters/design", element: <DesignPage /> },
-     { path: "masters/product", element: <ProductPage />},
+      { path: "masters/grade", element: <GradePage/> },
+      { path: "masters/design", element: <DesignPage /> },
+      { path: "masters/product", element: <ProductPage />},
       {path:"masters/item", element: <ItemPage />},
-      {path:"masters/stone",element:<StonePage />}
+      {path:"masters/stone",element:<StonePage />},
+      {path:"masters/employee",element:<EmployeePage />}
     ],
   },
 ]);
