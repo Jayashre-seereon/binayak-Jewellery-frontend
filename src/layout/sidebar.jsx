@@ -28,7 +28,7 @@ export default function Sidebar() {
         { name: "Party Type Master", path: "/masters/partytype"},
         { name: "Party Master", path: "/masters/party"},
         { name: "Party Opening Bal.", path: "/masters/openingbalance"},
-        { name: "Design Master", path: "/masters/design" },
+        
         
       ],
     },

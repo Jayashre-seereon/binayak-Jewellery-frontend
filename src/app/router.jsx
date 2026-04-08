@@ -18,6 +18,7 @@ import StonePage from "@/features/masters/stone/stone-page";
 import EmployeePage from "@/features/masters/employee/employee-page";
 import PartyTypePage from "@/features/masters/party-type/party-type-page";
 import PartyPage from "@/features/masters/party/party-page";
+import PartyOpeningPage from "@/features/masters/party-opening/party-opening-page";
 
 export const router = createBrowserRouter([
   {
@@ -55,7 +56,8 @@ export const router = createBrowserRouter([
       {path:"masters/stone",element:<StonePage />},
       {path:"masters/employee",element:<EmployeePage />},
       {path:"masters/partytype",element:<PartyTypePage />},
-      {path:"masters/party",element:<PartyPage />}
+      {path:"masters/party",element:<PartyPage />},
+      {path:"masters/openingbalance",element:<PartyOpeningPage />}
     ],
   },
 ]);
