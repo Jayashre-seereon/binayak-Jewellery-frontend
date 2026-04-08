@@ -17,6 +17,7 @@ import ItemPage from "@/features/masters/item/item-page";
 import StonePage from "@/features/masters/stone/stone-page";
 import EmployeePage from "@/features/masters/employee/employee-page";
 import PartyTypePage from "@/features/masters/party-type/party-type-page";
+import PartyPage from "@/features/masters/party/party-page";
 
 export const router = createBrowserRouter([
   {
@@ -53,7 +54,8 @@ export const router = createBrowserRouter([
       {path:"masters/item", element: <ItemPage />},
       {path:"masters/stone",element:<StonePage />},
       {path:"masters/employee",element:<EmployeePage />},
-      {path:"masters/partytype",element:<PartyTypePage />}
+      {path:"masters/partytype",element:<PartyTypePage />},
+      {path:"masters/party",element:<PartyPage />}
     ],
   },
 ]);
