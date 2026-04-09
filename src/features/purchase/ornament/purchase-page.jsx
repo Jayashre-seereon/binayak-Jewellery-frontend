@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
-import PurchaseTable from "./ornament-purchase-table";
-import PurchaseForm from "./ornament-purchase-form";
+import PurchaseTable from "./purchase-table";
+import PurchaseForm from "./purchase-form";
 
 import {
   getPurchases,
   addPurchase,
   deletePurchase,
-} from "./ornament-purchase-api";
+} from "./purchase-api";
 
 export default function PurchasePage() {
   const [data, setData] = useState([]);

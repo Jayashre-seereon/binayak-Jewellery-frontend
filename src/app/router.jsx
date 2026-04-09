@@ -21,6 +21,7 @@ import PartyPage from "@/features/masters/party/party-page";
 import PartyOpeningPage from "@/features/masters/party-opening/party-opening-page";
 import RatePage from "@/features/accounts/rate/rate-page";
 import PurchasePage from "@/features/purchase/ornament/purchase-page";
+import OldPurchasePage from "@/features/purchase/old/old-purchase-page";
 
 export const router = createBrowserRouter([
   {
@@ -63,7 +64,8 @@ export const router = createBrowserRouter([
       // rate master routes
       {path:"accounts/rate",element:<RatePage />},
       // purchase routes 
-      {path:"purchase/ornament",element:<PurchasePage />}
+      {path:"purchase/ornament",element:<PurchasePage />},
+      {path:"purchase/old",element:<OldPurchasePage />}
     ],
   },
 ]);
