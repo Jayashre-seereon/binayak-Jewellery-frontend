@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine,Barcode } from "lucide-react";
 
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -46,6 +46,16 @@ export default function Sidebar() {
         {name:"Ornament Purchase",path:"purchase/ornament"},
         {name:"Old Purchase",path:"purchase/old"},
         {name:"Bullion Purchase",path:"purchase/bullion"}
+      ]
+    },
+    {
+      name: "Barcoding",
+      icon: Barcode,
+      children:[
+        {name:"Gold Ornament",path:"barcoding/gold"},
+        {name:"Dimond Ornament",path:"barcoding/diamond"},
+        {name:"MRP Barcoding",path:"barcoding/mrp"},
+        {name:"Branded Ornament",path:"barcoding/branded"}
       ]
     },
     {

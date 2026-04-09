@@ -23,6 +23,7 @@ import RatePage from "@/features/accounts/rate/rate-page";
 import PurchasePage from "@/features/purchase/ornament/purchase-page";
 import OldPurchasePage from "@/features/purchase/old/old-purchase-page";
 import BullionPurchasePage from "@/features/purchase/bullion/bullion-purchase-page";
+import BarcodingPage from "@/features/barcoding/goldornament/gold-barcoding-page";
 
 export const router = createBrowserRouter([
   {
@@ -67,7 +68,10 @@ export const router = createBrowserRouter([
       // purchase routes 
       {path:"purchase/ornament",element:<PurchasePage />},
       {path:"purchase/old",element:<OldPurchasePage />},
-      {path:"purchase/bullion",element:<BullionPurchasePage/>}
+      {path:"purchase/bullion",element:<BullionPurchasePage/>},
+
+      // barcoding routes will be added here
+      {path:"barcoding/gold",element:<BarcodingPage/>},
     ],
   },
 ]);
