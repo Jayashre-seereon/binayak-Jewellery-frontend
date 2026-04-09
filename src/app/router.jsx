@@ -26,6 +26,7 @@ import BullionPurchasePage from "@/features/purchase/bullion/bullion-purchase-pa
 import BarcodingPage from "@/features/barcoding/goldornament/gold-barcoding-page";
 import DiamondBarcodingPage from "@/features/barcoding/diamond/dimond-barcoding-page";
 import MrpBarcodingPage from "@/features/barcoding/mrp/mrp-barcoding-page";
+import BrandedBarcodingPage from "@/features/barcoding/branded/branded-barcoding-page";
 
 export const router = createBrowserRouter([
   {
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
       {path:"barcoding/gold",element:<BarcodingPage/>},
       {path:"barcoding/diamond",element:<DiamondBarcodingPage/>},
       {path:"barcoding/mrp",element:<MrpBarcodingPage/>},
+      {path:"barcoding/branded",element:<BrandedBarcodingPage/>}
     ],
   },
 ]);
