@@ -20,6 +20,7 @@ import PartyTypePage from "@/features/masters/party-type/party-type-page";
 import PartyPage from "@/features/masters/party/party-page";
 import PartyOpeningPage from "@/features/masters/party-opening/party-opening-page";
 import RatePage from "@/features/accounts/rate/rate-page";
+import PurchasePage from "@/features/purchase/ornament/purchase-page";
 
 export const router = createBrowserRouter([
   {
@@ -60,7 +61,9 @@ export const router = createBrowserRouter([
       {path:"masters/party",element:<PartyPage />},
       {path:"masters/openingbalance",element:<PartyOpeningPage />},
       // rate master routes
-      {path:"accounts/rate",element:<RatePage />}
+      {path:"accounts/rate",element:<RatePage />},
+      // purchase routes 
+      {path:"purchase/ornament",element:<PurchasePage />}
     ],
   },
 ]);
