@@ -33,6 +33,9 @@ import StockPage from "@/features/inventory/add-stock/stock-page";
 import TransferPage from "@/features/inventory/counter-transfer/transfer-page";
 import SalesPage from "@/features/sales/sale-estimate/sales-estimate-page";
 import AdvancePage from "@/features/advance/advance-page";
+import PaymentPage from "@/features/accounts/payment/payment-page";
+import ReceiptPage from "@/features/accounts/receipt/receipt-page";
+import JournalPage from "@/features/accounts/journal/journal-page";
 
 export const router = createBrowserRouter([
   {
@@ -94,6 +97,10 @@ export const router = createBrowserRouter([
       {path:"sales/estimate", element:<SalesPage/>},
       // advance routes will be added here
       {path:"advance/recieve", element:<AdvancePage/>},
+      // accounts routes will be added here
+      {path:"accounts/payment", element:<PaymentPage/>},
+      {path:"accounts/receipt", element:<ReceiptPage/>},
+      {path:"accounts/journal", element:<JournalPage/>},
     ],
   },
 ]);

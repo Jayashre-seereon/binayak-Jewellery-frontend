@@ -94,9 +94,9 @@ export default function Sidebar() {
       name: "Accounting",
       icon: BookOpen,
       children:[
-        {name:"Journal Entry", path:"accounting/journal"},
-        {name:"Payment Voucher", path:"accounting/payment"},
-        {name:"Receipt Voucher", path:"accounting/receipt"},
+        {name:"Journal Entry", path:"accounts/journal"},
+        {name:"Payment Voucher", path:"accounts/payment"},
+        {name:"Receipt Voucher", path:"accounts/receipt"},
       ]
     },
       {
