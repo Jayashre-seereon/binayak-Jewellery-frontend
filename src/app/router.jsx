@@ -32,6 +32,7 @@ import ItemStatusPage from "@/features/inventory/itemstatus/ItemStatusPage";
 import StockPage from "@/features/inventory/add-stock/stock-page";
 import TransferPage from "@/features/inventory/counter-transfer/transfer-page";
 import SalesPage from "@/features/sales/sale-estimate/sales-estimate-page";
+import AdvancePage from "@/features/advance/advance-page";
 
 export const router = createBrowserRouter([
   {
@@ -91,6 +92,8 @@ export const router = createBrowserRouter([
       {path:"stock/transfer", element:<TransferPage/>},
       // sales routes will be added here
       {path:"sales/estimate", element:<SalesPage/>},
+      // advance routes will be added here
+      {path:"advance/recieve", element:<AdvancePage/>},
     ],
   },
 ]);
