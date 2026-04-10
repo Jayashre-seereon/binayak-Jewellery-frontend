@@ -61,7 +61,11 @@ export default function Sidebar() {
     {
       name: "Inventory",
       icon: Boxes,
-      path: "/inventory",
+      children: [
+        { name: "Stock Summary", path: "inventory/stock" },
+        { name: "Item Status", path: "inventory/itemstatus" },
+        { name: "Stock Verification", path: "inventory/verification" },
+      ],
     },
     {
       name: "Sales",
