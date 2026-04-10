@@ -29,6 +29,7 @@ import MrpBarcodingPage from "@/features/barcoding/mrp/mrp-barcoding-page";
 import BrandedBarcodingPage from "@/features/barcoding/branded/branded-barcoding-page";
 import StockSummaryPage from "@/features/inventory/summary/stock-summary-page";
 import ItemStatusPage from "@/features/inventory/itemstatus/ItemStatusPage";
+import StockPage from "@/features/inventory/add-stock/stock-page";
 
 export const router = createBrowserRouter([
   {
@@ -83,6 +84,7 @@ export const router = createBrowserRouter([
       // inventory routes
       {path:"inventory/stock",element:<StockSummaryPage/>},
       {path:"inventory/itemstatus",element:<ItemStatusPage/>},
+      {path:"inventory/additem",element:<StockPage/>},
     ],
   },
 ]);

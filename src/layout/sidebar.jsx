@@ -64,7 +64,7 @@ export default function Sidebar() {
       children: [
         { name: "Stock Summary", path: "inventory/stock" },
         { name: "Item Status", path: "inventory/itemstatus"},
-        { name: "Stock Verification", path: "inventory/verification" },
+        { name: "Add Stock", path: "inventory/additem" },
       ],
     },
     {
