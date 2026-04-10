@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine,Barcode } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine,Barcode,ArrowLeftRight } from "lucide-react";
 
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -68,9 +68,12 @@ export default function Sidebar() {
       ],
     },
     {
-      name: "Sales",
-      icon: ShoppingCart,
-      path: "/sales",
+      name: "Stock Movement",
+      icon: ArrowLeftRight,
+      children:[
+        {name:"Counter Transfer", path:"stock/transfer"},
+        
+      ]
     },
   ];
 

@@ -30,6 +30,7 @@ import BrandedBarcodingPage from "@/features/barcoding/branded/branded-barcoding
 import StockSummaryPage from "@/features/inventory/summary/stock-summary-page";
 import ItemStatusPage from "@/features/inventory/itemstatus/ItemStatusPage";
 import StockPage from "@/features/inventory/add-stock/stock-page";
+import TransferPage from "@/features/inventory/counter-transfer/transfer-page";
 
 export const router = createBrowserRouter([
   {
@@ -85,6 +86,8 @@ export const router = createBrowserRouter([
       {path:"inventory/stock",element:<StockSummaryPage/>},
       {path:"inventory/itemstatus",element:<ItemStatusPage/>},
       {path:"inventory/additem",element:<StockPage/>},
+      // counter transfer route will be added here
+      {path:"stock/transfer", element:<TransferPage/>} 
     ],
   },
 ]);
