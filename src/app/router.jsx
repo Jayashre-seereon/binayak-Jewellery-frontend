@@ -31,6 +31,7 @@ import StockSummaryPage from "@/features/inventory/summary/stock-summary-page";
 import ItemStatusPage from "@/features/inventory/itemstatus/ItemStatusPage";
 import StockPage from "@/features/inventory/add-stock/stock-page";
 import TransferPage from "@/features/inventory/counter-transfer/transfer-page";
+import SalesPage from "@/features/sales/sale-estimate/sales-estimate-page";
 
 export const router = createBrowserRouter([
   {
@@ -87,7 +88,9 @@ export const router = createBrowserRouter([
       {path:"inventory/itemstatus",element:<ItemStatusPage/>},
       {path:"inventory/additem",element:<StockPage/>},
       // counter transfer route will be added here
-      {path:"stock/transfer", element:<TransferPage/>} 
+      {path:"stock/transfer", element:<TransferPage/>},
+      // sales routes will be added here
+      {path:"sales/estimate", element:<SalesPage/>},
     ],
   },
 ]);

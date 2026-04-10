@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine,Barcode,ArrowLeftRight } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine,Barcode,ArrowLeftRight, Wallet, ShoppingBag,BookOpen,NotepadText  } from "lucide-react";
 
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -73,6 +73,43 @@ export default function Sidebar() {
       children:[
         {name:"Counter Transfer", path:"stock/transfer"},
         
+      ]
+    },
+    {
+      name: "Sales",
+      icon: ShoppingBag,
+      children:[
+        {name:"Sales Estimate", path:"sales/estimate"},
+        {name:"Sales Invoice", path:"sales/invoice"},
+      ]
+    },
+    {
+      name: "Advance ",
+      icon: Wallet,
+      children:[
+        {name:"Advance Recieve", path:"advance/recieve"},
+      ]
+    },
+     {
+      name: "Accounting",
+      icon: BookOpen,
+      children:[
+        {name:"Journal Entry", path:"accounting/journal"},
+        {name:"Payment Voucher", path:"accounting/payment"},
+        {name:"Receipt Voucher", path:"accounting/receipt"},
+      ]
+    },
+      {
+      name: "Reports",
+      icon: NotepadText,
+      children:[
+        {name:"Sales Summary", path:"report/sales-summary"},
+        {name:"Purchase Register", path:"report/purchase-register"},
+        {name:"Old Purchase Reg.", path:"report/old-purchase-register"},
+        {name:"Advance Register", path:"report/advance-register"},
+        {name:"Sales Register", path:"report/sales-register"},
+        {name:"Old Stock Reg.", path:"report/old-stock-register"},
+        {name:"Pure Metal Reg.", path:"report/metal-register"},
       ]
     },
   ];
