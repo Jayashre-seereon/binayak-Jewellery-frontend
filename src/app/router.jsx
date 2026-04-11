@@ -37,6 +37,7 @@ import PaymentPage from "@/features/accounts/payment/payment-page";
 import ReceiptPage from "@/features/accounts/receipt/receipt-page";
 import JournalPage from "@/features/accounts/journal/journal-page";
 import SaleSummaryPage from "@/features/reports/sale-summary/sale-summary-page";
+import PurchaeRegisterPage from "@/features/reports/purchase-register/purchase-register-page";
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -101,7 +102,9 @@ export const router = createBrowserRouter([
       {path:"accounts/payment", element:<PaymentPage/>},
       {path:"accounts/receipt", element:<ReceiptPage/>},
       {path:"accounts/journal", element:<JournalPage/>},
-      {path:"report/sales-summary", element:<SaleSummaryPage/>}
+      // reports routes will be added here
+      {path:"report/sales-summary", element:<SaleSummaryPage/>},
+      {path:"report/purchase-register", element: <PurchaeRegisterPage/>},
     ],
   },
 ]);
