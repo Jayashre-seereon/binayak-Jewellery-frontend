@@ -36,7 +36,7 @@ import AdvancePage from "@/features/advance/advance-page";
 import PaymentPage from "@/features/accounts/payment/payment-page";
 import ReceiptPage from "@/features/accounts/receipt/receipt-page";
 import JournalPage from "@/features/accounts/journal/journal-page";
-
+import SaleSummaryPage from "@/features/reports/sale-summary/sale-summary-page";
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -101,6 +101,7 @@ export const router = createBrowserRouter([
       {path:"accounts/payment", element:<PaymentPage/>},
       {path:"accounts/receipt", element:<ReceiptPage/>},
       {path:"accounts/journal", element:<JournalPage/>},
+      {path:"report/sales-summary", element:<SaleSummaryPage/>}
     ],
   },
 ]);
