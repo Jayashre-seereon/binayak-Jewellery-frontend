@@ -38,6 +38,7 @@ import ReceiptPage from "@/features/accounts/receipt/receipt-page";
 import JournalPage from "@/features/accounts/journal/journal-page";
 import SaleSummaryPage from "@/features/reports/sale-summary/sale-summary-page";
 import PurchaeRegisterPage from "@/features/reports/purchase-register/purchase-register-page";
+import OldPurchaseRegisterPage from "@/features/reports/old-purchase/old-purchase-page";
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -105,6 +106,7 @@ export const router = createBrowserRouter([
       // reports routes will be added here
       {path:"report/sales-summary", element:<SaleSummaryPage/>},
       {path:"report/purchase-register", element: <PurchaeRegisterPage/>},
+      {path:"report/old-purchase", element: <OldPurchaseRegisterPage/>},
     ],
   },
 ]);

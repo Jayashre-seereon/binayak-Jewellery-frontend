@@ -105,7 +105,7 @@ export default function Sidebar() {
       children:[
         {name:"Sales Summary", path:"report/sales-summary"},
         {name:"Purchase Register", path:"report/purchase-register"},
-        {name:"Old Purchase Reg.", path:"report/old-purchase-register"},
+        {name:"Old Purchase Reg.", path:"report/old-purchase"},
         {name:"Advance Register", path:"report/advance-register"},
         {name:"Sales Register", path:"report/sales-register"},
         {name:"Old Stock Reg.", path:"report/old-stock-register"},
