@@ -41,6 +41,7 @@ import PurchaeRegisterPage from "@/features/reports/purchase-register/purchase-r
 import OldPurchaseRegisterPage from "@/features/reports/old-purchase/old-purchase-page";
 import AdvanceRegisterPage from "@/features/reports/advance-register/advance-register-page";
 import SalesRegisterPage from "@/features/reports/sales-register/sales-register-page";
+import OldStockPage from "@/features/reports/old-stock-register/old-stock-page";
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -111,6 +112,7 @@ export const router = createBrowserRouter([
       {path:"report/old-purchase", element: <OldPurchaseRegisterPage/>},
       {path:"report/advance-register", element: <AdvanceRegisterPage/>},
       {path:"report/sales-register", element: <SalesRegisterPage/>},
+      {path:"report/old-stock-register", element: <OldStockPage/>},
     ],
   },
 ]);
