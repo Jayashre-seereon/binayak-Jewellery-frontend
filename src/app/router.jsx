@@ -42,6 +42,7 @@ import OldPurchaseRegisterPage from "@/features/reports/old-purchase/old-purchas
 import AdvanceRegisterPage from "@/features/reports/advance-register/advance-register-page";
 import SalesRegisterPage from "@/features/reports/sales-register/sales-register-page";
 import OldStockPage from "@/features/reports/old-stock-register/old-stock-page";
+import PureMetalPage from "@/features/reports/pure-metal-register/pure-metal-page";
 export const router = createBrowserRouter([
   {
     path: "/login",
@@ -113,6 +114,7 @@ export const router = createBrowserRouter([
       {path:"report/advance-register", element: <AdvanceRegisterPage/>},
       {path:"report/sales-register", element: <SalesRegisterPage/>},
       {path:"report/old-stock-register", element: <OldStockPage/>},
+      {path:"report/metal-register", element: <PureMetalPage/>},
     ],
   },
 ]);
