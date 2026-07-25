@@ -1,12 +1,26 @@
 import http from "@/api/http";
 
-export const getStores = () => http.get("/api/stores/get");
+export const getStores = async () => {
+  const res = await http.get("/api/stores/get");
+  return res;
+};
 
-export const createStore = (payload) => http.post("/api/stores/create", payload);
+export const createStore = async (payload) => {
+  const res = await http.post("/api/stores/create", payload);
+  return res;
+};
 
-export const deleteStore = (id) => http.delete(`/api/stores/delete/${id}`);
+export const deleteStore = async (id) => {
+  const res = await http.delete(`/api/stores/delete/${id}`);
+  return res;
+};
 
-export const getStoreById = (id) => http.get(`/api/stores/getById/${id}`);
+export const getStoreById = async (id) => {
+  const res = await http.get(`/api/stores/getById/${id}`);
+  return res;
+};
 
-export const updateStore = (id, payload) =>
-  http.put(`/api/stores/update/${id}`, payload);
+export const updateStore = async (id, payload) => {
+  const res = await http.put(`/api/stores/update/${id}`, payload);
+  return res;
+};
