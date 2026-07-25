@@ -6,9 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
 export default function LoginPage() {
-  const { register, handleSubmit } = useForm();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+  const [showPassword, setShowPassword] = useState(false);
   const setSession = useAuthStore((state) => state.setSession);
   const setSelectedStore = useAuthStore((state) => state.setSelectedStore);
   const navigate = useNavigate();
@@ -57,8 +64,51 @@ export default function LoginPage() {
           <h2 className="text-xl font-semibold mb-4">Login</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input type="email" placeholder="Email" {...register("email")} />
-            <Input type="password" placeholder="Password" {...register("password")} />
+            <div className="space-y-1">
+              <Input
+                type="email"
+                placeholder="Email"
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: "Enter a valid email address",
+                  },
+                })}
+                aria-invalid={Boolean(errors.email)}
+              />
+              {errors.email ? (
+                <p className="text-xs text-red-500">{errors.email.message}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-1">
+              <div className="relative">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  className="pr-10"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
+                  aria-invalid={Boolean(errors.password)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {errors.password ? (
+                <p className="text-xs text-red-500">{errors.password.message}</p>
+              ) : null}
+            </div>
 
             <Button className="w-full">Login</Button>
           </form>

@@ -1,10 +1,13 @@
 import { useNavigate } from "react-router-dom";
 import { useStoreStore } from "./storeStore";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState } from "react";
 
 export default function StoreCard({ store, onEdit, onDelete, onSelect }) {
   const navigate = useNavigate();
   const setStore = useStoreStore((state) => state.setStore);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const enterStore = () => {
     setStore(store);
@@ -29,11 +32,36 @@ export default function StoreCard({ store, onEdit, onDelete, onSelect }) {
           </Button>
         ) : null}
         {onDelete ? (
-          <Button variant="destructive" onClick={() => onDelete(store)}>
+          <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
             Delete
           </Button>
         ) : null}
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Delete Store</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {store.storeName || store.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setConfirmOpen(false);
+                onDelete(store);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
