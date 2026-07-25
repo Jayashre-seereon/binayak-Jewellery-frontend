@@ -1,6 +1,6 @@
 import { Bell, User } from "lucide-react";
-import { useAuthStore } from "@/auth/authStore";
-import { logoutApi } from "@/auth/authApi";
+import { useAuthStore } from "@/store/authStore";
+import { logoutApi } from "@/api/authApi";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 

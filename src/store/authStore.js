@@ -5,6 +5,9 @@ export const useAuthStore = create((set) => ({
   token: localStorage.getItem("token") || null,
   refreshToken: localStorage.getItem("refreshToken") || null,
   role: localStorage.getItem("role") || null,
+  storeUser: JSON.parse(localStorage.getItem("storeUser")) || null,
+  storeToken: localStorage.getItem("storeToken") || null,
+  storeRefreshToken: localStorage.getItem("storeRefreshToken") || null,
   selectedStore: JSON.parse(localStorage.getItem("selectedStore")) || null,
 
   setSession: ({ user, token, refreshToken, role }) => {
@@ -21,6 +24,20 @@ export const useAuthStore = create((set) => ({
     }));
   },
 
+  setStoreSession: ({ storeUser, storeToken, storeRefreshToken }) => {
+    if (storeUser) localStorage.setItem("storeUser", JSON.stringify(storeUser));
+    if (storeToken) localStorage.setItem("storeToken", storeToken);
+    if (storeRefreshToken) {
+      localStorage.setItem("storeRefreshToken", storeRefreshToken);
+    }
+
+    set((state) => ({
+      storeUser: storeUser ?? state.storeUser,
+      storeToken: storeToken ?? state.storeToken,
+      storeRefreshToken: storeRefreshToken ?? state.storeRefreshToken,
+    }));
+  },
+
   setSelectedStore: (store) => {
     localStorage.setItem("selectedStore", JSON.stringify(store));
     set({ selectedStore: store });
@@ -31,6 +48,17 @@ export const useAuthStore = create((set) => ({
     set({ selectedStore: null });
   },
 
+  clearStoreSession: () => {
+    localStorage.removeItem("storeUser");
+    localStorage.removeItem("storeToken");
+    localStorage.removeItem("storeRefreshToken");
+    set({
+      storeUser: null,
+      storeToken: null,
+      storeRefreshToken: null,
+    });
+  },
+
   logout: () => {
     localStorage.clear();
     set({
@@ -38,6 +66,9 @@ export const useAuthStore = create((set) => ({
       token: null,
       refreshToken: null,
       role: null,
+      storeUser: null,
+      storeToken: null,
+      storeRefreshToken: null,
       selectedStore: null,
     });
   },

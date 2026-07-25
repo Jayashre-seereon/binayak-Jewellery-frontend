@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
-import { useAuthStore } from "@/auth/authStore";
+import { useAuthStore } from "@/store/authStore";
 import { useNavigate } from "react-router-dom";
-import { loginApi } from "@/auth/authApi";
+import { loginApi } from "@/api/authApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

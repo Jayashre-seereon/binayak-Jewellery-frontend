@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import { useAuthStore } from "@/auth/authStore";
+import { useAuthStore } from "../store/authStore";
 import DashboardLayout from "@/layout/dashboard-layout";
 import Dashboard from "@/features/dashboard/dashboard";
 import LoginPage from "@/pages/loginPage";
@@ -72,56 +72,56 @@ export const router = createBrowserRouter([
         <DashboardLayout />
       </ProtectedRoute>
     ),
-    children: [ 
+    children: [
       { index: true, element: <Navigate to="/dashboard" /> },
       { path: "dashboard", element: <Dashboard /> },
-      {path:"masters/brand",element:<BrandPage/>},
-      {path:"masters/category",element:<CategoryMaster/>},
-      {path:"masters/metal",element:<MetalPage/>},
+      { path: "masters/brand", element: <BrandPage /> },
+      { path: "masters/category", element: <CategoryMaster /> },
+      { path: "masters/metal", element: <MetalPage /> },
       { path: "masters/purity", element: <PurityPage /> },
-      { path: "masters/grade", element: <GradePage/> },
+      { path: "masters/grade", element: <GradePage /> },
       { path: "masters/design", element: <DesignPage /> },
-      { path: "masters/product", element: <ProductPage />},
-      {path:"masters/item", element: <ItemPage />},
-      {path:"masters/stone",element:<StonePage />},
-      {path:"masters/employee",element:<EmployeePage />},
-      {path:"masters/partytype",element:<PartyTypePage />},
-      {path:"masters/party",element:<PartyPage />},
-      {path:"masters/openingbalance",element:<PartyOpeningPage />},
+      { path: "masters/product", element: <ProductPage /> },
+      { path: "masters/item", element: <ItemPage /> },
+      { path: "masters/stone", element: <StonePage /> },
+      { path: "masters/employee", element: <EmployeePage /> },
+      { path: "masters/partytype", element: <PartyTypePage /> },
+      { path: "masters/party", element: <PartyPage /> },
+      { path: "masters/openingbalance", element: <PartyOpeningPage /> },
       // rate master routes
-      {path:"accounts/rate",element:<RatePage />},
+      { path: "accounts/rate", element: <RatePage /> },
       // purchase routes 
-      {path:"purchase/ornament",element:<PurchasePage />},
-      {path:"purchase/old",element:<OldPurchasePage />},
-      {path:"purchase/bullion",element:<BullionPurchasePage/>},
+      { path: "purchase/ornament", element: <PurchasePage /> },
+      { path: "purchase/old", element: <OldPurchasePage /> },
+      { path: "purchase/bullion", element: <BullionPurchasePage /> },
 
       // barcoding routes will be added here
-      {path:"barcoding/gold",element:<BarcodingPage/>},
-      {path:"barcoding/diamond",element:<DiamondBarcodingPage/>},
-      {path:"barcoding/mrp",element:<MrpBarcodingPage/>},
-      {path:"barcoding/branded",element:<BrandedBarcodingPage/>},
+      { path: "barcoding/gold", element: <BarcodingPage /> },
+      { path: "barcoding/diamond", element: <DiamondBarcodingPage /> },
+      { path: "barcoding/mrp", element: <MrpBarcodingPage /> },
+      { path: "barcoding/branded", element: <BrandedBarcodingPage /> },
       // inventory routes
-      {path:"inventory/stock",element:<StockSummaryPage/>},
-      {path:"inventory/itemstatus",element:<ItemStatusPage/>},
-      {path:"inventory/additem",element:<StockPage/>},
+      { path: "inventory/stock", element: <StockSummaryPage /> },
+      { path: "inventory/itemstatus", element: <ItemStatusPage /> },
+      { path: "inventory/additem", element: <StockPage /> },
       // counter transfer route will be added here
-      {path:"stock/transfer", element:<TransferPage/>},
+      { path: "stock/transfer", element: <TransferPage /> },
       // sales routes will be added here
-      {path:"sales/estimate", element:<SalesPage/>},
+      { path: "sales/estimate", element: <SalesPage /> },
       // advance routes will be added here
-      {path:"advance/recieve", element:<AdvancePage/>},
+      { path: "advance/recieve", element: <AdvancePage /> },
       // accounts routes will be added here
-      {path:"accounts/payment", element:<PaymentPage/>},
-      {path:"accounts/receipt", element:<ReceiptPage/>},
-      {path:"accounts/journal", element:<JournalPage/>},
+      { path: "accounts/payment", element: <PaymentPage /> },
+      { path: "accounts/receipt", element: <ReceiptPage /> },
+      { path: "accounts/journal", element: <JournalPage /> },
       // reports routes will be added here
-      {path:"report/sales-summary", element:<SaleSummaryPage/>},
-      {path:"report/purchase-register", element: <PurchaeRegisterPage/>},
-      {path:"report/old-purchase", element: <OldPurchaseRegisterPage/>},
-      {path:"report/advance-register", element: <AdvanceRegisterPage/>},
-      {path:"report/sales-register", element: <SalesRegisterPage/>},
-      {path:"report/old-stock-register", element: <OldStockPage/>},
-      {path:"report/metal-register", element: <PureMetalPage/>},
+      { path: "report/sales-summary", element: <SaleSummaryPage /> },
+      { path: "report/purchase-register", element: <PurchaeRegisterPage /> },
+      { path: "report/old-purchase", element: <OldPurchaseRegisterPage /> },
+      { path: "report/advance-register", element: <AdvanceRegisterPage /> },
+      { path: "report/sales-register", element: <SalesRegisterPage /> },
+      { path: "report/old-stock-register", element: <OldStockPage /> },
+      { path: "report/metal-register", element: <PureMetalPage /> },
     ],
   },
 ]);

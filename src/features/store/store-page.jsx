@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import StoreForm from "./store-form";
 import StoreCard from "./store-card";
-import { createStore, deleteStore, getStoreById, getStores, updateStore } from "./store-api";
+import { createStore, deleteStore, getStoreById, getStores, updateStore } from "./../../api/store-api";
 import { toast } from "sonner";
 
 export default function StorePage() {
