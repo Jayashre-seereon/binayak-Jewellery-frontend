@@ -5,6 +5,7 @@ import Dashboard from "@/features/dashboard/dashboard";
 import LoginPage from "@/pages/loginPage";
 import StoreSelectionPage from "@/pages/storeSelectionPage";
 import ProtectedRoute from "@/auth/protectedRoute";
+import RoleGuard from "@/auth/roleGuard";
 import BrandPage from "@/features/masters/brand/brand-page";
 import CategoryMaster from "@/features/masters/category/category-page";
 import MetalPage from "@/features/masters/metal/metal-page";
@@ -53,7 +54,9 @@ export const router = createBrowserRouter([
     path: "/select-store",
     element: (
       <ProtectedRoute>
-        <StoreSelectionPage />
+        <RoleGuard roles={["ADMIN"]}>
+          <StoreSelectionPage />
+        </RoleGuard>
       </ProtectedRoute>
     ),
   },

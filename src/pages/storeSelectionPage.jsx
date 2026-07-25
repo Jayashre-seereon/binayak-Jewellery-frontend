@@ -15,6 +15,7 @@ export default function StoreSelectionPage() {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingStore, setEditingStore] = useState(null);
+  const role = useAuthStore((state) => state.role);
 
   const loadStores = async () => {
     setLoading(true);
@@ -33,11 +34,17 @@ export default function StoreSelectionPage() {
     loadStores();
   }, []);
 
+  useEffect(() => {
+    if (role && role !== "ADMIN") {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate, role]);
+
   const handleStoreSelect = (store) => {
     setSelectedStore(store);
     localStorage.setItem("selectedStoreId", String(store.id));
     toast.success(`Entered ${store.storeName || store.name || "store"}.`);
-    navigate("/dashboard");
+    navigate("/dashboard", { replace: false });
   };
 
   const handleCreate = async (data) => {
