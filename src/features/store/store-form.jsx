@@ -33,7 +33,11 @@ export default function StoreForm({ open, setOpen, onSave, initialValues }) {
   const [showPassword, setShowPassword] = useState(false);
 
   const submit = (data) => {
-    onSave(data);
+    const payload = initialValues ? { ...data, password: undefined } : data;
+    if (payload.password === undefined) {
+      delete payload.password;
+    }
+    onSave(payload);
     reset();
     setOpen(false);
   };
@@ -85,33 +89,37 @@ export default function StoreForm({ open, setOpen, onSave, initialValues }) {
           {!initialValues ? (
             <div className="space-y-1">
               <div className="relative">
-              <Input
-                label="Password"
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                className="pr-10"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters",
-                  },
-                })}
-                aria-invalid={Boolean(errors.password)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((value) => !value)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+                <Input
+                  label="Password"
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  className="pr-10"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
+                  aria-invalid={Boolean(errors.password)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
               {errors.password ? (
                 <p className="text-xs text-red-500">{errors.password.message}</p>
               ) : null}
             </div>
-          ) : null}
+          ) : (
+            <p className="text-xs text-gray-500">
+              Password will not change when updating this store.
+            </p>
+          )}
 
           <div className="space-y-1">
             <Input
@@ -127,10 +135,10 @@ export default function StoreForm({ open, setOpen, onSave, initialValues }) {
               })}
               aria-invalid={Boolean(errors.email)}
             />
-              {errors.email ? (
-                <p className="text-xs text-red-500">{errors.email.message}</p>
-              ) : null}
-            </div>
+            {errors.email ? (
+              <p className="text-xs text-red-500">{errors.email.message}</p>
+            ) : null}
+          </div>
 
           <Button type="submit" className="w-full">
             {initialValues ? "Update" : "Save"}
