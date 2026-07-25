@@ -1,42 +1,52 @@
 import { useForm } from "react-hook-form";
 import { useAuthStore } from "@/auth/authStore";
 import { useNavigate } from "react-router-dom";
-import { users } from "@/auth/users";
-import { getStores } from "@/features/store/store-api";
+import { loginApi } from "@/auth/authApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const { register, handleSubmit } = useForm();
-  const login = useAuthStore((state) => state.login);
+  const setSession = useAuthStore((state) => state.setSession);
+  const setSelectedStore = useAuthStore((state) => state.setSelectedStore);
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
-    const user = users.find(
-      (u) =>
-        (u.username === data.username || u.email === data.username) &&
-        u.password === data.password
-    );
+    try {
+      const response = await loginApi({
+        email: data.email,
+        password: data.password,
+      });
 
-    if (user) {
-      login(user);
+      const payload = response.data?.data || response.data;
+      const user = payload?.user || payload;
+      const token = payload?.accessToken || payload?.token;
+      const refreshToken = payload?.refreshToken;
+      const role = user?.role || payload?.role;
 
-      if (user.role === "admin") {
+      setSession({
+        user,
+        token,
+        refreshToken,
+        role,
+      });
+
+      if (role === "ADMIN") {
+        toast.success("Login successful. Select a store to continue.");
         navigate("/select-store");
-      } else if (user.role === "staff" && user.assignedStoreId) {
-        // For staff users, get their assigned store and set it
-        const stores = await getStores();
-        const assignedStore = stores.find(store => store.id === user.assignedStoreId);
-        if (assignedStore) {
-          localStorage.setItem("selectedStore", JSON.stringify(assignedStore));
-        }
-        navigate("/dashboard");
       } else {
+        setSelectedStore(user?.store || null);
+        toast.success("Login successful. Redirecting to dashboard.");
         navigate("/dashboard");
       }
-    } else {
-      alert("Invalid credentials");
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Login failed. Please check your credentials and try again.";
+      toast.error(message);
     }
   };
 
@@ -47,16 +57,11 @@ export default function LoginPage() {
           <h2 className="text-xl font-semibold mb-4">Login</h2>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input placeholder="Username or Email" {...register("username")} />
+            <Input type="email" placeholder="Email" {...register("email")} />
             <Input type="password" placeholder="Password" {...register("password")} />
 
             <Button className="w-full">Login</Button>
           </form>
-
-          <div className="mt-4 text-sm text-gray-500">
-            <p>Admin: admin / 123456</p>
-            <p>Staff: staff / 123456</p>
-          </div>
         </CardContent>
       </Card>
     </div>

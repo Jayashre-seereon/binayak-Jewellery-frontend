@@ -57,6 +57,10 @@ export const router = createBrowserRouter([
       </ProtectedRoute>
     ),
   },
+  {
+    path: "*",
+    element: <RootRedirect />,
+  },
 
   {
     path: "/",
@@ -118,3 +122,18 @@ export const router = createBrowserRouter([
     ],
   },
 ]);
+
+function RootRedirect() {
+  const token = useAuthStore((state) => state.token);
+  const role = useAuthStore((state) => state.role);
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (role === "ADMIN") {
+    return <Navigate to="/select-store" replace />;
+  }
+
+  return <Navigate to="/dashboard" replace />;
+}

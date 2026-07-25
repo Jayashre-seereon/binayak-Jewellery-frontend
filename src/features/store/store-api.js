@@ -1,26 +1,12 @@
-let stores = [
-  { 
-    id: 1, 
-    name: "rasulgarh store", 
-    location: "Bhubaneswar",
-    address: "Rasulgarh, Bhubaneswar, Odisha",
-    phone: "+91-674-2345678",
-    email: "rasulgarh@binayakjewellery.com"
-  },
-  { 
-    id: 2, 
-    name: "saheed nagar store", 
-    location: "Bhubaneswar",
-    address: "Saheed Nagar, Bhubaneswar, Odisha",
-    phone: "+91-674-3456789",
-    email: "sahidnagar@binayakjewellery.com"
-  },
-];
+import http from "@/api/http";
 
-export const getStores = () => Promise.resolve(stores);
+export const getStores = () => http.get("/api/stores/get");
 
-export const addStore = (data) => {
-  data.id = stores.length + 1;
-  stores.push(data);
-  return Promise.resolve(data);
-};
+export const createStore = (payload) => http.post("/api/stores/create", payload);
+
+export const deleteStore = (id) => http.delete(`/api/stores/delete/${id}`);
+
+export const getStoreById = (id) => http.get(`/api/stores/getById/${id}`);
+
+export const updateStore = (id, payload) =>
+  http.put(`/api/stores/update/${id}`, payload);
