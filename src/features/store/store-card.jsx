@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useStoreStore } from "./storeStore";
+import { useStoreStore } from "../../store/storeStore";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useState } from "react";
