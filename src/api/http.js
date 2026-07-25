@@ -3,9 +3,7 @@ import { useAuthStore } from "@/auth/authStore";
 
 const http = axios.create({
   baseURL:
-    import.meta.env.VITE_API_BASE_URL ||
-    import.meta.env.VITE_BASE_URL ||
-    "http://localhost:5000",
+    import.meta.env.VITE_API_BASE_URL
 });
 
 http.interceptors.request.use((config) => {
