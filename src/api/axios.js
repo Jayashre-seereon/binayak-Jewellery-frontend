@@ -7,6 +7,20 @@ const http = axios.create({
 });
 
 http.interceptors.request.use((config) => {
+  const url = config.url || "";
+
+  // Only skip adding Authorization for login and refresh-token endpoints.
+  // Allow logout endpoints to receive the Authorization header.
+  const isAuthLogin =
+    url.includes("/api/users/login") ||
+    url.includes("/api/users/refresh-token") ||
+    url.includes("/api/stores/login") ||
+    url.includes("/api/stores/refresh-token");
+
+  if (isAuthLogin) {
+    return config;
+  }
+
   const { token, storeToken } = useAuthStore.getState();
   const activeToken = storeToken || token;
 
@@ -25,18 +39,20 @@ http.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
-    const isAuthEndpoint = originalRequest?.url?.includes("/api/users/");
-    const isStoreAuthEndpoint = originalRequest?.url?.includes("/api/stores/");
-    const { token, refreshToken, storeToken, storeRefreshToken } =
-      useAuthStore.getState();
+
+    // Only exclude login and refresh-token endpoints from the automatic
+    // refresh flow. This allows endpoints like /api/users/logout to trigger
+    // a refresh when they return 401 due to an expired access token.
+    const isAuthExcluded =
+      originalRequest?.url?.includes("/api/users/login") ||
+      originalRequest?.url?.includes("/api/users/refresh-token") ||
+      originalRequest?.url?.includes("/api/stores/login") ||
+      originalRequest?.url?.includes("/api/stores/refresh-token");
+
+    const { refreshToken, storeToken, storeRefreshToken } = useAuthStore.getState();
     const usingStoreSession = Boolean(storeToken);
 
-    if (
-      status === 401 &&
-      !originalRequest._retry &&
-      !isAuthEndpoint &&
-      !isStoreAuthEndpoint
-    ) {
+    if (status === 401 && !originalRequest._retry && !isAuthExcluded) {
       originalRequest._retry = true;
 
       try {
@@ -56,7 +72,9 @@ http.interceptors.response.use(
 
         refreshPromise =
           refreshPromise ||
-          http.post(refreshUrl, { refreshToken: currentRefreshToken });
+          axios.post(`${import.meta.env.VITE_API_BASE_URL}${refreshUrl}`, {
+            refreshToken: currentRefreshToken,
+          });
 
         const response = await refreshPromise;
         refreshPromise = null;
@@ -72,15 +90,18 @@ http.interceptors.response.use(
         if (nextToken) {
           if (usingStoreSession) {
             useAuthStore.getState().setStoreSession({
+              storeUser: useAuthStore.getState().storeUser,
               storeToken: nextToken,
               storeRefreshToken: nextRefreshToken || currentRefreshToken,
             });
           } else {
             useAuthStore.getState().setSession({
+              user: useAuthStore.getState().user,
               token: nextToken,
               refreshToken: nextRefreshToken || currentRefreshToken,
             });
           }
+          originalRequest.headers = originalRequest.headers || {};
           originalRequest.headers.Authorization = `Bearer ${nextToken}`;
           return http(originalRequest);
         }
@@ -89,6 +110,8 @@ http.interceptors.response.use(
         useAuthStore.getState().logout();
         window.location.href = "/login";
         return Promise.reject(refreshError);
+      } finally {
+        refreshPromise = null;
       }
     }
 
