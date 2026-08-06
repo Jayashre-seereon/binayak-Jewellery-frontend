@@ -1,6 +1,5 @@
 import http from "./axios";
 
-
 export const getBrands = async () => {
   const res = await http.get("/api/brands/get");
   return res.data?.brands ?? [];

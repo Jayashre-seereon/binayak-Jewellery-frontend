@@ -4,15 +4,18 @@ import { Table } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import CategoryTable from "./category-table"
 import CategoryForm from "./category-form"
-
-import { getCategory,addCategory,updatCategory,deleteCategory } from "./category-api"
+import DeleteModal from "../../../utils/DeleteModal"
+import { getCategory, addCategory, updateCategory, deleteCategory } 
+from "@/api/category-api";
 
 export default function CategoryMaster()  {
   const [search, setSearch] = useState("");
   const [category,setCategory] = useState([]);
     const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
-
+const [deleteOpen, setDeleteOpen] = useState(false);
+const [deleteId, setDeleteId] = useState(null);
+const [deleteName, setDeleteName] = useState("");
 
   const loadData = async  () => {
        const data = await getCategory();
@@ -25,29 +28,44 @@ export default function CategoryMaster()  {
   },[]);
 
   
-  const handleSave = async (data) => {
-      if(editData) {
-        await updatCategory({ ...data, id: editData.id })
-      } else {
-        await addCategory(data)
-      }
-      setEditData(null);
-    loadData();
+ const handleSave = async (data) => {
+  if (editData?.id) {
+    await updateCategory(editData.id, data); 
+  } else {
+    await addCategory(data);
   }
+
+  setEditData(null);
+  setOpen(false);
+  loadData();
+};
 
    const handleEdit = (item) => {
       setEditData(item);
       setOpen(true);
     };
-  
-    const handleDelete = async (id) => {
-      await deleteCategory(id);
-      loadData();
-    };
-  const filteredData = category.filter((item) =>
+  const confirmDelete = async () => {
+  if (!deleteId) return;
+
+  await deleteCategory(deleteId);
+
+  setDeleteId(null);
+  setDeleteName("");
+  setDeleteOpen(false);
+
+  loadData();
+};
+   const handleDelete = (item) => {
+  setDeleteId(item.id);
+  setDeleteName(item.name);
+  setDeleteOpen(true);
+};
+ const filteredData = category
+  .filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.alias.toLowerCase().includes(search.toLowerCase())
-  );
+    (item.alias || "").toLowerCase().includes(search.toLowerCase())
+  )
+  .reverse(); 
 
     return (
         <div>
@@ -73,6 +91,14 @@ export default function CategoryMaster()  {
       <CategoryForm open={open} setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}/>
+
+        <DeleteModal
+  open={deleteOpen}
+  setOpen={setDeleteOpen}
+  onConfirm={confirmDelete}
+  title="Delete Category"
+  description={`Are you sure you want to delete "${deleteName}"?`}
+/>
         </div>
     )
   }

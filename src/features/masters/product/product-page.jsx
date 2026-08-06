@@ -9,7 +9,7 @@ import {
   updateProduct,
   deleteProduct,
 } from "./product-api";
-import { getCategory } from "@/features/masters/category/category-api";
+
 import { getMetals } from "@/features/masters/metal/metal-api";
 
 export default function ProductPage() {

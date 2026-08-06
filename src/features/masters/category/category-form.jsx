@@ -1,5 +1,5 @@
-import { useForm } from "react-hook-form";
-import {
+import { useEffect } from "react"; 
+import { useForm } from "react-hook-form";import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -15,7 +15,11 @@ export default function CategoryForm({
   onSave,
   defaultValues,
 }) {
-  const { register, handleSubmit, reset } = useForm({ defaultValues });
+ const { register, handleSubmit, reset } = useForm();
+
+useEffect(() => {
+  reset(defaultValues || {});
+}, [defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
@@ -31,8 +35,7 @@ export default function CategoryForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-3">
-          <Input placeholder="Short Name" {...register("alias")} />
-          <Input placeholder="Category Name" {...register("name")} />
+           <Input placeholder="Category Name" {...register("name")} />
           <Textarea placeholder="Description" {...register("description")} />
 
           <div className="flex justify-end gap-2">
