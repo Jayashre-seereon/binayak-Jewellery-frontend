@@ -39,12 +39,28 @@ export const useAuthStore = create((set) => ({
   },
 
   setSelectedStore: (store) => {
-    localStorage.setItem("selectedStore", JSON.stringify(store));
-    set({ selectedStore: store });
+    const normalizedStore = store
+      ? {
+          ...store,
+          id: store.id ?? store.storeId ?? store.store_id ?? store._id,
+        }
+      : null;
+
+    if (normalizedStore) {
+      localStorage.setItem("selectedStore", JSON.stringify(normalizedStore));
+      if (normalizedStore.id) {
+        localStorage.setItem("selectedStoreId", String(normalizedStore.id));
+      }
+    } else {
+      localStorage.removeItem("selectedStore");
+      localStorage.removeItem("selectedStoreId");
+    }
+    set({ selectedStore: normalizedStore });
   },
 
   clearSelectedStore: () => {
     localStorage.removeItem("selectedStore");
+    localStorage.removeItem("selectedStoreId");
     set({ selectedStore: null });
   },
 

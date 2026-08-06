@@ -20,6 +20,19 @@ export default function LoginPage() {
   const setSelectedStore = useAuthStore((state) => state.setSelectedStore);
   const navigate = useNavigate();
 
+  const normalizeStore = (source) => {
+    if (!source) return null;
+
+    const id = source.id ?? source.storeId ?? source.store_id ?? source._id;
+
+    if (!id) return null;
+
+    return {
+      ...source,
+      id,
+    };
+  };
+
   const onSubmit = async (data) => {
     try {
       const response = await loginApi({
@@ -44,7 +57,16 @@ export default function LoginPage() {
         toast.success("Login successful. Select a store to continue.");
         navigate("/select-store");
       } else {
-        setSelectedStore(user?.store || null);
+        const currentStore =
+          normalizeStore(user) ||
+          normalizeStore(user?.store) ||
+          normalizeStore(user?.storeInfo) ||
+          normalizeStore(user?.storeData) ||
+          normalizeStore(payload?.store) ||
+          normalizeStore(payload?.storeInfo) ||
+          normalizeStore(payload?.storeData);
+
+        setSelectedStore(currentStore);
         toast.success("Login successful. Redirecting to dashboard.");
         navigate("/dashboard");
       }

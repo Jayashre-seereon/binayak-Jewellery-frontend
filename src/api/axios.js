@@ -9,24 +9,40 @@ const http = axios.create({
 http.interceptors.request.use((config) => {
   const url = config.url || "";
 
-  // Only skip adding Authorization for login and refresh-token endpoints.
-  // Allow logout endpoints to receive the Authorization header.
   const isAuthLogin =
     url.includes("/api/users/login") ||
     url.includes("/api/users/refresh-token") ||
     url.includes("/api/stores/login") ||
     url.includes("/api/stores/refresh-token");
 
+  // ✅ ADD THIS LINE
+  const { token, storeToken, selectedStore, storeUser } = useAuthStore.getState();
+  const storedSelectedStoreId = localStorage.getItem("selectedStoreId");
+
   if (isAuthLogin) {
     return config;
   }
 
-  const { token, storeToken } = useAuthStore.getState();
   const activeToken = storeToken || token;
 
+  // ✅ Token attach (already correct)
   if (activeToken) {
     config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${activeToken}`;
+  }
+
+  // 🆕 ✅ ADD THIS BLOCK (IMPORTANT)
+  const storeId =
+    selectedStore?.id ||
+    selectedStore?.storeId ||
+    storeUser?.storeId ||
+    storedSelectedStoreId;
+
+  if (storeId) {
+    config.params = {
+      ...config.params,
+      storeId,
+    };
   }
 
   return config;
@@ -40,9 +56,6 @@ http.interceptors.response.use(
     const originalRequest = error.config;
     const status = error.response?.status;
 
-    // Only exclude login and refresh-token endpoints from the automatic
-    // refresh flow. This allows endpoints like /api/users/logout to trigger
-    // a refresh when they return 401 due to an expired access token.
     const isAuthExcluded =
       originalRequest?.url?.includes("/api/users/login") ||
       originalRequest?.url?.includes("/api/users/refresh-token") ||

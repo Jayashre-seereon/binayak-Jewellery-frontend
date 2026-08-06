@@ -1,15 +1,28 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+const emptyValues = {
+  alias: "",
+  name: "",
+  description: "",
+};
+
 export default function BrandForm({ open, setOpen, onSave, defaultValues }) {
-  const { register, handleSubmit, reset } = useForm({ defaultValues });
+  const { register, handleSubmit, reset } = useForm({
+    defaultValues: emptyValues,
+  });
+
+  useEffect(() => {
+    reset(defaultValues || emptyValues);
+  }, [defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
-    reset();
+    reset(emptyValues);
     setOpen(false);
   };
 
@@ -17,19 +30,18 @@ export default function BrandForm({ open, setOpen, onSave, defaultValues }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Brand Master</DialogTitle>
+          <DialogTitle>{defaultValues ? "Update Brand" : "Add Brand"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-3">
-          <Input placeholder="short Name" {...register("alias")} />
-          <Input placeholder="Brand Name" {...register("name")} />
+            <Input placeholder="Brand Name" {...register("name")} />
           <Textarea placeholder="Description" {...register("description")} />
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit">{defaultValues ? "Update" : "Save"}</Button>
           </div>
         </form>
       </DialogContent>

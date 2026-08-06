@@ -6,7 +6,7 @@ import CategoryTable from "./category-table"
 import CategoryForm from "./category-form"
 
 import { getCategory,addCategory,updatCategory,deleteCategory } from "./category-api"
-import { updateBrand } from "../brand/brand-api"
+
 export default function CategoryMaster()  {
   const [search, setSearch] = useState("");
   const [category,setCategory] = useState([]);

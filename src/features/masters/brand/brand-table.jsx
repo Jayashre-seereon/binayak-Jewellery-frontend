@@ -6,8 +6,7 @@ export default function BrandTable({ data, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
+            <th className="p-3 text-left">SL No</th>
             <th className="p-3 text-left">Brand Name</th>
             <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Actions</th>
@@ -16,10 +15,9 @@ export default function BrandTable({ data, onEdit, onDelete }) {
 
         <tbody>
           {data.length > 0 ? (
-            data.map((item) => (
+           data.map((item, index) => (
               <tr key={item.id} className="border-t hover:bg-gray-50">
-                <td className="p-3 text-left">{item.id}</td>
-                <td className="p-3 text-left">{item.alias}</td>
+                <td className="p-3 text-left">{index + 1}</td>
                 <td className="p-3 text-left">{item.name}</td>
                 <td className="p-3 text-left">{item.description}</td>
                 <td className="p-3">
@@ -35,8 +33,7 @@ export default function BrandTable({ data, onEdit, onDelete }) {
                       <Trash
                         size={16}
                         className="text-red-500"
-                        onClick={() => onDelete(item.id)}
-                      />
+                      onClick={() => onDelete(item)} />
                     </button>
                   </div>
                 </td>
