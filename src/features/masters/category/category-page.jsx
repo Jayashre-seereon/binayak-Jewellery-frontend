@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import CategoryTable from "./category-table"
 import CategoryForm from "./category-form"
 import DeleteModal from "../../../utils/DeleteModal"
-import { getCategory, addCategory, updateCategory, deleteCategory } 
+import { getCategory,getCategoryById, addCategory, updateCategory, deleteCategory } 
 from "@/api/category-api";
 
 export default function CategoryMaster()  {
@@ -40,10 +40,16 @@ const [deleteName, setDeleteName] = useState("");
   loadData();
 };
 
-   const handleEdit = (item) => {
-      setEditData(item);
-      setOpen(true);
-    };
+  const handleEdit = async (item) => {
+  try {
+    const category = await getCategoryById(item.id); 
+    setEditData(category);                         
+    setOpen(true);
+  } catch (err) {
+    console.error("Failed to fetch category", err);
+  }
+};
+
   const confirmDelete = async () => {
   if (!deleteId) return;
 

@@ -6,20 +6,18 @@ export default function MetalTable({ data, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
-            <th className="p-3 text-left">Metal Name</th>
+            <th className="p-3 text-left">SL No</th>
+             <th className="p-3 text-left">Metal Name</th>
             <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
         </thead>
 
         <tbody>
-          {data.map((item) => (
+          {data.map((item, index) => (
             <tr key={item.id} className="border-t">
-              <td className="p-3">{item.id}</td>
-              <td className="p-3">{item.alias}</td>
-              <td className="p-3">{item.name}</td>
+              <td className="p-3">{index + 1}</td> {/* ✅ SL No */}
+               <td className="p-3">{item.name}</td>
               <td className="p-3">{item.description}</td>
               <td className="p-3">
                 <div className="flex gap-2">
@@ -31,7 +29,7 @@ export default function MetalTable({ data, onEdit, onDelete }) {
                   <Trash
                     size={16}
                     className="text-red-500 cursor-pointer"
-                    onClick={() => onDelete(item.id)}
+                    onClick={() => onDelete(item)}
                   />
                 </div>
               </td>

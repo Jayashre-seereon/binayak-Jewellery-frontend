@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -15,7 +16,12 @@ export default function MetalForm({
   onSave,
   defaultValues,
 }) {
-  const { register, handleSubmit, reset } = useForm({ defaultValues });
+  const { register, handleSubmit, reset } = useForm();
+
+  // ✅ IMPORTANT FIX
+  useEffect(() => {
+    reset(defaultValues || {});
+  }, [defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
@@ -27,7 +33,9 @@ export default function MetalForm({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Metal Master</DialogTitle>
+          <DialogTitle>
+            {defaultValues ? "Edit Metal" : "Add Metal"}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-3">
@@ -39,7 +47,9 @@ export default function MetalForm({
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Save</Button>
+            <Button type="submit">
+              {defaultValues ? "Update" : "Save"}
+            </Button>
           </div>
         </form>
       </DialogContent>

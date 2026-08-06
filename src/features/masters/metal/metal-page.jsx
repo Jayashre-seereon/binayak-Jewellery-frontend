@@ -3,19 +3,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import MetalTable from "./metal-table";
 import MetalForm from "./metal-form";
+import DeleteModal from "../../../utils/DeleteModal";
 import {
   getMetals,
+  getMetalById,
   addMetal,
   updateMetal,
   deleteMetal,
-} from "./metal-api";
+} from "@/api/metal-api";
 
 export default function MetalPage() {
   const [metals, setMetals] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
-
+  const [deleteOpen, setDeleteOpen] = useState(false);
+const [deleteId, setDeleteId] = useState(null);
+const [deleteName, setDeleteName] = useState("");
   const loadData = async () => {
     const data = await getMetals();
     setMetals(data);
@@ -27,7 +31,7 @@ export default function MetalPage() {
 
   const handleSave = async (data) => {
     if (editData) {
-      await updateMetal({ ...data, id: editData.id });
+    await updateMetal(editData.id, data);
     } else {
       await addMetal(data);
     }
@@ -35,16 +39,32 @@ export default function MetalPage() {
     loadData();
   };
 
-  const handleEdit = (item) => {
-    setEditData(item);
-    setOpen(true);
-  };
+ const handleEdit = async (item) => {
+  try {
+    const metal = await getMetalById(item.id); 
+    setEditData(metal);                        
+    setOpen(true);                            
+  } catch (err) {
+    console.error("Failed to fetch metal", err);
+  }
+};
 
-  const handleDelete = async (id) => {
-    await deleteMetal(id);
-    loadData();
-  };
+const handleDelete = (item) => {
+  setDeleteId(item.id);
+  setDeleteName(item.name);
+  setDeleteOpen(true);
+};
+const confirmDelete = async () => {
+  if (!deleteId) return;
 
+  await deleteMetal(deleteId);
+
+  setDeleteId(null);
+  setDeleteName("");
+  setDeleteOpen(false);
+
+  loadData();
+};
   const filteredData = metals.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()) ||
     item.alias.toLowerCase().includes(search.toLowerCase())
@@ -78,6 +98,13 @@ export default function MetalPage() {
         onSave={handleSave}
         defaultValues={editData}
       />
+      <DeleteModal
+  open={deleteOpen}
+  setOpen={setDeleteOpen}
+  onConfirm={confirmDelete}
+  title="Delete Metal"
+  description={`Are you sure you want to delete "${deleteName}"?`}
+/>
     </div>
   );
 }
