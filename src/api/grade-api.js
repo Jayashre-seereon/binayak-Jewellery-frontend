@@ -2,12 +2,16 @@ import http from "./axios";
 
 export const getGrades = async () => {
   const res = await http.get("/api/grades/get");
-  return res.data?.data ?? [];
+  if (Array.isArray(res.data)) return res.data;
+  return res.data?.data ?? res.data?.grades ?? [];
 };
 
 export const getGradeById = async (id) => {
   const res = await http.get(`/api/grades/getById/${id}`);
-  return res.data?.data ?? null;
+  if (res.data?.data && !Array.isArray(res.data.data)) return res.data.data;
+  if (res.data?.grade) return res.data.grade;
+  if (res.data && !Array.isArray(res.data)) return res.data;
+  return null;
 };
 
 export const addGrade = async (data) => {

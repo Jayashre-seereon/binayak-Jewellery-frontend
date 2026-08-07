@@ -5,11 +5,12 @@ import GradeTable from "./grade-table";
 import GradeForm from "./grade-form";
 import DeleteModal from "../../../utils/DeleteModal";
 import {
+  getGrades,
+  getGradeById,
   addGrade,
   updateGrade,
   deleteGrade,
 } from "@/api/grade-api";
-import http from "@/api/axios";
 import { getPurities } from "@/api/purity-api";
 
 export default function GradePage() {
@@ -37,8 +38,7 @@ export default function GradePage() {
   };
 
   const loadData = async () => {
-    const gradeRes = await http.get("/api/grades/get");
-    const gradeData = unwrapList(gradeRes.data);
+    const gradeData = unwrapList(await getGrades());
     const purityData = await getPurities();
     setGrades(Array.isArray(gradeData) ? [...gradeData].reverse() : []);
     setPurities(purityData);
@@ -60,8 +60,7 @@ export default function GradePage() {
   };
 
   const handleEdit = async (item) => {
-    const gradeRes = await http.get(`/api/grades/getById/${item.id}`);
-    const grade = unwrapItem(gradeRes.data);
+    const grade = unwrapItem(await getGradeById(item.id));
     setEditData(grade);
     setOpen(true);
   };
