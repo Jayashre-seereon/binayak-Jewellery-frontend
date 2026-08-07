@@ -3,14 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ProductTable from "./product-table";
 import ProductForm from "./product-form";
+import DeleteModal from "../../../utils/DeleteModal";
 import {
   getProducts,
+  getProductById,
   addProduct,
   updateProduct,
   deleteProduct,
 } from "./product-api";
-
-import { getMetals } from "@/features/masters/metal/metal-api";
+import { getCategory } from "@/api/category-api";
+import { getMetals } from "@/api/metal-api";
 
 export default function ProductPage() {
   const [products, setProducts] = useState([]);
@@ -19,13 +21,16 @@ export default function ProductPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteName, setDeleteName] = useState("");
 
   const loadData = async () => {
     const productData = await getProducts();
     const categoryData = await getCategory();
     const metalData = await getMetals();
 
-    setProducts(productData);
+    setProducts(Array.isArray(productData) ? [...productData].reverse() : []);
     setCategories(categoryData);
     setMetals(metalData);
   };
@@ -36,16 +41,35 @@ export default function ProductPage() {
 
   const handleSave = async (data) => {
     if (editData) {
-      await updateProduct({ ...data, id: editData.id });
+      await updateProduct(editData.id, data);
     } else {
       await addProduct(data);
     }
     setEditData(null);
+    setOpen(false);
+    loadData();
+  };
+
+  const handleDelete = (id) => {
+    setDeleteId(id);
+    const selected = products.find((item) => item.id === id);
+    setDeleteName(selected?.name || `#${id}`);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await deleteProduct(deleteId);
+    setDeleteId(null);
+    setDeleteName("");
+    setDeleteOpen(false);
     loadData();
   };
 
   const filteredData = products.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase())
+    `${p.name || ""} ${p.productCode || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
   return (
@@ -64,14 +88,12 @@ export default function ProductPage() {
 
       <ProductTable
         data={filteredData}
-        onEdit={(item) => {
-          setEditData(item);
+        onEdit={async (item) => {
+          const product = await getProductById(item.id);
+          setEditData(product || item);
           setOpen(true);
         }}
-        onDelete={async (id) => {
-          await deleteProduct(id);
-          loadData();
-        }}
+        onDelete={handleDelete}
       />
 
       <ProductForm
@@ -81,6 +103,14 @@ export default function ProductPage() {
         defaultValues={editData}
         categories={categories}
         metals={metals}
+      />
+
+      <DeleteModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        onConfirm={confirmDelete}
+        title="Delete Product"
+        description={`Are you sure you want to delete "${deleteName}"?`}
       />
     </div>
   );

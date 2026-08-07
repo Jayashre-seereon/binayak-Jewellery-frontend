@@ -1,13 +1,19 @@
 import { Pencil, Trash } from "lucide-react";
 
 export default function ProductTable({ data, onEdit, onDelete }) {
+  const getCategoryLabel = (item) =>
+    item.category?.name || item.categoryName || item.category || "-";
+
+  const getMetalLabel = (item) => item.metal?.name || item.metalName || item.metal || "-";
+
   return (
     <div className="bg-white rounded-lg border">
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
+            <th className="p-3 text-left">SL No</th>
+            <th className="p-3 text-left">Product Code</th>
+            <th className="p-3 text-left">Image</th>
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Metal</th>
@@ -17,18 +23,29 @@ export default function ProductTable({ data, onEdit, onDelete }) {
         </thead>
 
         <tbody>
-          {data.map((item) => (
+          {data.map((item, index) => (
             <tr key={item.id} className="border-t">
-              <td className="p-3">{item.id}</td>
-              <td className="p-3">{item.alias}</td>
+              <td className="p-3">{index + 1}</td>
+              <td className="p-3">{item.productCode || "-"}</td>
+              <td className="p-3">
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="h-12 w-12 rounded object-cover"
+                  />
+                ) : (
+                  "-"
+                )}
+              </td>
               <td className="p-3">{item.name}</td>
-              <td className="p-3">{item.category}</td>
-              <td className="p-3">{item.metal}</td>
+              <td className="p-3">{getCategoryLabel(item)}</td>
+              <td className="p-3">{getMetalLabel(item)}</td>
               <td className="p-3">{item.description}</td>
               <td className="p-3">
                 <div className="flex gap-2">
                   <Pencil size={16} className="text-blue-500 cursor-pointer" onClick={() => onEdit(item)} />
-                  <Trash size={16} className="text-red-500 cursor-pointerr" onClick={() => onDelete(item.id)} />
+                  <Trash size={16} className="text-red-500 cursor-pointer" onClick={() => onDelete(item.id)} />
                 </div>
               </td>
             </tr>

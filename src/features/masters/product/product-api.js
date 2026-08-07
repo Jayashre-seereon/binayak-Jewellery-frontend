@@ -1,28 +1,55 @@
-let products = [
-  {
-    id: 1,
-    alias: "RNG-001",
-    name: "Gold Ring",
-    category: "Ring",
-    metal: "Gold",
-    description: "Simple gold ring",
-  },
-];
+import http from "@/api/axios";
 
-export const getProducts = () => Promise.resolve(products);
-
-export const addProduct = (data) => {
-  data.id = products.length + 1;
-  products.push(data);
-  return Promise.resolve(data);
+export const getProducts = async () => {
+  const res = await http.get("/api/products/get", {
+  });
+  if (Array.isArray(res.data)) return res.data;
+  return res.data?.products ?? res.data?.data ?? [];
 };
 
-export const updateProduct = (data) => {
-  products = products.map((p) => (p.id === data.id ? data : p));
-  return Promise.resolve(data);
+export const getProductById = async (id) => {
+  const res = await http.get(`/api/products/getById/${id}`, {
+  });
+  if (res.data?.product) return res.data.product;
+  if (res.data?.data && !Array.isArray(res.data.data)) return res.data.data;
+  if (res.data && !Array.isArray(res.data)) return res.data;
+  return null;
 };
 
-export const deleteProduct = (id) => {
-  products = products.filter((p) => p.id !== id);
-  return Promise.resolve();
+const buildProductFormData = (data) => {
+  const formData = new FormData();
+  formData.append("name", data.name || "");
+  formData.append("description", data.description || "");
+  if (data.categoryId !== undefined && data.categoryId !== null && data.categoryId !== "") {
+    formData.append("categoryId", String(Number(data.categoryId)));
+  }
+  if (data.metalId !== undefined && data.metalId !== null && data.metalId !== "") {
+    formData.append("metalId", String(Number(data.metalId)));
+  }
+  if (data.image) {
+    formData.append("image", data.image);
+  }
+  return formData;
+};
+
+export const addProduct = async (data) => {
+  const formData = buildProductFormData(data);
+  const res = await http.post("/api/products/create", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const updateProduct = async (id, data) => {
+  const formData = buildProductFormData(data);
+  const res = await http.put(`/api/products/update/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
+export const deleteProduct = async (id) => {
+  const res = await http.delete(`/api/products/delete/${id}`, {
+  });
+  return res.data;
 };

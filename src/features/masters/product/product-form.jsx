@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -24,9 +25,47 @@ export default function ProductForm({
   categories,
   metals,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+      categoryId: "",
+      metalId: "",
+      image: null,
+    },
   });
+  const [preview, setPreview] = useState(null);
+  const categoryValue = watch("categoryId");
+  const metalValue = watch("metalId");
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: defaultValues?.name || "",
+        description: defaultValues?.description || "",
+        categoryId:
+          defaultValues?.categoryId ||
+          defaultValues?.category?.id ||
+          "",
+        metalId: defaultValues?.metalId || defaultValues?.metal?.id || "",
+        image: null,
+      });
+      setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
+      setValue(
+        "categoryId",
+        defaultValues?.categoryId || defaultValues?.category?.id || ""
+      );
+      setValue("metalId", defaultValues?.metalId || defaultValues?.metal?.id || "");
+    }
+  }, [defaultValues, open, reset, setValue]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setValue("image", file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
   const submit = (data) => {
     onSave(data);
@@ -43,28 +82,22 @@ export default function ProductForm({
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div>
-            <label className="text-sm">Alias</label>
-            <Input className="h-9" {...register("alias")} />
-          </div>
-
-          <div>
             <label className="text-sm">Product Name</label>
             <Input className="h-9" {...register("name")} />
           </div>
 
-          {/* Category Dropdown */}
           <div>
             <label className="text-sm">Category</label>
             <Select
-              defaultValue={defaultValues?.category}
-              onValueChange={(value) => setValue("category", value)}
+              value={String(categoryValue || "")}
+              onValueChange={(value) => setValue("categoryId", value)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((c) => (
-                  <SelectItem key={c.name} value={c.name}>
+                  <SelectItem key={c.id} value={String(c.id)}>
                     {c.name}
                   </SelectItem>
                 ))}
@@ -72,25 +105,37 @@ export default function ProductForm({
             </Select>
           </div>
 
-          {/* Metal Dropdown */}
           <div>
             <label className="text-sm">Metal</label>
             <Select
-              defaultValue={defaultValues?.metal}
-              onValueChange={(value) => setValue("metal", value)}
+              value={String(metalValue || "")}
+              onValueChange={(value) => setValue("metalId", value)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Metal" />
               </SelectTrigger>
               <SelectContent>
                 {metals.map((m) => (
-                  <SelectItem key={m.name} value={m.name}>
+                  <SelectItem key={m.id} value={String(m.id)}>
                     {m.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          <div>
+            <label className="text-sm">Image</label>
+            <Input type="file" accept="image/*" onChange={handleImageChange} />
+          </div>
+
+          {preview && (
+            <img
+              src={preview}
+              alt="preview"
+              className="w-20 h-20 object-cover border rounded"
+            />
+          )}
 
           <div>
             <label className="text-sm">Description</label>
