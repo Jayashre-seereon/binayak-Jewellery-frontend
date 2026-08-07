@@ -9,7 +9,7 @@ import {
   updateGrade,
   deleteGrade,
 } from "./grade-api";
-import { getPurities } from "../purity/purity-api";
+import { getPurities } from "@/api/purity-api";
 
 export default function GradePage() {
   const [grades, setGrades] = useState([]);

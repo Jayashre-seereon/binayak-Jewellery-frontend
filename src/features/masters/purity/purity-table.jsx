@@ -1,6 +1,15 @@
 import { Pencil, Trash } from "lucide-react";
 
-export default function PurityTable({ data, onEdit, onDelete }) {
+export default function PurityTable({ data, metals = [], onEdit, onDelete }) {
+  const getMetalLabel = (item) => {
+    if (item.metal?.name) return item.metal.name;
+    if (item.metalName) return item.metalName;
+    if (item.metalId) {
+      return metals.find((metal) => metal.id === item.metalId)?.name || `#${item.metalId}`;
+    }
+    return "-";
+  };
+
   return (
     <div className="bg-white rounded-lg border">
       <table className="w-full text-sm">
@@ -21,7 +30,7 @@ export default function PurityTable({ data, onEdit, onDelete }) {
               <td className="p-3">{item.id}</td>
               <td className="p-3">{item.alias}</td>
               <td className="p-3">{item.name}</td>
-              <td className="p-3">{item.metal}</td>
+              <td className="p-3">{getMetalLabel(item)}</td>
               <td className="p-3">{item.description}</td>
               <td className="p-3">
                 <div className="flex gap-2">
@@ -33,7 +42,7 @@ export default function PurityTable({ data, onEdit, onDelete }) {
                   <Trash
                     size={16}
                     className="text-red-500 cursor-pointer"
-                    onClick={() => onDelete(item.id)}
+                    onClick={() => onDelete(item)}
                   />
                 </div>
               </td>

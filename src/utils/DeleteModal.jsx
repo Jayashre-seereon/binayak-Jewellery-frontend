@@ -13,6 +13,11 @@ export default function DeleteModal({
   title = "Confirm Delete",
   description = "Are you sure you want to delete this item?",
 }) {
+  const handleConfirm = async () => {
+    await onConfirm();
+    setOpen(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[400px]">
@@ -29,10 +34,7 @@ export default function DeleteModal({
 
           <Button
             variant="destructive"
-            onClick={() => {
-              onConfirm();
-              setOpen(false);
-            }}
+            onClick={handleConfirm}
           >
             Delete
           </Button>

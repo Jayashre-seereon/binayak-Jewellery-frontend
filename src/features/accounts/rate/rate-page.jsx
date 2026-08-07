@@ -11,7 +11,7 @@ import {
 } from "./rate-api";
 
 import { getMetals } from "@/features/masters/metal/metal-api";
-import { getPurities } from "@/features/masters/purity/purity-api";
+import { getPurities } from "@/api/purity-api";
 import { getGrades } from "@/features/masters/grade/grade-api";
 
 export default function RatePage() {

@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PurityTable from "./purity-table";
 import PurityForm from "./purity-form";
+import DeleteModal from "../../../utils/DeleteModal";
 import {
   getPurities,
+  getPurityById,
   addPurity,
   updatePurity,
   deletePurity,
-} from "./purity-api";
-import { getMetals } from "../metal/metal-api";
+} from "@/api/purity-api";
+import { getMetals } from "@/api/metal-api";
 
 export default function PurityPage() {
   const [purities, setPurities] = useState([]);
@@ -17,13 +19,18 @@ export default function PurityPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteName, setDeleteName] = useState("");
 
-  const loadData = async () => {
-    const purityData = await getPurities();
-    const metalData = await getMetals();
-    setPurities(purityData);
-    setMetals(metalData);
-  };
+ const loadData = async () => {
+  const purityData = await getPurities();
+  console.log("Purity Data:", purityData); 
+  setPurities(purityData);
+
+  const metalData = await getMetals();
+  setMetals(metalData);
+};
 
   useEffect(() => {
     loadData();
@@ -31,26 +38,38 @@ export default function PurityPage() {
 
   const handleSave = async (data) => {
     if (editData) {
-      await updatePurity({ ...data, id: editData.id });
+      await updatePurity(editData.id, data);
     } else {
       await addPurity(data);
     }
     setEditData(null);
+    setOpen(false);
     loadData();
   };
 
-  const handleEdit = (item) => {
-    setEditData(item);
+  const handleEdit = async (item) => {
+    const purity = await getPurityById(item.id);
+    setEditData(purity);
     setOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    await deletePurity(id);
+  const handleDelete = (item) => {
+    setDeleteId(item.id);
+    setDeleteName(item.name || `#${item.id}`);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    await deletePurity(deleteId);
+    setDeleteId(null);
+    setDeleteName("");
+    setDeleteOpen(false);
     loadData();
   };
 
   const filteredData = purities.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase())
+    item.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -71,6 +90,7 @@ export default function PurityPage() {
 
       <PurityTable
         data={filteredData}
+        metals={metals}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
@@ -81,6 +101,14 @@ export default function PurityPage() {
         onSave={handleSave}
         defaultValues={editData}
         metals={metals}
+      />
+
+      <DeleteModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        onConfirm={confirmDelete}
+        title="Delete Purity"
+        description={`Are you sure you want to delete "${deleteName}"?`}
       />
     </div>
   );

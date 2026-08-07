@@ -1,4 +1,5 @@
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +24,35 @@ export default function PurityForm({
   defaultValues,
   metals,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const { register, handleSubmit, reset, control } = useForm({
+    defaultValues: {
+      name: "",
+      metalId: "",
+      description: "",
+    },
   });
 
+  useEffect(() => {
+    if (open) {
+      const resolvedMetalId =
+        defaultValues?.metalId ||
+        defaultValues?.metal?.id ||
+        defaultValues?.metal?.metalId ||
+        "";
+
+      reset({
+        name: defaultValues?.name || "",
+        metalId: resolvedMetalId ? String(resolvedMetalId) : "",
+        description: defaultValues?.description || "",
+      });
+    }
+  }, [defaultValues, open, reset]);
+
   const submit = (data) => {
-    onSave(data);
+    onSave({
+      ...data,
+      metalId: data.metalId ? Number(data.metalId) : null,
+    });
     reset();
     setOpen(false);
   };
@@ -42,29 +66,30 @@ export default function PurityForm({
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
   <div>
-    <label className="text-sm">Alias</label>
-    <Input className="w-full" {...register("alias")} />
-  </div>
-
-  <div>
     <label className="text-sm">Purity Name</label>
     <Input className="w-full" {...register("name")} />
   </div>
 
   <div>
     <label className="text-sm">Metal</label>
-    <Select onValueChange={(value) => setValue("metal", value)}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select Metal" />
-      </SelectTrigger>
-      <SelectContent>
-        {metals.map((m) => (
-          <SelectItem key={m.name} value={m.name}>
-            {m.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Controller
+      name="metalId"
+      control={control}
+      render={({ field }) => (
+        <Select value={field.value} onValueChange={field.onChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Metal" />
+          </SelectTrigger>
+          <SelectContent>
+            {metals.map((m) => (
+              <SelectItem key={m.id} value={String(m.id)}>
+                {m.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    />
   </div>
 
   <div>
