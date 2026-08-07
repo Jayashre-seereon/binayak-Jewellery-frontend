@@ -12,7 +12,7 @@ import {
 
 import { getMetals } from "@/features/masters/metal/metal-api";
 import { getPurities } from "@/api/purity-api";
-import { getGrades } from "@/features/masters/grade/grade-api";
+import { getGrades } from "@/api/grade-api";
 
 export default function RatePage() {
   const [data, setData] = useState([]);

@@ -1,4 +1,5 @@
-import { useForm } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   Dialog,
   DialogContent,
@@ -23,12 +24,45 @@ export default function GradeForm({
   defaultValues,
   purities,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const { register, handleSubmit, reset, control } = useForm({
+    defaultValues: {
+      name: "",
+      purityId: "",
+      percentage: "",
+      description: "",
+    },
   });
 
+  useEffect(() => {
+    if (open) {
+      const resolvedPurityId =
+        defaultValues?.purityId ||
+        defaultValues?.purity?.id ||
+        defaultValues?.purity?.purityId ||
+        "";
+
+      reset({
+        name: defaultValues?.name || "",
+        purityId: resolvedPurityId ? String(resolvedPurityId) : "",
+        percentage:
+          defaultValues?.percentage !== undefined &&
+          defaultValues?.percentage !== null
+            ? String(defaultValues.percentage)
+            : "",
+        description: defaultValues?.description || "",
+      });
+    }
+  }, [defaultValues, open, reset]);
+
   const submit = (data) => {
-    onSave(data);
+    onSave({
+      ...data,
+      purityId: data.purityId ? Number(data.purityId) : null,
+      percentage:
+        data.percentage === "" || data.percentage === null
+          ? null
+          : Number.parseFloat(data.percentage),
+    });
     reset();
     setOpen(false);
   };
@@ -41,7 +75,6 @@ export default function GradeForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
-         
           <div>
             <label className="text-sm">Grade Name</label>
             <Input className="h-9" {...register("name")} />
@@ -49,21 +82,24 @@ export default function GradeForm({
 
           <div>
             <label className="text-sm">Purity</label>
-            <Select
-              defaultValue={defaultValues?.purity}
-              onValueChange={(value) => setValue("purity", value)}
-            >
-              <SelectTrigger className="w-full h-9">
-                <SelectValue placeholder="Select Purity" />
-              </SelectTrigger>
-              <SelectContent>
-                {purities.map((p) => (
-                  <SelectItem key={p.name} value={p.name}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="purityId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger className="w-full h-9">
+                    <SelectValue placeholder="Select Purity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {purities.map((p) => (
+                      <SelectItem key={p.id} value={String(p.id)}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div>
