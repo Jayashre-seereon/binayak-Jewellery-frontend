@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import MetalTable from "./metal-table";
 import MetalForm from "./metal-form";
 import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getMetals,
   getMetalById,
@@ -21,8 +22,12 @@ export default function MetalPage() {
 const [deleteId, setDeleteId] = useState(null);
 const [deleteName, setDeleteName] = useState("");
   const loadData = async () => {
-    const data = await getMetals();
-    setMetals(data);
+    try {
+      const data = await getMetals();
+      setMetals(Array.isArray(data) ? [...data].reverse() : []);
+    } catch (error) {
+      notifyError(error, "Failed to load metals.");
+    }
   };
 
   useEffect(() => {
@@ -30,13 +35,20 @@ const [deleteName, setDeleteName] = useState("");
   }, []);
 
   const handleSave = async (data) => {
-    if (editData) {
-    await updateMetal(editData.id, data);
-    } else {
-      await addMetal(data);
+    try {
+      if (editData) {
+        await updateMetal(editData.id, data);
+        notifySuccess("Metal updated successfully.");
+      } else {
+        await addMetal(data);
+        notifySuccess("Metal added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Metal save failed.");
     }
-    setEditData(null);
-    loadData();
   };
 
  const handleEdit = async (item) => {
@@ -44,8 +56,8 @@ const [deleteName, setDeleteName] = useState("");
     const metal = await getMetalById(item.id); 
     setEditData(metal);                        
     setOpen(true);                            
-  } catch (err) {
-    console.error("Failed to fetch metal", err);
+  } catch (error) {
+    notifyError(error, "Failed to load metal details.");
   }
 };
 
@@ -57,13 +69,16 @@ const handleDelete = (item) => {
 const confirmDelete = async () => {
   if (!deleteId) return;
 
-  await deleteMetal(deleteId);
-
-  setDeleteId(null);
-  setDeleteName("");
-  setDeleteOpen(false);
-
-  loadData();
+  try {
+    await deleteMetal(deleteId);
+    notifySuccess("Metal deleted successfully.");
+    setDeleteId(null);
+    setDeleteName("");
+    setDeleteOpen(false);
+    loadData();
+  } catch (error) {
+    notifyError(error, "Failed to delete metal.");
+  }
 };
   const filteredData = metals.filter((item) =>
     item.name.toLowerCase().includes(search.toLowerCase()) ||

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import DesignTable from "./design-table";
 import DesignForm from "./design-form";
 import DeleteModal from "@/utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getDesigns,
   addDesign,
@@ -22,8 +23,12 @@ export default function DesignPage() {
   const [deleteName, setDeleteName] = useState("");
 
   const loadData = async () => {
-    const data = await getDesigns();
-    setDesigns(Array.isArray(data) ? [...data].reverse() : []);
+    try {
+      const data = await getDesigns();
+      setDesigns(Array.isArray(data) ? [...data].reverse() : []);
+    } catch (error) {
+      notifyError(error, "Failed to load designs.");
+    }
   };
 
   useEffect(() => {
@@ -31,20 +36,30 @@ export default function DesignPage() {
   }, []);
 
   const handleSave = async (data) => {
-    if (editData) {
-      await updateDesign(editData.id, data);
-    } else {
-      await addDesign(data);
+    try {
+      if (editData) {
+        await updateDesign(editData.id, data);
+        notifySuccess("Design updated successfully.");
+      } else {
+        await addDesign(data);
+        notifySuccess("Design added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Design save failed.");
     }
-    setEditData(null);
-    setOpen(false);
-    loadData();
   };
 
   const handleEdit = async (item) => {
-    const design = await getDesignById(item.id);
-    setEditData(design || item);
-    setOpen(true);
+    try {
+      const design = await getDesignById(item.id);
+      setEditData(design || item);
+      setOpen(true);
+    } catch (error) {
+      notifyError(error, "Failed to load design details.");
+    }
   };
 
   const handleDelete = (id) => {
@@ -56,11 +71,16 @@ export default function DesignPage() {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    await deleteDesign(deleteId);
-    setDeleteId(null);
-    setDeleteName("");
-    setDeleteOpen(false);
-    loadData();
+    try {
+      await deleteDesign(deleteId);
+      notifySuccess("Design deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete design.");
+    }
   };
 
   const filteredData = designs.filter((item) =>

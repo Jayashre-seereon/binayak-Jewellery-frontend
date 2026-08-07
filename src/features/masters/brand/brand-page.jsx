@@ -4,7 +4,9 @@ import { Input } from "@/components/ui/input";
 import BrandTable from "./brand-table";
 import BrandForm from "./brand-form";
 import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import { getBrands, getBrandById, addBrand, updateBrand, deleteBrand } from "../../../api/brand-api";
+
 export default function BrandPage() {
   const [brands, setBrands] = useState([]);
   const [search, setSearch] = useState("");
@@ -13,70 +15,82 @@ export default function BrandPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteName, setDeleteName] = useState("");
   const [deleteId, setDeleteId] = useState(null);
- const loadData = async () => {
-  const data = await getBrands();
-  setBrands(data);
-};
+
+  const loadData = async () => {
+    try {
+      const data = await getBrands();
+      setBrands(Array.isArray(data) ? [...data].reverse() : []);
+    } catch (error) {
+      notifyError(error, "Failed to load brands.");
+    }
+  };
 
   useEffect(() => {
     loadData();
   }, []);
 
-const handleSave = async (data) => {
-  try {
-    if (editData?.id) {
-      await updateBrand(editData.id, data);
-    } else {
-      await addBrand(data);
-    }
+  const handleSave = async (data) => {
+    try {
+      if (editData?.id) {
+        await updateBrand(editData.id, data);
+        notifySuccess("Brand updated successfully.");
+      } else {
+        await addBrand(data);
+        notifySuccess("Brand added successfully.");
+      }
 
-    setEditData(null);
-    setOpen(false);
-    loadData();
-  } catch (err) {
-    console.error("Save failed", err);
-  }
-};
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Brand save failed.");
+    }
+  };
 
   const handleEdit = async (item) => {
-    const brand = await getBrandById(item.id);
-    setEditData(brand);
-    setOpen(true);
+    try {
+      const brand = await getBrandById(item.id);
+      setEditData(brand);
+      setOpen(true);
+    } catch (error) {
+      notifyError(error, "Failed to load brand details.");
+    }
   };
-const confirmDelete = async () => {
-  if (!deleteId) return;
 
-  await deleteBrand(deleteId);
+  const handleDelete = (item) => {
+    setDeleteId(item.id);
+    setDeleteName(item.name);
+    setDeleteOpen(true);
+  };
 
-  setDeleteId(null);
-  setDeleteName("");   // ✅ reset name
-  setDeleteOpen(false);
+  const confirmDelete = async () => {
+    if (!deleteId) return;
 
-  loadData();
-};
-const handleDelete = (item) => {
-  setDeleteId(item.id);
-  setDeleteName(item.name); // ✅ store name
-  setDeleteOpen(true);
-};
+    try {
+      await deleteBrand(deleteId);
+      notifySuccess("Brand deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete brand.");
+    }
+  };
 
-  // Search filter
-const filteredData = brands
-  .filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    (item.alias || "").toLowerCase().includes(search.toLowerCase())
-  )
-  .reverse(); 
-  
+  const filteredData = brands
+    .filter((item) =>
+      item.name.toLowerCase().includes(search.toLowerCase()) ||
+      (item.alias || "").toLowerCase().includes(search.toLowerCase())
+    )
+    .reverse();
+
   return (
     <div>
-      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Brand Master</h1>
-     
       </div>
 
-      {/* Search */}
       <div className="mb-3 flex justify-between ">
         <Input
           placeholder="Search brand..."
@@ -84,7 +98,7 @@ const filteredData = brands
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-           <Button
+        <Button
           onClick={() => {
             setEditData(null);
             setOpen(true);
@@ -94,14 +108,12 @@ const filteredData = brands
         </Button>
       </div>
 
-      {/* Table */}
       <BrandTable
         data={filteredData}
         onEdit={handleEdit}
         onDelete={handleDelete}
       />
 
-      {/* Form */}
       <BrandForm
         open={open}
         setOpen={(value) => {
@@ -111,12 +123,14 @@ const filteredData = brands
         onSave={handleSave}
         defaultValues={editData}
       />
+
       <DeleteModal
-  open={deleteOpen}
-  setOpen={setDeleteOpen}
-  onConfirm={confirmDelete}
-  title="Delete Brand"
- description={`Are you sure you want to delete "${deleteName}"?`}/>
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        onConfirm={confirmDelete}
+        title="Delete Brand"
+        description={`Are you sure you want to delete "${deleteName}"?`}
+      />
     </div>
   );
 }

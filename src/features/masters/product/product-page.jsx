@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import ProductTable from "./product-table";
 import ProductForm from "./product-form";
 import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getProducts,
   getProductById,
@@ -26,13 +27,17 @@ export default function ProductPage() {
   const [deleteName, setDeleteName] = useState("");
 
   const loadData = async () => {
-    const productData = await getProducts();
-    const categoryData = await getCategory();
-    const metalData = await getMetals();
+    try {
+      const productData = await getProducts();
+      const categoryData = await getCategory();
+      const metalData = await getMetals();
 
-    setProducts(Array.isArray(productData) ? [...productData].reverse() : []);
-    setCategories(categoryData);
-    setMetals(metalData);
+      setProducts(Array.isArray(productData) ? [...productData].reverse() : []);
+      setCategories(categoryData);
+      setMetals(metalData);
+    } catch (error) {
+      notifyError(error, "Failed to load products.");
+    }
   };
 
   useEffect(() => {
@@ -40,14 +45,20 @@ export default function ProductPage() {
   }, []);
 
   const handleSave = async (data) => {
-    if (editData) {
-      await updateProduct(editData.id, data);
-    } else {
-      await addProduct(data);
+    try {
+      if (editData) {
+        await updateProduct(editData.id, data);
+        notifySuccess("Product updated successfully.");
+      } else {
+        await addProduct(data);
+        notifySuccess("Product added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Product save failed.");
     }
-    setEditData(null);
-    setOpen(false);
-    loadData();
   };
 
   const handleDelete = (id) => {
@@ -59,11 +70,16 @@ export default function ProductPage() {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    await deleteProduct(deleteId);
-    setDeleteId(null);
-    setDeleteName("");
-    setDeleteOpen(false);
-    loadData();
+    try {
+      await deleteProduct(deleteId);
+      notifySuccess("Product deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete product.");
+    }
   };
 
   const filteredData = products.filter((p) =>

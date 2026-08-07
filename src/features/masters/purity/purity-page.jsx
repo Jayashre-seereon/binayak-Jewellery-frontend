@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import PurityTable from "./purity-table";
 import PurityForm from "./purity-form";
 import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getPurities,
   getPurityById,
@@ -24,12 +25,15 @@ export default function PurityPage() {
   const [deleteName, setDeleteName] = useState("");
 
  const loadData = async () => {
-  const purityData = await getPurities();
-  console.log("Purity Data:", purityData); 
- setPurities([...purityData].reverse());
+  try {
+    const purityData = await getPurities();
+    setPurities(Array.isArray(purityData) ? [...purityData].reverse() : []);
 
-  const metalData = await getMetals();
-  setMetals(metalData);
+    const metalData = await getMetals();
+    setMetals(metalData);
+  } catch (error) {
+    notifyError(error, "Failed to load purities.");
+  }
 };
 
   useEffect(() => {
@@ -37,20 +41,30 @@ export default function PurityPage() {
   }, []);
 
   const handleSave = async (data) => {
-    if (editData) {
-      await updatePurity(editData.id, data);
-    } else {
-      await addPurity(data);
+    try {
+      if (editData) {
+        await updatePurity(editData.id, data);
+        notifySuccess("Purity updated successfully.");
+      } else {
+        await addPurity(data);
+        notifySuccess("Purity added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Purity save failed.");
     }
-    setEditData(null);
-    setOpen(false);
-    loadData();
   };
 
   const handleEdit = async (item) => {
-    const purity = await getPurityById(item.id);
-    setEditData(purity);
-    setOpen(true);
+    try {
+      const purity = await getPurityById(item.id);
+      setEditData(purity);
+      setOpen(true);
+    } catch (error) {
+      notifyError(error, "Failed to load purity details.");
+    }
   };
 
   const handleDelete = (item) => {
@@ -61,11 +75,16 @@ export default function PurityPage() {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    await deletePurity(deleteId);
-    setDeleteId(null);
-    setDeleteName("");
-    setDeleteOpen(false);
-    loadData();
+    try {
+      await deletePurity(deleteId);
+      notifySuccess("Purity deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete purity.");
+    }
   };
 
   const filteredData = purities.filter((item) =>

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import GradeTable from "./grade-table";
 import GradeForm from "./grade-form";
 import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getGrades,
   getGradeById,
@@ -38,10 +39,14 @@ export default function GradePage() {
   };
 
   const loadData = async () => {
-    const gradeData = unwrapList(await getGrades());
-    const purityData = await getPurities();
-    setGrades(Array.isArray(gradeData) ? [...gradeData].reverse() : []);
-    setPurities(purityData);
+    try {
+      const gradeData = unwrapList(await getGrades());
+      const purityData = await getPurities();
+      setGrades(Array.isArray(gradeData) ? [...gradeData].reverse() : []);
+      setPurities(purityData);
+    } catch (error) {
+      notifyError(error, "Failed to load grades.");
+    }
   };
 
   useEffect(() => {
@@ -49,20 +54,30 @@ export default function GradePage() {
   }, []);
 
   const handleSave = async (data) => {
-    if (editData) {
-      await updateGrade(editData.id, data);
-    } else {
-      await addGrade(data);
+    try {
+      if (editData) {
+        await updateGrade(editData.id, data);
+        notifySuccess("Grade updated successfully.");
+      } else {
+        await addGrade(data);
+        notifySuccess("Grade added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Grade save failed.");
     }
-    setEditData(null);
-    setOpen(false);
-    loadData();
   };
 
   const handleEdit = async (item) => {
-    const grade = unwrapItem(await getGradeById(item.id));
-    setEditData(grade);
-    setOpen(true);
+    try {
+      const grade = unwrapItem(await getGradeById(item.id));
+      setEditData(grade);
+      setOpen(true);
+    } catch (error) {
+      notifyError(error, "Failed to load grade details.");
+    }
   };
 
   const handleDelete = async (id) => {
@@ -74,11 +89,16 @@ export default function GradePage() {
 
   const confirmDelete = async () => {
     if (!deleteId) return;
-    await deleteGrade(deleteId);
-    setDeleteId(null);
-    setDeleteName("");
-    setDeleteOpen(false);
-    loadData();
+    try {
+      await deleteGrade(deleteId);
+      notifySuccess("Grade deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete grade.");
+    }
   };
 
   const filteredData = grades.filter((item) =>

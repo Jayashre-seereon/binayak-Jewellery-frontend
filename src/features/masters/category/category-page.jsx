@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import CategoryTable from "./category-table"
 import CategoryForm from "./category-form"
 import DeleteModal from "../../../utils/DeleteModal"
+import { notifyError, notifySuccess } from "@/utils/notify";
 import { getCategory,getCategoryById, addCategory, updateCategory, deleteCategory } 
 from "@/api/category-api";
 
@@ -18,8 +19,12 @@ const [deleteId, setDeleteId] = useState(null);
 const [deleteName, setDeleteName] = useState("");
 
   const loadData = async  () => {
-       const data = await getCategory();
-          setCategory(data);
+       try {
+        const data = await getCategory();
+        setCategory(Array.isArray(data) ? [...data].reverse() : []);
+      } catch (error) {
+        notifyError(error, "Failed to load categories.");
+      }
 
   }
 
@@ -29,15 +34,21 @@ const [deleteName, setDeleteName] = useState("");
 
   
  const handleSave = async (data) => {
-  if (editData?.id) {
-    await updateCategory(editData.id, data); 
-  } else {
-    await addCategory(data);
-  }
+  try {
+    if (editData?.id) {
+      await updateCategory(editData.id, data);
+      notifySuccess("Category updated successfully.");
+    } else {
+      await addCategory(data);
+      notifySuccess("Category added successfully.");
+    }
 
-  setEditData(null);
-  setOpen(false);
-  loadData();
+    setEditData(null);
+    setOpen(false);
+    loadData();
+  } catch (error) {
+    notifyError(error, "Category save failed.");
+  }
 };
 
   const handleEdit = async (item) => {
@@ -45,21 +56,24 @@ const [deleteName, setDeleteName] = useState("");
     const category = await getCategoryById(item.id); 
     setEditData(category);                         
     setOpen(true);
-  } catch (err) {
-    console.error("Failed to fetch category", err);
+  } catch (error) {
+    notifyError(error, "Failed to load category details.");
   }
 };
 
   const confirmDelete = async () => {
   if (!deleteId) return;
 
-  await deleteCategory(deleteId);
-
-  setDeleteId(null);
-  setDeleteName("");
-  setDeleteOpen(false);
-
-  loadData();
+  try {
+    await deleteCategory(deleteId);
+    notifySuccess("Category deleted successfully.");
+    setDeleteId(null);
+    setDeleteName("");
+    setDeleteOpen(false);
+    loadData();
+  } catch (error) {
+    notifyError(error, "Failed to delete category.");
+  }
 };
    const handleDelete = (item) => {
   setDeleteId(item.id);
