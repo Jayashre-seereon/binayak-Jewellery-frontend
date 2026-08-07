@@ -7,7 +7,6 @@ export default function GradeTable({ data, onEdit, onDelete }) {
         <thead className="bg-gray-50">
           <tr>
             <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
             <th className="p-3 text-left">Grade Name</th>
             <th className="p-3 text-left">Purity</th>
             <th className="p-3 text-left">%</th>
@@ -20,7 +19,6 @@ export default function GradeTable({ data, onEdit, onDelete }) {
           {data.map((item) => (
             <tr key={item.id} className="border-t">
               <td className="p-3">{item.id}</td>
-              <td className="p-3">{item.alias}</td>
               <td className="p-3">{item.name}</td>
               <td className="p-3">{item.purity}</td>
               <td className="p-3">{item.percentage}</td>

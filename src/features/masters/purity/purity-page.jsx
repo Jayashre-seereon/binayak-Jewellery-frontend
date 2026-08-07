@@ -26,7 +26,7 @@ export default function PurityPage() {
  const loadData = async () => {
   const purityData = await getPurities();
   console.log("Purity Data:", purityData); 
-  setPurities(purityData);
+ setPurities([...purityData].reverse());
 
   const metalData = await getMetals();
   setMetals(metalData);

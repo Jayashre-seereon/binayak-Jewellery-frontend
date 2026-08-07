@@ -41,11 +41,7 @@ export default function GradeForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
-          <div>
-            <label className="text-sm">Alias</label>
-            <Input className="h-9" {...register("alias")} />
-          </div>
-
+         
           <div>
             <label className="text-sm">Grade Name</label>
             <Input className="h-9" {...register("name")} />

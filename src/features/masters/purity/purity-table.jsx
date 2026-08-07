@@ -15,9 +15,8 @@ export default function PurityTable({ data, metals = [], onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
-            <th className="p-3 text-left">Purity Name</th>
+            <th className="p-3 text-left">SL No</th>
+              <th className="p-3 text-left">Purity Name</th>
             <th className="p-3 text-left">Metal</th>
             <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Actions</th>
@@ -25,11 +24,10 @@ export default function PurityTable({ data, metals = [], onEdit, onDelete }) {
         </thead>
 
         <tbody>
-          {data.map((item) => (
+          {data.map((item, index) => (
             <tr key={item.id} className="border-t">
-              <td className="p-3">{item.id}</td>
-              <td className="p-3">{item.alias}</td>
-              <td className="p-3">{item.name}</td>
+             <td className="p-3">{index + 1}</td>
+                <td className="p-3">{item.name}</td>
               <td className="p-3">{getMetalLabel(item)}</td>
               <td className="p-3">{item.description}</td>
               <td className="p-3">
