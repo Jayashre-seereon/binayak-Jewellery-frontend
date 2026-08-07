@@ -10,7 +10,7 @@ import {
   deleteItem,
 } from "./item-api";
 
-import { getProducts } from "../product/product-api";
+import { getProducts } from "@/api/product-api";
 import { getDesigns } from "@/api/design-api";
 
 export default function ItemPage() {

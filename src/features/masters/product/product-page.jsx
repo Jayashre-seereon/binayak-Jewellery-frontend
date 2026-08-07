@@ -10,7 +10,7 @@ import {
   addProduct,
   updateProduct,
   deleteProduct,
-} from "./product-api";
+} from "@/api/product-api";
 import { getCategory } from "@/api/category-api";
 import { getMetals } from "@/api/metal-api";
 

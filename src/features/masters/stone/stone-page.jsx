@@ -11,7 +11,7 @@ import {
   deleteStone,
 } from "./stone-api";
 
-import { getProducts } from "../product/product-api";
+import { getProducts } from "@/api/product-api";
 import { getItems } from "../item/item-api";
 
 export default function StonePage() {
