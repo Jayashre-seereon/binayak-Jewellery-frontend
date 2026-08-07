@@ -73,7 +73,18 @@ const filteredData = brands
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Brand Master</h1>
-        <Button
+     
+      </div>
+
+      {/* Search */}
+      <div className="mb-3 flex justify-between ">
+        <Input
+          placeholder="Search brand..."
+          className="w-64"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+           <Button
           onClick={() => {
             setEditData(null);
             setOpen(true);
@@ -81,16 +92,6 @@ const filteredData = brands
         >
           Add New
         </Button>
-      </div>
-
-      {/* Search */}
-      <div className="mb-3">
-        <Input
-          placeholder="Search brand..."
-          className="w-64"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
       </div>
 
       {/* Table */}

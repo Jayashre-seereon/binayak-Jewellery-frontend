@@ -74,16 +74,17 @@ const confirmDelete = async () => {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Metal Master</h1>
-        <Button onClick={() => setOpen(true)}>Add New</Button>
-      </div>
+        </div>
 
-      <div className="mb-3">
+      <div className="mb-3 flex justify-between">
         <Input
           placeholder="Search metal..."
           className="w-64"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+         <Button onClick={() => setOpen(true)}>Add New</Button>
+     
       </div>
 
       <MetalTable

@@ -77,15 +77,16 @@ const [deleteName, setDeleteName] = useState("");
         <div>
             <div className="flex justify-between items-center mb-4 ">
                 <h1 className="text-xl font-semibold"> Category Master</h1>
-                <Button onClick={() => setOpen(true)}>Add New</Button>
-            </div>
-             <div className="mb-3">
+                 </div>
+             <div className="mb-3 flex justify-between">
         <Input
-          placeholder="Search brand..."
+          placeholder="Search category..."
           className="w-64"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+          <Button onClick={() => setOpen(true)}>Add New</Button>
+         
       </div>
       {/* category table */}
        <CategoryTable

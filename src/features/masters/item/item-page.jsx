@@ -11,7 +11,7 @@ import {
 } from "./item-api";
 
 import { getProducts } from "../product/product-api";
-import { getDesigns } from "@/features/masters/design/design-api";
+import { getDesigns } from "@/api/design-api";
 
 export default function ItemPage() {
   const [items, setItems] = useState([]);

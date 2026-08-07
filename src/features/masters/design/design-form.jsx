@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -15,27 +16,51 @@ export default function DesignForm({
   onSave,
   defaultValues,
 }) {
-  const { register, handleSubmit, reset } = useForm({ defaultValues });
+  const { register, handleSubmit, reset, setValue } = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+      image: null,
+    },
+  });
+
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: defaultValues?.name || "",
+        description: defaultValues?.description || "",
+        image: null,
+      });
+
+      setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
+    }
+  }, [defaultValues, open, reset]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setValue("image", file);
+      setPreview(URL.createObjectURL(file));
+    }
+  };
 
   const submit = (data) => {
     onSave(data);
     reset();
+    setPreview(null);
     setOpen(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Design Master</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
-          <div>
-            <label className="text-sm">Alias</label>
-            <Input className="h-9" {...register("alias")} />
-          </div>
-
           <div>
             <label className="text-sm">Design Name</label>
             <Input className="h-9" {...register("name")} />
@@ -45,6 +70,19 @@ export default function DesignForm({
             <label className="text-sm">Description</label>
             <Textarea rows={3} {...register("description")} />
           </div>
+
+          <div>
+            <label className="text-sm">Image</label>
+            <Input type="file" accept="image/*" onChange={handleImageChange} />
+          </div>
+
+          {preview && (
+            <img
+              src={preview}
+              alt="preview"
+              className="w-20 h-20 object-cover border rounded"
+            />
+          )}
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
