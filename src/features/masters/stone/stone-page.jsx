@@ -12,7 +12,7 @@ import {
 } from "./stone-api";
 
 import { getProducts } from "@/api/product-api";
-import { getItems } from "../item/item-api";
+import { getItems } from "@/api/item-api";
 
 export default function StonePage() {
   const [stones, setStones] = useState([]);

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -5,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,14 +25,59 @@ export default function ItemForm({
   products,
   designs,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const [preview, setPreview] = useState(null);
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {
+      name: "",
+      productId: "",
+      designId: "",
+      description: "",
+      image: null,
+    },
   });
+  const productValue = watch("productId");
+  const designValue = watch("designId");
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: defaultValues?.name || "",
+        productId:
+          defaultValues?.productId ||
+          defaultValues?.product?.id ||
+          "",
+        designId:
+          defaultValues?.designId ||
+          defaultValues?.design?.id ||
+          "",
+        description: defaultValues?.description || "",
+        image: null,
+      });
+      setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
+      setValue(
+        "productId",
+        defaultValues?.productId || defaultValues?.product?.id || ""
+      );
+      setValue(
+        "designId",
+        defaultValues?.designId || defaultValues?.design?.id || ""
+      );
+    }
+  }, [defaultValues, open, reset, setValue]);
 
   const submit = (data) => {
     onSave(data);
     reset();
+    setPreview(null);
     setOpen(false);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setValue("image", file);
+      setPreview(URL.createObjectURL(file));
+    }
   };
 
   return (
@@ -42,28 +89,24 @@ export default function ItemForm({
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div>
-            <label className="text-sm">Alias</label>
-            <Input className="h-9" {...register("alias")} />
-          </div>
-
-          <div>
             <label className="text-sm">Item Name</label>
-            <Input className="h-9" {...register("name")} />
-          </div>
+           <Input
+  className="h-9"
+  {...register("name", { required: "Item name is required" })}
+/> </div>
 
-          {/* Product Dropdown */}
           <div>
             <label className="text-sm">Product</label>
             <Select
-              defaultValue={defaultValues?.product}
-              onValueChange={(val) => setValue("product", val)}
+              value={String(productValue || "")}
+              onValueChange={(val) => setValue("productId", val)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Product" />
               </SelectTrigger>
               <SelectContent>
                 {products.map((p) => (
-                  <SelectItem key={p.name} value={p.name}>
+                  <SelectItem key={p.id} value={String(p.id)}>
                     {p.name}
                   </SelectItem>
                 ))}
@@ -71,19 +114,18 @@ export default function ItemForm({
             </Select>
           </div>
 
-          {/* Design Dropdown */}
           <div>
             <label className="text-sm">Design</label>
             <Select
-              defaultValue={defaultValues?.design}
-              onValueChange={(val) => setValue("design", val)}
+              value={String(designValue || "")}
+              onValueChange={(val) => setValue("designId", val)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Design" />
               </SelectTrigger>
               <SelectContent>
                 {designs.map((d) => (
-                  <SelectItem key={d.name} value={d.name}>
+                  <SelectItem key={d.id} value={String(d.id)}>
                     {d.name}
                   </SelectItem>
                 ))}
@@ -91,8 +133,29 @@ export default function ItemForm({
             </Select>
           </div>
 
+          <div>
+            <label className="text-sm">Description</label>
+  <Textarea
+  className="min-h-[80px]"
+  {...register("description")}
+/>        
+          </div>
+
+          <div>
+            <label className="text-sm">Image</label>
+            <Input type="file" accept="image/*" onChange={handleImageChange} />
+          </div>
+
+          {preview && (
+            <img
+              src={preview}
+              alt="preview"
+              className="w-20 h-20 object-cover border rounded"
+            />
+          )}
+
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>

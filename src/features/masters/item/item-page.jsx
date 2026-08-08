@@ -7,10 +7,11 @@ import DeleteModal from "@/utils/DeleteModal";
 import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getItems,
+  getItemById,
   addItem,
   updateItem,
   deleteItem,
-} from "./item-api";
+} from "@/api/item-api";
 
 import { getProducts } from "@/api/product-api";
 import { getDesigns } from "@/api/design-api";
@@ -44,7 +45,7 @@ export default function ItemPage() {
   const handleSave = async (data) => {
     try {
       if (editData) {
-        await updateItem({ ...data, id: editData.id });
+        await updateItem(editData.id, data);
         notifySuccess("Item updated successfully.");
       } else {
         await addItem(data);
@@ -58,15 +59,28 @@ export default function ItemPage() {
     }
   };
 
-  const filtered = items.filter((i) =>
-    i.name.toLowerCase().includes(search.toLowerCase())
+ const filtered = [...items]
+  .sort((a, b) => b.id - a.id) // latest first
+  .filter((i) =>
+    `${i.name || ""} ${i.itemCode || ""} ${i.description || ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
-  const handleDelete = (item) => {
-    setDeleteId(item.id);
-    setDeleteName(item.name);
-    setDeleteOpen(true);
-  };
+ const handleDelete = (item) => {
+  if (!item) return;
+
+  setDeleteId(item.id);
+
+  setDeleteName(
+    item.name ||
+    item.itemCode ||
+    item.alias ||
+    `#${item.id}`
+  );
+
+  setDeleteOpen(true);
+};
 
   const confirmDelete = async () => {
     if (!deleteId) return;
@@ -98,8 +112,9 @@ export default function ItemPage() {
 
       <ItemTable
         data={filtered}
-        onEdit={(item) => {
-          setEditData(item);
+        onEdit={async (item) => {
+          const fullItem = await getItemById(item.id);
+          setEditData(fullItem || item);
           setOpen(true);
         }}
         onDelete={handleDelete}

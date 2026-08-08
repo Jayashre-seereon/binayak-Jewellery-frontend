@@ -1,5 +1,21 @@
 import { Pencil, Trash } from "lucide-react";
 
+const getLabel = (value) => {
+  if (value == null) return "-";
+  if (typeof value === "string" || typeof value === "number") return value;
+  if (typeof value === "object") {
+    return (
+      value.name ||
+      value.productCode ||
+      value.itemCode ||
+      value.description ||
+      value.id ||
+      "-"
+    );
+  }
+  return "-";
+};
+
 export default function ItemTable({ data, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-lg border">
@@ -16,13 +32,13 @@ export default function ItemTable({ data, onEdit, onDelete }) {
         </thead>
 
         <tbody>
-          {data.map((item) => (
+        {data.map((item, index) => (
             <tr key={item.id} className="border-t hover:bg-gray-50">
-              <td className="p-3">{item.id}</td>
-              <td className="p-3">{item.alias}</td>
-              <td className="p-3">{item.name}</td>
-              <td className="p-3">{item.product}</td>
-              <td className="p-3">{item.design}</td>
+              <td className="p-3">{index + 1}</td>
+               <td className="p-3">{getLabel(item.alias || item.itemCode)}</td>
+              <td className="p-3">{getLabel(item.name)}</td>
+              <td className="p-3">{getLabel(item.product?.name || item.product)}</td>
+              <td className="p-3">{getLabel(item.design?.name || item.design)}</td>
 
               <td className="p-3">
                 <div className="flex gap-2">
@@ -38,7 +54,7 @@ export default function ItemTable({ data, onEdit, onDelete }) {
                     <Trash
                       size={16}
                       className="text-red-500"
-                      onClick={() => onDelete(item.id)}
+                     onClick={() => onDelete(item)}
                     />
                   </button>
                 </div>
