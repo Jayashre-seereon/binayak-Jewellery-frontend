@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -7,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -23,9 +25,27 @@ export default function StoneForm({
   products,
   items,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {
+      name: "",
+      description: "",
+      productId: "",
+      itemId: "",
+    },
   });
+
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: defaultValues?.name || "",
+        description: defaultValues?.description || "",
+        productId: defaultValues?.productId
+          ? String(defaultValues.productId)
+          : "",
+        itemId: defaultValues?.itemId ? String(defaultValues.itemId) : "",
+      });
+    }
+  }, [open, defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
@@ -33,37 +53,40 @@ export default function StoneForm({
     setOpen(false);
   };
 
+  const productId = watch("productId");
+  const itemId = watch("itemId");
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Stone Master</DialogTitle>
+          <DialogTitle>{defaultValues ? "Edit Stone" : "Add Stone"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div>
-            <label className="text-sm">Alias</label>
-            <Input className="h-9" {...register("alias")} />
+            <label className="text-sm">Stone Name</label>
+            <Input className="h-9" {...register("name", { required: true })} />
           </div>
 
           <div>
-            <label className="text-sm">Stone Name</label>
-            <Input className="h-9" {...register("name")} />
+            <label className="text-sm">Description</label>
+            <Textarea className="min-h-[70px]" {...register("description")} />
           </div>
 
           {/* Product Dropdown */}
           <div>
             <label className="text-sm">Product</label>
             <Select
-              defaultValue={defaultValues?.product}
-              onValueChange={(val) => setValue("product", val)}
+              value={productId || undefined}
+              onValueChange={(val) => setValue("productId", val)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Product" />
               </SelectTrigger>
               <SelectContent>
                 {products.map((p) => (
-                  <SelectItem key={p.name} value={p.name}>
+                  <SelectItem key={p.id} value={String(p.id)}>
                     {p.name}
                   </SelectItem>
                 ))}
@@ -75,15 +98,15 @@ export default function StoneForm({
           <div>
             <label className="text-sm">Item</label>
             <Select
-              defaultValue={defaultValues?.item}
-              onValueChange={(val) => setValue("item", val)}
+              value={itemId || undefined}
+              onValueChange={(val) => setValue("itemId", val)}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Item" />
               </SelectTrigger>
               <SelectContent>
                 {items.map((i) => (
-                  <SelectItem key={i.name} value={i.name}>
+                  <SelectItem key={i.id} value={String(i.id)}>
                     {i.name}
                   </SelectItem>
                 ))}
@@ -92,7 +115,7 @@ export default function StoneForm({
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>

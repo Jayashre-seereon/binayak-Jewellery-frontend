@@ -1,14 +1,17 @@
 import { Pencil, Trash } from "lucide-react";
 
-export default function StoneTable({ data, onEdit, onDelete }) {
+export default function StoneTable({ data, products, items, onEdit, onDelete }) {
+  const productName = (id) => products.find((p) => p.id === id)?.name || "-";
+  const itemName = (id) => items.find((i) => i.id === id)?.name || "-";
+
   return (
     <div className="bg-white rounded-lg border">
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
+            <th className="p-3 text-left">S.No</th>
             <th className="p-3 text-left">Stone Name</th>
+            <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Item</th>
             <th className="p-3 text-left">Actions</th>
@@ -16,13 +19,13 @@ export default function StoneTable({ data, onEdit, onDelete }) {
         </thead>
 
         <tbody>
-          {data.map((item) => (
-            <tr key={item.id} className="border-t hover:bg-gray-50">
-              <td className="p-3">{item.id}</td>
-              <td className="p-3">{item.alias}</td>
-              <td className="p-3">{item.name}</td>
-              <td className="p-3">{item.product}</td>
-              <td className="p-3">{item.item}</td>
+          {data.map((stone, index) => (
+            <tr key={stone.id} className="border-t hover:bg-gray-50">
+              <td className="p-3">{index + 1}</td>
+              <td className="p-3">{stone.name}</td>
+              <td className="p-3">{stone.description}</td>
+              <td className="p-3">{productName(stone.productId)}</td>
+              <td className="p-3">{itemName(stone.itemId)}</td>
 
               <td className="p-3">
                 <div className="flex gap-2">
@@ -30,7 +33,7 @@ export default function StoneTable({ data, onEdit, onDelete }) {
                     <Pencil
                       size={16}
                       className="text-blue-500"
-                      onClick={() => onEdit(item)}
+                      onClick={() => onEdit(stone)}
                     />
                   </button>
 
@@ -38,7 +41,7 @@ export default function StoneTable({ data, onEdit, onDelete }) {
                     <Trash
                       size={16}
                       className="text-red-500"
-                      onClick={() => onDelete(item.id)}
+                      onClick={() => onDelete(stone.id)}
                     />
                   </button>
                 </div>

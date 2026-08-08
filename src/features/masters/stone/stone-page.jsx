@@ -3,13 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import StoneTable from "./stone-table";
 import StoneForm from "./stone-form";
+import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 
 import {
   getStones,
+  getStoneById,
   addStone,
   updateStone,
   deleteStone,
-} from "./stone-api";
+} from "@/api/stone-api";
 
 import { getProducts } from "@/api/product-api";
 import { getItems } from "@/api/item-api";
@@ -22,11 +25,27 @@ export default function StonePage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteName, setDeleteName] = useState("");
 
   const loadData = async () => {
-    setStones(await getStones());
-    setProducts(await getProducts());
-    setItems(await getItems());
+    try {
+      const stoneData = await getStones();
+      const productData = await getProducts();
+      const itemData = await getItems();
+
+     setStones(
+  Array.isArray(stoneData)
+    ? [...stoneData].sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      )
+    : []
+);  setProducts(productData);
+      setItems(itemData);
+    } catch (error) {
+      notifyError(error, "Failed to load stones.");
+    }
   };
 
   useEffect(() => {
@@ -34,24 +53,59 @@ export default function StonePage() {
   }, []);
 
   const handleSave = async (data) => {
-    if (editData) {
-      await updateStone({ ...data, id: editData.id });
-    } else {
-      await addStone(data);
+    try {
+      if (editData) {
+        await updateStone(editData.id, data);
+        notifySuccess("Stone updated successfully.");
+      } else {
+        await addStone(data);
+        notifySuccess("Stone added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Stone save failed.");
     }
-    setEditData(null);
-    loadData();
   };
 
-  const filtered = stones.filter((s) =>
-    s.name.toLowerCase().includes(search.toLowerCase())
+  const handleDelete = (id) => {
+    setDeleteId(id);
+    const selected = stones.find((item) => item.id === id);
+    setDeleteName(selected?.name || `#${id}`);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteStone(deleteId);
+      notifySuccess("Stone deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete stone.");
+    }
+  };
+
+  const filteredData = stones.filter((s) =>
+    `${s.name || ""}`.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div>
       <div className="flex justify-between mb-4">
         <h1 className="text-xl font-semibold">Stone Master</h1>
-        <Button onClick={() => setOpen(true)}>Add Stone</Button>
+        <Button
+          onClick={() => {
+            setEditData(null);
+            setOpen(true);
+          }}
+        >
+          Add Stone
+        </Button>
       </div>
 
       <Input
@@ -62,15 +116,19 @@ export default function StonePage() {
       />
 
       <StoneTable
-        data={filtered}
-        onEdit={(item) => {
-          setEditData(item);
-          setOpen(true);
+        data={filteredData}
+        products={products}
+        items={items}
+        onEdit={async (item) => {
+          try {
+            const stone = await getStoneById(item.id);
+            setEditData(stone || item);
+            setOpen(true);
+          } catch (error) {
+            notifyError(error, "Failed to load stone details.");
+          }
         }}
-        onDelete={async (id) => {
-          await deleteStone(id);
-          loadData();
-        }}
+        onDelete={handleDelete}
       />
 
       <StoneForm
@@ -80,6 +138,14 @@ export default function StonePage() {
         defaultValues={editData}
         products={products}
         items={items}
+      />
+
+      <DeleteModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        onConfirm={confirmDelete}
+        title="Delete Stone"
+        description={`Are you sure you want to delete "${deleteName}"?`}
       />
     </div>
   );
