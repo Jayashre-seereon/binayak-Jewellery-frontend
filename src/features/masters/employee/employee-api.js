@@ -1,38 +1,26 @@
-let employees = [
-  {
-    id: 1,
-    code: "EMP001",
-    alias: "emp1",
-    name: "John Doe",
-    fatherName: "Robert Doe",
-    doj: "2024-01-01",
-    phone: "1234567890",
-    mobile: "9876543210",
-    email: "john@example.com",
-    website: "www.john.com",
-    account: "123456789",
-    bank: "HDFC",
-    basic: 20000,
-    allowance: 5000,
-    address1: "Street 1",
-    address2: "City",
-  },
-];
+import http from "@/api/axios";
 
-export const getEmployees = () => Promise.resolve(employees);
-
-export const addEmployee = (data) => {
-  data.id = employees.length + 1;
-  employees.push(data);
-  return Promise.resolve(data);
+export const getEmployees = async () => {
+  const res = await http.get("/api/employees/get");
+  return res.data?.employees || [];
 };
 
-export const updateEmployee = (data) => {
-  employees = employees.map((e) => (e.id === data.id ? data : e));
-  return Promise.resolve(data);
+export const getEmployeeById = async (id) => {
+  const res = await http.get(`/api/employees/getById/${id}`);
+  return res.data?.employee ?? res.data?.data ?? null;
 };
 
-export const deleteEmployee = (id) => {
-  employees = employees.filter((e) => e.id !== id);
-  return Promise.resolve();
+export const addEmployee = async (data) => {
+  const res = await http.post("/api/employees/create", data);
+  return res.data;
+};
+
+export const updateEmployee = async (id, data) => {
+  const res = await http.put(`/api/employees/update/${id}`, data);
+  return res.data;
+};
+
+export const deleteEmployee = async (id) => {
+  const res = await http.delete(`/api/employees/delete/${id}`);
+  return res.data;
 };

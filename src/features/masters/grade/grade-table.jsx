@@ -16,8 +16,8 @@ export default function GradeTable({ data, purities = [], onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-lg border">
     <table className="w-full text-sm">
-      <thead>
-        <tr className="bg-gray-100 text-left">
+             <thead className="bg-gray-50">
+        <tr>
           <th className="p-2 border">SL No</th>
           <th className="p-2 border">Grade Name</th>
           <th className="p-2 border">Purity</th>

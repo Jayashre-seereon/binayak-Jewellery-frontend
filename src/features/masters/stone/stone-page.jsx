@@ -98,7 +98,16 @@ export default function StonePage() {
     <div>
       <div className="flex justify-between mb-4">
         <h1 className="text-xl font-semibold">Stone Master</h1>
-        <Button
+       
+      </div>
+ <div className="mb-3 flex justify-between">
+      <Input
+        placeholder="Search stone..."
+        className="w-64 "
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+       <Button
           onClick={() => {
             setEditData(null);
             setOpen(true);
@@ -106,15 +115,7 @@ export default function StonePage() {
         >
           Add Stone
         </Button>
-      </div>
-
-      <Input
-        placeholder="Search stone..."
-        className="w-64 mb-3"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-
+</div>
       <StoneTable
         data={filteredData}
         products={products}

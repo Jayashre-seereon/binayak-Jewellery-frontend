@@ -88,7 +88,7 @@ export default function DesignPage() {
   );
 
   return (
-    <div className="p-4">
+    <div >
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Design Master</h2>
        

@@ -92,16 +92,16 @@ export default function ProductPage() {
     <div>
       <div className="flex justify-between mb-4">
         <h1 className="text-xl font-semibold">Product Master</h1>
-        <Button onClick={() => setOpen(true)}>Add Product</Button>
-      </div>
-
+         </div>
+<div className="mb-3 flex justify-between">
       <Input
         placeholder="Search product..."
-        className="w-64 mb-3"
+        className="w-64 "
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-
+ <Button onClick={() => setOpen(true)}>Add Product</Button>
+    </div>
       <ProductTable
         data={filteredData}
         onEdit={async (item) => {

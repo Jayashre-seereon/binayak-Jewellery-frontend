@@ -6,23 +6,23 @@ export default function EmployeeTable({ data, onEdit, onDelete }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>
-            <th className="p-3 text-left">Code</th>
+            <th className="p-3 text-left">S.No</th>
+            <th className="p-3 text-left">Emp Code</th>
             <th className="p-3 text-left">Name</th>
             <th className="p-3 text-left">Mobile</th>
             <th className="p-3 text-left">Email</th>
-            <th className="p-3 text-left">Salary</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
         </thead>
 
         <tbody>
-          {data.map((item) => (
+          {data.map((item, index) => (
             <tr key={item.id} className="border-t hover:bg-gray-50">
-              <td className="p-3">{item.code}</td>
+              <td className="p-3">{index + 1}</td>
+              <td className="p-3">{item.empCode}</td>
               <td className="p-3">{item.name}</td>
               <td className="p-3">{item.mobile}</td>
               <td className="p-3">{item.email}</td>
-              <td className="p-3">₹{item.basic}</td>
 
               <td className="p-3">
                 <div className="flex gap-2">

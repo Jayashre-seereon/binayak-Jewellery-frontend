@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -8,13 +9,57 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function EmployeeForm({
-  open,
-  setOpen,
-  onSave,
-  defaultValues,
-}) {
-  const { register, handleSubmit, reset } = useForm({ defaultValues });
+export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    mode: "onChange", // validate as the user types/tabs, not just on submit
+    defaultValues: {
+      name: "",
+      fatherName: "",
+      dateOfJoining: "",
+      phone: "",
+      mobile: "",
+      email: "",
+      webAddress: "",
+      bankAccountNo: "",
+      bankName: "",
+      basicSalary: "",
+      specialAllowance: "",
+      addressLine1: "",
+      addressLine2: "",
+    },
+  });
+
+ useEffect(() => {
+  if (open) {
+    reset({
+      name: defaultValues?.name || "",
+      fatherName: defaultValues?.fatherName || "",
+
+      dateOfJoining: defaultValues?.dateOfJoining
+        ? defaultValues.dateOfJoining.split("T")[0]
+        : "",
+
+      phone: defaultValues?.phone || "",
+      mobile: defaultValues?.mobile || "",
+      email: defaultValues?.email || "",
+      webAddress: defaultValues?.webAddress || "",
+
+      bankAccountNo: defaultValues?.bankAccountNo || "",
+      bankName: defaultValues?.bankName || "",
+
+      basicSalary: defaultValues?.basicSalary ?? "",
+      specialAllowance: defaultValues?.specialAllowance ?? "",
+
+      addressLine1: defaultValues?.addressLine1 || "",
+      addressLine2: defaultValues?.addressLine2 || "",
+    });
+  }
+}, [open, defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
@@ -22,96 +67,170 @@ export default function EmployeeForm({
     setOpen(false);
   };
 
+  // Small helper so we don't repeat the same JSX for every error message
+  const FieldError = ({ message }) =>
+    message ? (
+      <p className="text-xs text-red-500 mt-1">{message}</p>
+    ) : null;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Employee Master</DialogTitle>
+          <DialogTitle>
+            {defaultValues ? "Edit Employee" : "Employee Master"}
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="flex flex-col h-full">
-              <div className="overflow-y-auto pr-2 space-y-4 max-h-[70vh]">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="overflow-y-auto pr-2 space-y-4 max-h-[70vh]">
+            <div className="grid grid-cols-2 gap-4">
+              {defaultValues?.empCode && (
+                <div>
+                  <label className="text-sm">Employee Code</label>
+                  <Input className="h-9" value={defaultValues.empCode} disabled />
+                </div>
+              )}
 
-            <div>
-              <label className="text-sm">Employee Code</label>
-              <Input className="h-9" {...register("code")} />
+              <div>
+                <label className="text-sm">Employee Name</label>
+                <Input
+                  className="h-9"
+                  {...register("name", { required: "Employee Name is required" })}
+                />
+                <FieldError message={errors.name?.message} />
+              </div>
+
+              <div>
+                <label className="text-sm">Father Name</label>
+                <Input className="h-9" {...register("fatherName")} />
+              </div>
+
+              <div>
+                <label className="text-sm">Date of Joining</label>
+                <Input type="date" className="h-9" {...register("dateOfJoining")} />
+              </div>
+
+             <div>
+  <label className="text-sm">Phone</label>
+  <Input
+    type="tel"
+    inputMode="numeric"
+    maxLength={10}
+    className="h-9"
+    {...register("phone", {
+      required: "Phone is required",
+      pattern: {
+        value: /^[0-9]{10}$/,
+        message: "Phone must be 10 digits",
+      },
+      onChange: (e) => {
+        e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+      },
+    })}
+  />
+  <FieldError message={errors.phone?.message} />
+</div>
+
+<div>
+  <label className="text-sm">Mobile</label>
+  <Input
+    type="tel"
+    inputMode="numeric"
+    maxLength={10}
+    className="h-9"
+    {...register("mobile", {
+      required: "Mobile is required",
+      pattern: {
+        value: /^[0-9]{10}$/,
+        message: "Mobile must be 10 digits",
+      },
+      onChange: (e) => {
+        e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
+      },
+    })}
+  />
+  <FieldError message={errors.mobile?.message} />
+</div>
+
+              <div>
+                <label className="text-sm">Email</label>
+                <Input
+                  type="email"
+                  className="h-9"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: "Invalid email",
+                    },
+                  })}
+                />
+                <FieldError message={errors.email?.message} />
+              </div>
+
+              <div>
+                <label className="text-sm">Web Address</label>
+                <Input className="h-9" {...register("webAddress")} />
+              </div>
+
+              <div>
+                <label className="text-sm">Bank Account Number</label>
+                <div>
+  <label className="text-sm">Bank Account Number</label>
+  <Input
+    type="text"
+    inputMode="numeric"
+    className="h-9"
+    {...register("bankAccountNo", {
+      onChange: (e) => {
+        e.target.value = e.target.value.replace(/\D/g, "");
+      },
+    })}
+  />
+</div>  </div>
+
+              <div>
+                <label className="text-sm">Bank Name</label>
+                <Input className="h-9" {...register("bankName")} />
+              </div>
+
+              <div>
+                <label className="text-sm">Basic Salary</label>
+                <Input
+                  type="number"
+                  className="h-9"
+                  {...register("basicSalary", {
+                    required: "Basic Salary is required",
+                    valueAsNumber: true,
+                  })}
+                />
+                <FieldError message={errors.basicSalary?.message} />
+              </div>
+
+              <div>
+                <label className="text-sm">Special Allowance</label>
+                <Input
+                  type="number"
+                  className="h-9"
+                  {...register("specialAllowance")}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="text-sm">Address Line 1</label>
+                <Input className="h-9" {...register("addressLine1")} />
+              </div>
+
+              <div className="col-span-2">
+                <label className="text-sm">Address Line 2</label>
+                <Input className="h-9" {...register("addressLine2")} />
+              </div>
             </div>
-
-            <div>
-              <label className="text-sm">Alias</label>
-              <Input className="h-9" {...register("alias")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Employee Name</label>
-              <Input className="h-9" {...register("name")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Father Name</label>
-              <Input className="h-9" {...register("fatherName")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Date of Joining</label>
-              <Input type="date" className="h-9" {...register("doj")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Phone</label>
-              <Input className="h-9" {...register("phone")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Mobile</label>
-              <Input className="h-9" {...register("mobile")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Email</label>
-              <Input type="email" className="h-9" {...register("email")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Web Address</label>
-              <Input className="h-9" {...register("website")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Bank Account Number</label>
-              <Input className="h-9" {...register("account")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Bank Name</label>
-              <Input className="h-9" {...register("bank")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Basic Salary</label>
-              <Input type="number" className="h-9" {...register("basic")} />
-            </div>
-
-            <div>
-              <label className="text-sm">Special Allowance</label>
-              <Input type="number" className="h-9" {...register("allowance")} />
-            </div>
-
-            <div className="col-span-2">
-              <label className="text-sm">Address Line 1</label>
-              <Input className="h-9" {...register("address1")} />
-            </div>
-
-            <div className="col-span-2">
-              <label className="text-sm">Address Line 2</label>
-              <Input className="h-9" {...register("address2")} />
-            </div>
-
           </div>
-            </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>

@@ -100,15 +100,16 @@ export default function ItemPage() {
     <div>
       <div className="flex justify-between mb-4">
         <h1 className="text-xl font-semibold">Item Master</h1>
-        <Button onClick={() => setOpen(true)}>Add Item</Button>
-      </div>
-
+       </div>
+ <div className="mb-3 flex justify-between">
       <Input
         placeholder="Search item..."
-        className="w-64 mb-3"
+        className="w-64 "
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
+        <Button onClick={() => setOpen(true)}>Add Item</Button>
+     </div>
 
       <ItemTable
         data={filtered}
