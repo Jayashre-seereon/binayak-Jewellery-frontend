@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -23,14 +24,38 @@ export default function PartyOpeningForm({
   parties,
   metals,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {},
   });
+
+  const selectedPartyId = watch("partymasterId");
+  const selectedMetalId = watch("metalId");
+  const selectedType = watch("type");
+
+  useEffect(() => {
+    if (open) {
+      reset(
+        defaultValues
+          ? {
+              ...defaultValues,
+              partymasterId: defaultValues.partymasterId ?? defaultValues.partymaster?.id,
+              metalId: defaultValues.metalId ?? defaultValues.metal?.id,
+            }
+          : {
+              partymasterId: "",
+              metalId: "",
+              type: "",
+              year: "",
+              debit: "",
+              credit: "",
+            }
+      );
+    }
+  }, [open, defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
     reset();
-    setOpen(false);
   };
 
   return (
@@ -48,15 +73,15 @@ export default function PartyOpeningForm({
             <div>
               <label className="text-sm">Party</label>
               <Select
-                defaultValue={defaultValues?.party}
-                onValueChange={(val) => setValue("party", val)}
+                value={selectedPartyId ? String(selectedPartyId) : ""}
+                onValueChange={(val) => setValue("partymasterId", val)}
               >
                 <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="Select Party" />
                 </SelectTrigger>
                 <SelectContent>
                   {parties.map((p) => (
-                    <SelectItem key={p.name} value={p.name}>
+                    <SelectItem key={p.id} value={String(p.id)}>
                       {p.name}
                     </SelectItem>
                   ))}
@@ -68,15 +93,15 @@ export default function PartyOpeningForm({
             <div>
               <label className="text-sm">Metal</label>
               <Select
-                defaultValue={defaultValues?.metal}
-                onValueChange={(val) => setValue("metal", val)}
+                value={selectedMetalId ? String(selectedMetalId) : ""}
+                onValueChange={(val) => setValue("metalId", val)}
               >
                 <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="Select Metal" />
                 </SelectTrigger>
                 <SelectContent>
                   {metals.map((m) => (
-                    <SelectItem key={m.name} value={m.name}>
+                    <SelectItem key={m.id} value={String(m.id)}>
                       {m.name}
                     </SelectItem>
                   ))}
@@ -88,7 +113,7 @@ export default function PartyOpeningForm({
             <div>
               <label className="text-sm">Opening Type</label>
               <Select
-                defaultValue={defaultValues?.type}
+                value={selectedType || ""}
                 onValueChange={(val) => setValue("type", val)}
               >
                 <SelectTrigger className="w-full h-9">
@@ -110,20 +135,20 @@ export default function PartyOpeningForm({
             {/* Debit */}
             <div>
               <label className="text-sm">Debit Weight</label>
-              <Input type="number" className="h-9" {...register("debitWeight")} />
+              <Input type="number" className="h-9" {...register("debit")} />
             </div>
 
             {/* Credit */}
             <div>
               <label className="text-sm">Credit Weight</label>
-              <Input type="number" className="h-9" {...register("creditWeight")} />
+              <Input type="number" className="h-9" {...register("credit")} />
             </div>
 
           </div>
 
           {/* Footer */}
           <div className="flex justify-end gap-2 mt-4 pt-3 border-t">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>
