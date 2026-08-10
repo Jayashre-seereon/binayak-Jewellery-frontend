@@ -94,7 +94,8 @@ export default function PartyForm({
 
             <div>
               <label className="text-sm">Phone</label>
-              <Input className="h-9" {...register("phone")} />
+              <Input   type="tel"
+    inputMode="numeric" className="h-9" {...register("phone",{required: true,pattern:{value:/^\d{10}$/, message:"Phone must be 10 digits"}})} />
             </div>
 
             <div className="col-span-2">
