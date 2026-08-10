@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -22,14 +23,25 @@ export default function PartyForm({
   defaultValues,
   partyTypes,
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
-    defaultValues,
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {},
   });
+
+  const selectedTypeId = watch("partytypeId");
+
+  useEffect(() => {
+    if (open) {
+      reset(
+        defaultValues
+          ? { ...defaultValues, partytypeId: defaultValues.partytypeId ?? defaultValues.partytype?.id }
+          : {  name: "", ledger: "", gst: "", phone: "", address: "", partytypeId: "" }
+      );
+    }
+  }, [open, defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
     reset();
-    setOpen(false);
   };
 
   return (
@@ -44,10 +56,7 @@ export default function PartyForm({
           {/* Scrollable */}
           <div className="grid grid-cols-2 gap-4 overflow-y-auto max-h-[65vh] pr-2">
 
-            <div>
-              <label className="text-sm">Alias</label>
-              <Input className="h-9" {...register("alias")} />
-            </div>
+          
 
             <div>
               <label className="text-sm">Party Name</label>
@@ -57,15 +66,15 @@ export default function PartyForm({
             <div>
               <label className="text-sm">Party Type</label>
               <Select
-                defaultValue={defaultValues?.type}
-                onValueChange={(val) => setValue("type", val)}
+                value={selectedTypeId ? String(selectedTypeId) : ""}
+                onValueChange={(val) => setValue("partytypeId", val)}
               >
                 <SelectTrigger className="w-full h-9">
                   <SelectValue placeholder="Select Party Type" />
                 </SelectTrigger>
                 <SelectContent>
                   {partyTypes.map((p) => (
-                    <SelectItem key={p.name} value={p.name}>
+                    <SelectItem key={p.id} value={String(p.id)}>
                       {p.name}
                     </SelectItem>
                   ))}
@@ -97,7 +106,7 @@ export default function PartyForm({
 
           {/* Footer */}
           <div className="flex justify-end gap-2 mt-4 pt-3 border-t">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>

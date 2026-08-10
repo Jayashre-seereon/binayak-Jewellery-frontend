@@ -12,7 +12,7 @@ import {
   deleteOpening,
 } from "./party-opening-api";
 
-import { getParties } from "@/features/masters/party/party-api";
+import { getParties } from "@/api/party-api";
 import { getMetals } from "@/features/masters/metal/metal-api";
 
 export default function PartyOpeningPage() {
