@@ -12,7 +12,7 @@ import {
   addEmployee,
   updateEmployee,
   deleteEmployee,
-} from "./employee-api";
+} from "@/api/employee-api";
 
 export default function EmployeePage() {
   const [employees, setEmployees] = useState([]);
