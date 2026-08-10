@@ -3,67 +3,134 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import PartyTypeTable from "./party-type-table";
 import PartyTypeForm from "./party-type-form";
-
+import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 import {
   getPartyTypes,
+  getPartyTypeById,
   addPartyType,
   updatePartyType,
   deletePartyType,
-} from "./party-type-api";
+} from "@/api/party-type-api";
+
+// TODO: replace with your actual store context / auth value
+const STORE_ID = 1;
 
 export default function PartyTypePage() {
-  const [data, setData] = useState([]);
+  const [partyTypes, setPartyTypes] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteName, setDeleteName] = useState("");
+
+  const unwrapList = (payload) => {
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.partytypes)) return payload.partytypes;
+    if (Array.isArray(payload)) return payload;
+    return [];
+  };
+
+  const unwrapItem = (payload) => {
+    if (payload?.data && !Array.isArray(payload.data)) return payload.data;
+    if (payload?.partytype) return payload.partytype;
+    if (payload && !Array.isArray(payload)) return payload;
+    return null;
+  };
 
   const loadData = async () => {
-    const res = await getPartyTypes();
-    setData(res);
+    try {
+      const partyTypeData = unwrapList(await getPartyTypes(STORE_ID));
+      setPartyTypes(Array.isArray(partyTypeData) ? [...partyTypeData].reverse() : []);
+    } catch (error) {
+      notifyError(error, "Failed to load party types.");
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const handleSave = async (formData) => {
-    if (editData) {
-      await updatePartyType({ ...formData, id: editData.id });
-    } else {
-      await addPartyType(formData);
+  const handleSave = async (data) => {
+    try {
+      if (editData) {
+        await updatePartyType(editData.id, data);
+        notifySuccess("Party type updated successfully.");
+      } else {
+        await addPartyType({ ...data, storeId: STORE_ID });
+        notifySuccess("Party type added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Party type save failed.");
     }
-    setEditData(null);
-    loadData();
   };
 
-  const filtered = data.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase())
+  const handleEdit = async (item) => {
+    try {
+      const partyType = unwrapItem(await getPartyTypeById(item.id));
+      setEditData(partyType);
+      setOpen(true);
+    } catch (error) {
+      notifyError(error, "Failed to load party type details.");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    setDeleteId(id);
+    const selected = partyTypes.find((item) => item.id === id);
+    setDeleteName(selected?.name || `#${id}`);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deletePartyType(deleteId);
+      notifySuccess("Party type deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete party type.");
+    }
+  };
+
+  const filteredData = partyTypes.filter((item) =>
+    item.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div>
-      <div className="flex justify-between mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-semibold">Party Type Master</h1>
-        <Button onClick={() => setOpen(true)}>Add Party Type</Button>
       </div>
 
-      <Input
-        placeholder="Search party type..."
-        className="w-64 mb-3"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="mb-3 flex justify-between">
+        <Input
+          placeholder="Search party type..."
+          className="w-64"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <Button
+          onClick={() => {
+            setEditData(null);
+            setOpen(true);
+          }}
+        >
+          Add New
+        </Button>
+      </div>
 
       <PartyTypeTable
-        data={filtered}
-        onEdit={(item) => {
-          setEditData(item);
-          setOpen(true);
-        }}
-        onDelete={async (id) => {
-          await deletePartyType(id);
-          loadData();
-        }}
+        data={filteredData}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
       />
 
       <PartyTypeForm
@@ -71,6 +138,14 @@ export default function PartyTypePage() {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
+      />
+
+      <DeleteModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        onConfirm={confirmDelete}
+        title="Delete Party Type"
+        description={`Are you sure you want to delete "${deleteName}"?`}
       />
     </div>
   );

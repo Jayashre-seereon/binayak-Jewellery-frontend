@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -9,18 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function PartyTypeForm({
-  open,
-  setOpen,
-  onSave,
-  defaultValues,
-}) {
-  const { register, handleSubmit, reset } = useForm({ defaultValues });
+export default function PartyTypeForm({ open, setOpen, onSave, defaultValues }) {
+  const { register, handleSubmit, reset } = useForm({ defaultValues: {} });
+
+  useEffect(() => {
+    if (open) {
+      reset(defaultValues || { name: "", description: "" });
+    }
+  }, [open, defaultValues, reset]);
 
   const submit = (data) => {
     onSave(data);
     reset();
-    setOpen(false);
   };
 
   return (
@@ -31,15 +32,7 @@ export default function PartyTypeForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="flex flex-col h-full">
-          
-          {/* Scrollable */}
           <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-2">
-
-            <div>
-              <label className="text-sm">Alias</label>
-              <Input className="h-9" {...register("alias")} />
-            </div>
-
             <div>
               <label className="text-sm">Party Type Name</label>
               <Input className="h-9" {...register("name")} />
@@ -49,17 +42,14 @@ export default function PartyTypeForm({
               <label className="text-sm">Description</label>
               <Textarea rows={3} {...register("description")} />
             </div>
-
           </div>
 
-          {/* Footer */}
           <div className="flex justify-end gap-2 mt-4 pt-3 border-t">
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>
           </div>
-
         </form>
       </DialogContent>
     </Dialog>

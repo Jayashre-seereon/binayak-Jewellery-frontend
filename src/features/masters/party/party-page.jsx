@@ -11,7 +11,7 @@ import {
   deleteParty,
 } from "./party-api";
 
-import { getPartyTypes } from "@/features/masters/party-type/party-type-api";
+import { getPartyTypes } from "@/api/party-type-api";
 
 export default function PartyPage() {
   const [data, setData] = useState([]);
