@@ -28,3 +28,9 @@ export const deleteGrade = async (id) => {
   const res = await http.delete(`/api/grades/delete/${id}`);
   return res.data;
 };
+
+// GET BY PURITY
+export const getGradesByPurity = async (purityId) => {
+  const res = await http.get(`/api/grades/getByPurity/${purityId}`);
+  return res.data;
+};

@@ -24,3 +24,9 @@ export const deletePurity = async (id) => {
   const res = await http.delete(`/api/purities/delete/${id}`);
   return res.data;
 };
+
+// GET BY METAL
+export const getPuritiesByMetal = async (metalId) => {
+  const res = await http.get(`/api/purities/getByMetal/${metalId}`);
+  return res.data;
+};

@@ -39,7 +39,7 @@ export default function MetalForm({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-3">
-          <Input placeholder="Alias" {...register("alias")} />
+        
           <Input placeholder="Metal Name" {...register("name")} />
           <Textarea placeholder="Description" {...register("description")} />
 

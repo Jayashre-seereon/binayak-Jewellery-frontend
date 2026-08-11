@@ -2,32 +2,52 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import RateTable from "./rate-table";
 import RateForm from "./rate-form";
+import DeleteModal from "../../../utils/DeleteModal";
+import { notifyError, notifySuccess } from "@/utils/notify";
 
 import {
   getRates,
+  getRateById,
   addRate,
   updateRate,
   deleteRate,
-} from "./rate-api";
+} from "@/api/rate-api";
 
-import { getMetals } from "@/features/masters/metal/metal-api";
-import { getPurities } from "@/api/purity-api";
-import { getGrades } from "@/api/grade-api";
+import { getMetals } from "@/api/metal-api";
 
 export default function RatePage() {
-  const [data, setData] = useState([]);
+  const [rates, setRates] = useState([]);
   const [metals, setMetals] = useState([]);
-  const [purities, setPurities] = useState([]);
-  const [grades, setGrades] = useState([]);
 
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleteName, setDeleteName] = useState("");
+
+  const unwrapList = (payload, key) => {
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.[key])) return payload[key];
+    if (Array.isArray(payload)) return payload;
+    return [];
+  };
+
+  const unwrapItem = (payload) => {
+    if (payload?.data && !Array.isArray(payload.data)) return payload.data;
+    if (payload?.rate) return payload.rate;
+    if (payload && !Array.isArray(payload)) return payload;
+    return null;
+  };
 
   const loadData = async () => {
-    setData(await getRates());
-    setMetals(await getMetals());
-    setPurities(await getPurities());
-    setGrades(await getGrades());
+    try {
+      const [rateData, metalData] = await Promise.all([getRates(), getMetals()]);
+      const rateList = unwrapList(rateData, "rates");
+      setRates(Array.isArray(rateList) ? [...rateList].reverse() : []);
+      setMetals(unwrapList(metalData, "metals"));
+    } catch (error) {
+      notifyError(error, "Failed to load rates.");
+    }
   };
 
   useEffect(() => {
@@ -35,33 +55,78 @@ export default function RatePage() {
   }, []);
 
   const handleSave = async (formData) => {
-    if (editData) {
-      await updateRate({ ...formData, id: editData.id });
-    } else {
-      await addRate(formData);
+    try {
+      const payload = {
+        metalId: formData.metalId ? Number(formData.metalId) : null,
+        purityId: formData.purityId ? Number(formData.purityId) : null,
+        gradeId: formData.gradeId ? Number(formData.gradeId) : null,
+        unit: formData.unit,
+        saleRate: formData.saleRate ? Number(formData.saleRate) : 0,
+        exchangeRate: formData.exchangeRate ? Number(formData.exchangeRate) : 0,
+        cashRate: formData.cashRate ? Number(formData.cashRate) : 0,
+      };
+
+      if (editData) {
+        await updateRate(editData.id, payload);
+        notifySuccess("Rate updated successfully.");
+      } else {
+        await addRate(payload);
+        notifySuccess("Rate added successfully.");
+      }
+      setEditData(null);
+      setOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Rate save failed.");
     }
-    setEditData(null);
-    loadData();
+  };
+
+  const handleEdit = async (item) => {
+    try {
+      const rate = unwrapItem(await getRateById(item.id));
+      setEditData(rate);
+      setOpen(true);
+    } catch (error) {
+      notifyError(error, "Failed to load rate details.");
+    }
+  };
+
+  const handleDelete = (id) => {
+    setDeleteId(id);
+    const selected = rates.find((item) => item.id === id);
+    setDeleteName(selected?.metal?.name || `#${id}`);
+    setDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteRate(deleteId);
+      notifySuccess("Rate deleted successfully.");
+      setDeleteId(null);
+      setDeleteName("");
+      setDeleteOpen(false);
+      loadData();
+    } catch (error) {
+      notifyError(error, "Failed to delete rate.");
+    }
   };
 
   return (
     <div>
       <div className="flex justify-between mb-4">
         <h1 className="text-xl font-semibold">Rate Master</h1>
-        <Button onClick={() => setOpen(true)}>Add Rate</Button>
+        <Button
+          onClick={() => {
+            setEditData(null);
+            setOpen(true);
+          }}
+        >
+          Add Rate
+        </Button>
       </div>
 
-      <RateTable
-        data={data}
-        onEdit={(item) => {
-          setEditData(item);
-          setOpen(true);
-        }}
-        onDelete={async (id) => {
-          await deleteRate(id);
-          loadData();
-        }}
-      />
+      <RateTable data={rates} onEdit={handleEdit} onDelete={handleDelete} />
 
       <RateForm
         open={open}
@@ -69,8 +134,14 @@ export default function RatePage() {
         onSave={handleSave}
         defaultValues={editData}
         metals={metals}
-        purities={purities}
-        grades={grades}
+      />
+
+      <DeleteModal
+        open={deleteOpen}
+        setOpen={setDeleteOpen}
+        onConfirm={confirmDelete}
+        title="Delete Rate"
+        description={`Are you sure you want to delete the rate for "${deleteName}"?`}
       />
     </div>
   );

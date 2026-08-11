@@ -81,8 +81,8 @@ const confirmDelete = async () => {
   }
 };
   const filteredData = metals.filter((item) =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.alias.toLowerCase().includes(search.toLowerCase())
+    item.name.toLowerCase().includes(search.toLowerCase()) 
+    
   );
 
   return (
