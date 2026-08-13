@@ -478,7 +478,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="!w-[95vw] !max-w-[1400px] h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Old Purchase</DialogTitle>
+          <DialogTitle>Purchase</DialogTitle>
         </DialogHeader>
 
         <div className="border rounded-lg p-4 space-y-3">
