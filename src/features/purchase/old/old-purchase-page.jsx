@@ -12,6 +12,7 @@ import {
   addOldPurchase,
   updateOldPurchase,
   deleteOldPurchase,
+  getPurchasePdf,
 } from "../../../api/old-purchase-api";
 
 export default function OldPurchasePage() {
@@ -81,7 +82,25 @@ export default function OldPurchasePage() {
       notifyError(error, "Failed to delete old purchase.");
     }
   };
+const handleDownload = async (id) => {
+  try {
+    const blob = await getPurchasePdf(id, 1);
 
+    const pdfBlob = new Blob([blob], {
+      type: "application/pdf",
+    });
+
+    const pdfUrl = window.URL.createObjectURL(pdfBlob);
+
+    window.open(pdfUrl, "_blank");
+
+    setTimeout(() => {
+      window.URL.revokeObjectURL(pdfUrl);
+    }, 60000);
+  } catch (error) {
+    notifyError(error, "Failed to open purchase PDF.");
+  }
+};
   return (
     <div>
       <div className="flex justify-between mb-4">
@@ -93,6 +112,7 @@ export default function OldPurchasePage() {
         data={data}
         onEdit={handleEdit}
         onDelete={handleDelete}
+       onDownload={handleDownload}
       />
 
       <OldPurchaseForm
@@ -100,6 +120,7 @@ export default function OldPurchasePage() {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
+
       />
 
       <DeleteModal

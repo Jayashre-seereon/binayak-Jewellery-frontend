@@ -34,30 +34,27 @@ export const deleteOldPurchase = async (id) => {
   return res.data;
 };
 
-/* ------------------------------------------------------------------ */
-/* DROPDOWN MASTER DATA (fetched live from API)                       */
-/* ------------------------------------------------------------------ */
+export const getPurchasePdf = async (id, storeId) => {
+  const res = await http.get(
+    `/api/purchases/downloadPdf/${id}`,
+    {
+      responseType: "blob",
+    }
+  );
 
-export const getEmployees = async () => {
-  const res = await http.get("/api/employees/get");
-  return res.data?.employees ?? [];
+  return res.data;
+
 };
 
-export const getParties = async () => {
-  const res = await http.get("/api/partymasters/get");
-  if (Array.isArray(res.data)) return res.data;
-  return res.data?.parties ?? res.data?.partymasters ?? res.data?.data ?? [];
-};
+
+
 
 export const getProducts = async () => {
   const res = await http.get("/api/products/get");
   return res.data?.products ?? [];
 };
 
-export const getMetals = async () => {
-  const res = await http.get("/api/metals/get");
-  return res.data?.metals ?? [];
-};
+
 
 export const getPurities = async (metalId) => {
   const res = await http.get(
@@ -75,11 +72,7 @@ export const getGrades = async (purityId) => {
   return res.data?.data ?? res.data?.grades ?? [];
 };
 
-export const getStones = async () => {
-  const res = await http.get("/api/stones/get");
-  if (Array.isArray(res.data)) return res.data;
-  return res.data?.data ?? res.data?.stones ?? [];
-};
+
 
 /* ------------------------------------------------------------------ */
 /* STATIC (hardcoded, NOT from API - matches Prisma enum)             */

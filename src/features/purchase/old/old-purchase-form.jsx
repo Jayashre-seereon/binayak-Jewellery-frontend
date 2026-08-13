@@ -3,12 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { onlyDecimal, onlyDigits, onlyAlphaNumeric } from "@/utils/validation";
-
+import {getEmployees} from "@/api/employee-api";
+import{getParties} from "@/api/party-api";
+import{getMetals} from "@/api/metal-api";
+import{getStones} from "@/api/stone-api";
 import {
-  getEmployees,
-  getParties,
-  getMetals,
-  getStones,
   PURCHASE_TYPES,
   PAYMENT_MODES,
   CUSTOMER_ID_TYPES,

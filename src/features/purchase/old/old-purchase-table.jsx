@@ -1,6 +1,6 @@
-import { Pencil, Trash } from "lucide-react";
+import { Pencil, Trash ,Download} from "lucide-react";
 
-export default function OldPurchaseTable({ data, onEdit, onDelete }) {
+export default function OldPurchaseTable({ data, onEdit, onDelete,onDownload }) {
   return (
     <div className="bg-white border rounded">
       <table className="w-full text-sm">
@@ -40,6 +40,12 @@ export default function OldPurchaseTable({ data, onEdit, onDelete }) {
                     className="text-red-500 cursor-pointer"
                     onClick={() => onDelete(p.id)}
                   />
+                  <Download
+      size={16}
+      className="text-green-500 cursor-pointer"
+      onClick={() => onDownload(p.id)}
+    />
+                
                 </div>
               </td>
             </tr>
