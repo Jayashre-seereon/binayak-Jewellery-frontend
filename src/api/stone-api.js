@@ -5,6 +5,11 @@ export const getStones = async () => {
   return res.data?.stones || [];
 };
 
+export const getStonesByProductAndItem = async (productId, itemId) => {
+  const res = await http.get(`/api/stones/getByProductItem/${productId}/${itemId}`);
+  return res.data?.stones || res.data?.data || [];
+};
+
 export const getStoneById = async (id) => {
   const res = await http.get(`/api/stones/getById/${id}`);
   return res.data?.stone ?? res.data?.data ?? null;

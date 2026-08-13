@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getItemsByProduct } from "@/api/item-api";
 
 export default function StoneForm({
   open,
@@ -23,8 +24,8 @@ export default function StoneForm({
   onSave,
   defaultValues,
   products,
-  items,
 }) {
+  const [items, setItems] = useState([]);
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       name: "",
@@ -56,6 +57,37 @@ export default function StoneForm({
   const productId = watch("productId");
   const itemId = watch("itemId");
 
+  useEffect(() => {
+    if (!open) return;
+
+    let active = true;
+    (async () => {
+      if (!productId) {
+        if (active) setItems([]);
+        return;
+      }
+
+      try {
+        const response = await getItemsByProduct(productId);
+        if (!active) return;
+        setItems(Array.isArray(response) ? response : []);
+      } catch {
+        if (active) setItems([]);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [open, productId]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!productId) {
+      setValue("itemId", "");
+    }
+  }, [open, productId, setValue]);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[500px]">
@@ -79,7 +111,10 @@ export default function StoneForm({
             <label className="text-sm">Product</label>
             <Select
               value={productId || undefined}
-              onValueChange={(val) => setValue("productId", val)}
+              onValueChange={(val) => {
+                setValue("productId", val);
+                setValue("itemId", "");
+              }}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Product" />

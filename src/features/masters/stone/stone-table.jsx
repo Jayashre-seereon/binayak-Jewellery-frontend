@@ -1,8 +1,18 @@
 import { Pencil, Trash } from "lucide-react";
 
 export default function StoneTable({ data, products, items, onEdit, onDelete }) {
-  const productName = (id) => products.find((p) => p.id === id)?.name || "-";
-  const itemName = (id) => items.find((i) => i.id === id)?.name || "-";
+  const productList = Array.isArray(products) ? products : [];
+  const itemList = Array.isArray(items) ? items : [];
+
+  const productName = (stone) =>
+    stone?.product?.name ||
+    productList.find((p) => String(p.id) === String(stone?.productId))?.name ||
+    "-";
+
+  const itemName = (stone) =>
+    stone?.item?.name ||
+    itemList.find((i) => String(i.id) === String(stone?.itemId))?.name ||
+    "-";
 
   return (
     <div className="bg-white rounded-lg border">
@@ -24,8 +34,8 @@ export default function StoneTable({ data, products, items, onEdit, onDelete }) 
               <td className="p-3">{index + 1}</td>
               <td className="p-3">{stone.name}</td>
               <td className="p-3">{stone.description}</td>
-              <td className="p-3">{productName(stone.productId)}</td>
-              <td className="p-3">{itemName(stone.itemId)}</td>
+              <td className="p-3">{productName(stone)}</td>
+              <td className="p-3">{itemName(stone)}</td>
 
               <td className="p-3">
                 <div className="flex gap-2">

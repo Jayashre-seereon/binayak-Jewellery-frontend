@@ -5,6 +5,11 @@ export const getProducts = async () => {
   return res.data?.products || [];
 };
 
+export const getProductsByMetal = async (metalId) => {
+  const res = await http.get(`/api/products/getByMetal/${metalId}`);
+  return res.data?.products || res.data?.data || [];
+};
+
 export const getProductById = async (id) => {
   const res = await http.get(`/api/products/getById/${id}`);
   return res.data?.product ?? res.data?.data ?? null;

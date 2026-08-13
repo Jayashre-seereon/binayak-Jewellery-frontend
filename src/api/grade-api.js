@@ -6,6 +6,12 @@ export const getGrades = async () => {
   return res.data?.data ?? res.data?.grades ?? [];
 };
 
+export const getGradesByPurity = async (purityId) => {
+  const res = await http.get(`/api/grades/getByPurity/${purityId}`);
+  if (Array.isArray(res.data)) return res.data;
+  return res.data?.data ?? res.data?.grades ?? [];
+};
+
 export const getGradeById = async (id) => {
   const res = await http.get(`/api/grades/getById/${id}`);
   if (res.data?.data && !Array.isArray(res.data.data)) return res.data.data;
@@ -26,11 +32,5 @@ export const updateGrade = async (id, data) => {
 
 export const deleteGrade = async (id) => {
   const res = await http.delete(`/api/grades/delete/${id}`);
-  return res.data;
-};
-
-// GET BY PURITY
-export const getGradesByPurity = async (purityId) => {
-  const res = await http.get(`/api/grades/getByPurity/${purityId}`);
   return res.data;
 };
