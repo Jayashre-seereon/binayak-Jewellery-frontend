@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { makeEmailRules, makePhoneRules, makeNumericRules, onlyDigits } from "@/utils/validation";
 
 export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
   const {
@@ -113,21 +114,12 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
 
              <div>
   <label className="text-sm">Phone</label>
-  <Input
-    type="tel"
-    inputMode="numeric"
-    maxLength={10}
-    className="h-9"
-    {...register("phone", {
-      required: "Phone is required",
-      pattern: {
-        value: /^[0-9]{10}$/,
-        message: "Phone must be 10 digits",
-      },
-      onChange: (e) => {
-        e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
-      },
-    })}
+              <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                className="h-9"
+                {...register("phone", makePhoneRules("Phone"))}
   />
   <FieldError message={errors.phone?.message} />
 </div>
@@ -139,16 +131,7 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
     inputMode="numeric"
     maxLength={10}
     className="h-9"
-    {...register("mobile", {
-      required: "Mobile is required",
-      pattern: {
-        value: /^[0-9]{10}$/,
-        message: "Mobile must be 10 digits",
-      },
-      onChange: (e) => {
-        e.target.value = e.target.value.replace(/\D/g, "").slice(0, 10);
-      },
-    })}
+    {...register("mobile", makePhoneRules("Mobile"))}
   />
   <FieldError message={errors.mobile?.message} />
 </div>
@@ -158,13 +141,7 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
                 <Input
                   type="email"
                   className="h-9"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                      message: "Invalid email",
-                    },
-                  })}
+                {...register("email", makeEmailRules("Email"))}
                 />
                 <FieldError message={errors.email?.message} />
               </div>
@@ -184,7 +161,7 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
     className="h-9"
     {...register("bankAccountNo", {
       onChange: (e) => {
-        e.target.value = e.target.value.replace(/\D/g, "");
+        e.target.value = onlyDigits(e.target.value);
       },
     })}
   />
@@ -200,10 +177,7 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
                 <Input
                   type="number"
                   className="h-9"
-                  {...register("basicSalary", {
-                    required: "Basic Salary is required",
-                    valueAsNumber: true,
-                  })}
+                  {...register("basicSalary", makeNumericRules({ label: "Basic Salary", required: true, integerOnly: false }))}
                 />
                 <FieldError message={errors.basicSalary?.message} />
               </div>

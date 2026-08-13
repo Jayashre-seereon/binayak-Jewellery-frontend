@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { onlyDecimal, onlyDigits, onlyAlphaNumeric } from "@/utils/validation";
 
 import {
   getEmployees,
@@ -268,6 +269,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
   const [items, setItems] = useState(buildInitialItems(defaultValues));
   const [options, setOptions] = useState({ employees: [], parties: [], metals: [] });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (!open) return;
@@ -412,10 +414,32 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
   };
 
   const handleSave = () => {
-    if (!form.partyId && !form.customerName.trim()) {
-      alert("Customer Name is required.");
-      return;
+    const nextErrors = {};
+    const referenceNo = form.referenceNo.trim();
+    const customerName = form.customerName.trim();
+    const customerPhone = String(form.customerPhone || "").trim();
+    const customerIdType = String(form.customerIdType || "").trim();
+    const customerIdNumber = String(form.customerIdNumber || "").trim();
+
+    if (!form.partyId) nextErrors.partyId = "Party is required.";
+    if (!customerName) nextErrors.customerName = "Customer name is required.";
+    if (referenceNo && !/^[A-Za-z0-9\s.-]+$/.test(referenceNo)) {
+      nextErrors.referenceNo = "Reference No. can contain only letters, numbers, spaces, dots, and hyphens.";
     }
+    if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
+      nextErrors.customerPhone = "Phone must be exactly 10 digits.";
+    }
+    if (customerIdType && !customerIdNumber) {
+      nextErrors.customerIdNumber = "ID number is required when ID type is selected.";
+    }
+    if (customerIdNumber && !/^[A-Za-z0-9\s.-]+$/.test(customerIdNumber)) {
+      nextErrors.customerIdNumber = "ID number can contain only letters, numbers, spaces, dots, and hyphens.";
+    }
+    if (!form.date) nextErrors.date = "Date is required.";
+    if (!form.referenceDate) nextErrors.referenceDate = "Reference date is required.";
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     const payload = {
       purchaseType: form.purchaseType,
@@ -475,11 +499,17 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Reference No.</label>
-              <Input value={form.referenceNo} onChange={(e) => updateForm("referenceNo", e.target.value)} />
+              <Input
+                value={form.referenceNo}
+                onChange={(e) => updateForm("referenceNo", onlyAlphaNumeric(e.target.value))}
+                placeholder="Reference No."
+              />
+              {errors.referenceNo ? <p className="text-xs text-red-500">{errors.referenceNo}</p> : null}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Date</label>
               <Input type="date" value={form.date} onChange={(e) => updateForm("date", e.target.value)} />
+              {errors.date ? <p className="text-xs text-red-500">{errors.date}</p> : null}
             </div>
           </div>
 
@@ -490,14 +520,23 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
                 <option value="">Select</option>
                 {options.parties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
+              {errors.partyId ? <p className="text-xs text-red-500">{errors.partyId}</p> : null}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Customer Name <span className="text-destructive">*</span></label>
               <Input value={form.customerName} onChange={(e) => updateForm("customerName", e.target.value)} />
+              {errors.customerName ? <p className="text-xs text-red-500">{errors.customerName}</p> : null}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Phone</label>
-              <Input value={form.customerPhone} onChange={(e) => updateForm("customerPhone", e.target.value)} />
+              <Input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={form.customerPhone}
+                onChange={(e) => updateForm("customerPhone", onlyDigits(e.target.value).slice(0, 10))}
+              />
+              {errors.customerPhone ? <p className="text-xs text-red-500">{errors.customerPhone}</p> : null}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">ID Type</label>
@@ -508,7 +547,12 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">ID Number</label>
-              <Input value={form.customerIdNumber} onChange={(e) => updateForm("customerIdNumber", e.target.value)} />
+              <Input
+                value={form.customerIdNumber}
+                onChange={(e) => updateForm("customerIdNumber", onlyAlphaNumeric(e.target.value))}
+                placeholder="ID Number"
+              />
+              {errors.customerIdNumber ? <p className="text-xs text-red-500">{errors.customerIdNumber}</p> : null}
             </div>
           </div>
 
@@ -571,8 +615,8 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <select className={selectCls} value={form.paymentMode} onChange={(e) => updateForm("paymentMode", e.target.value)}>
                 {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
-              <Input type="number" placeholder="Paid Amount" value={form.paidAmount} onChange={(e) => updateForm("paidAmount", e.target.value)} />
-              <Input type="number" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", e.target.value)} />
+              <Input type="number" placeholder="Paid Amount" value={form.paidAmount} onChange={(e) => updateForm("paidAmount", onlyDecimal(e.target.value))} />
+              <Input type="number" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", onlyDecimal(e.target.value))} />
             </div>
             <Input placeholder="Narration" value={form.narration} onChange={(e) => updateForm("narration", e.target.value)} />
           </div>

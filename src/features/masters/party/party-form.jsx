@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { makePhoneRules } from "@/utils/validation";
 
 export default function PartyForm({
   open,
@@ -94,8 +95,12 @@ export default function PartyForm({
 
             <div>
               <label className="text-sm">Phone</label>
-              <Input   type="tel"
-    inputMode="numeric" className="h-9" {...register("phone",{required: true,pattern:{value:/^\d{10}$/, message:"Phone must be 10 digits"}})} />
+              <Input
+                type="tel"
+                inputMode="numeric"
+                className="h-9"
+                {...register("phone", makePhoneRules("Phone"))}
+              />
             </div>
 
             <div className="col-span-2">

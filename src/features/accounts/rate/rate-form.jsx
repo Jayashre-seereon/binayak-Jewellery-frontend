@@ -18,6 +18,7 @@ import {
 import { notifyError } from "@/utils/notify";
 import { getPuritiesByMetal } from "@/api/purity-api";
 import { getGradesByPurity } from "@/api/grade-api";
+import { makeNumericRules } from "@/utils/validation";
 
 export default function RateForm({
   open,
@@ -205,17 +206,17 @@ export default function RateForm({
 
             <div>
               <label className="text-sm">Sale Rate</label>
-              <Input type="number" className="h-9" {...register("saleRate")} />
+              <Input type="number" className="h-9" {...register("saleRate", makeNumericRules({ label: "Sale Rate" }))} />
             </div>
 
             <div>
               <label className="text-sm">Exchange Rate</label>
-              <Input type="number" className="h-9" {...register("exchangeRate")} />
+              <Input type="number" className="h-9" {...register("exchangeRate", makeNumericRules({ label: "Exchange Rate" }))} />
             </div>
 
             <div>
               <label className="text-sm">Cash Rate</label>
-              <Input type="number" className="h-9" {...register("cashRate")} />
+              <Input type="number" className="h-9" {...register("cashRate", makeNumericRules({ label: "Cash Rate" }))} />
             </div>
 
           </div>
