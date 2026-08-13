@@ -21,9 +21,7 @@ import PartyTypePage from "@/features/masters/party-type/party-type-page";
 import PartyPage from "@/features/masters/party/party-page";
 import PartyOpeningPage from "@/features/masters/party-opening/party-opening-page";
 import RatePage from "@/features/accounts/rate/rate-page";
-import PurchasePage from "@/features/purchase/ornament/purchase-page";
 import OldPurchasePage from "@/features/purchase/old/old-purchase-page";
-import BullionPurchasePage from "@/features/purchase/bullion/bullion-purchase-page";
 import BarcodingPage from "@/features/barcoding/goldornament/gold-barcoding-page";
 import DiamondBarcodingPage from "@/features/barcoding/diamond/dimond-barcoding-page";
 import MrpBarcodingPage from "@/features/barcoding/mrp/mrp-barcoding-page";
@@ -91,9 +89,7 @@ export const router = createBrowserRouter([
       // rate master routes
       { path: "accounts/rate", element: <RatePage /> },
       // purchase routes 
-      { path: "purchase/ornament", element: <PurchasePage /> },
-      { path: "purchase/old", element: <OldPurchasePage /> },
-      { path: "purchase/bullion", element: <BullionPurchasePage /> },
+       { path: "purchase", element: <OldPurchasePage /> },
 
       // barcoding routes will be added here
       { path: "barcoding/gold", element: <BarcodingPage /> },

@@ -43,10 +43,8 @@ export default function Sidebar() {
       name: "Purchase",
       icon: ShoppingCart,
       children:[
-        {name:"Ornament Purchase",path:"purchase/ornament"},
-        {name:"Old Purchase",path:"purchase/old"},
-        {name:"Bullion Purchase",path:"purchase/bullion"}
-      ]
+          {name:"Purchase",path:"purchase"},
+        ]
     },
     {
       name: "Barcoding",
