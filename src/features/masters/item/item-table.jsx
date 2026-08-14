@@ -17,6 +17,15 @@ const getLabel = (value) => {
 };
 
 export default function ItemTable({ data, onEdit, onDelete }) {
+  const getImageSrc = (item) => {
+    const src = item?.imageUrl || item?.image || item?.photo || "";
+    if (!src) return "";
+    if (/^https?:\/\//i.test(src) || src.startsWith("data:") || src.startsWith("blob:")) {
+      return src;
+    }
+    return src.startsWith("/") ? src : `/${src}`;
+  };
+
   return (
     <div className="bg-white rounded-lg border">
       <table className="w-full text-sm">
@@ -25,6 +34,7 @@ export default function ItemTable({ data, onEdit, onDelete }) {
             <th className="p-3 text-left">ID</th>
             <th className="p-3 text-left">Alias</th>
             <th className="p-3 text-left">Item Name</th>
+            <th className="p-3 text-left">Image</th>
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Design</th>
             <th className="p-3 text-left">Actions</th>
@@ -37,6 +47,17 @@ export default function ItemTable({ data, onEdit, onDelete }) {
               <td className="p-3">{index + 1}</td>
                <td className="p-3">{getLabel(item.alias || item.itemCode)}</td>
               <td className="p-3">{getLabel(item.name)}</td>
+              <td className="p-3">
+                {getImageSrc(item) ? (
+                  <img
+                    src={getImageSrc(item)}
+                    alt={item.name || "Item"}
+                    className="h-12 w-12 rounded border object-cover"
+                  />
+                ) : (
+                  "-"
+                )}
+              </td>
               <td className="p-3">{getLabel(item.product?.name || item.product)}</td>
               <td className="p-3">{getLabel(item.design?.name || item.design)}</td>
 

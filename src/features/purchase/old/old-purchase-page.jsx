@@ -27,7 +27,7 @@ export default function OldPurchasePage() {
     try {
       setData(await getOldPurchases());
     } catch (error) {
-      notifyError(error, "Failed to load old purchases.");
+      notifyError(error, "Failed to load purchases.");
     }
   };
 
@@ -39,16 +39,16 @@ export default function OldPurchasePage() {
     try {
       if (editData) {
         await updateOldPurchase(editData.id, formData);
-        notifySuccess("Old purchase updated successfully.");
+        notifySuccess("Purchase updated successfully.");
       } else {
         await addOldPurchase(formData);
-        notifySuccess("Old purchase added successfully.");
+        notifySuccess("Purchase added successfully.");
       }
       setEditData(null);
       setOpen(false);
       loadData();
     } catch (error) {
-      notifyError(error, "Failed to save old purchase.");
+      notifyError(error, "Failed to save purchase.");
     }
   };
 
@@ -58,7 +58,7 @@ export default function OldPurchasePage() {
       setEditData(purchase || item);
       setOpen(true);
     } catch (error) {
-      notifyError(error, "Failed to load old purchase details.");
+      notifyError(error, "Failed to load purchase details.");
     }
   };
 
@@ -73,13 +73,13 @@ export default function OldPurchasePage() {
     if (!deleteId) return;
     try {
       await deleteOldPurchase(deleteId);
-      notifySuccess("Old purchase deleted successfully.");
+      notifySuccess("Purchase deleted successfully.");
       setDeleteId(null);
       setDeleteName("");
       setDeleteOpen(false);
       loadData();
     } catch (error) {
-      notifyError(error, "Failed to delete old purchase.");
+      notifyError(error, "Failed to delete purchase.");
     }
   };
 const handleDownload = async (id) => {
@@ -104,8 +104,8 @@ const handleDownload = async (id) => {
   return (
     <div>
       <div className="flex justify-between mb-4">
-        <h1 className="text-xl font-semibold">Old Purchase</h1>
-        <Button onClick={() => setOpen(true)}>Add Old Purchase</Button>
+        <h1 className="text-xl font-semibold">Purchase</h1>
+        <Button onClick={() => setOpen(true)}>Add Purchase</Button>
       </div>
 
       <OldPurchaseTable
@@ -127,7 +127,7 @@ const handleDownload = async (id) => {
         open={deleteOpen}
         setOpen={setDeleteOpen}
         onConfirm={confirmDelete}
-        title="Delete Old Purchase"
+        title="Delete Purchase"
         description={`Are you sure you want to delete "${deleteName}"?`}
       />
     </div>

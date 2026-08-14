@@ -95,7 +95,7 @@ export default function BullionPurchaseForm({ open, setOpen, onSave }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="!w-[95vw] !max-w-[1300px] h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Old Purchase</DialogTitle>
+          <DialogTitle>Purchase</DialogTitle>
         </DialogHeader>
 
         {/* ── HEADER FIELDS ── */}

@@ -40,6 +40,11 @@ export default function ItemForm({
 
   useEffect(() => {
     if (open) {
+      const existingImage =
+        defaultValues?.imageUrl ||
+        defaultValues?.image ||
+        defaultValues?.photo ||
+        null;
       reset({
         name: defaultValues?.name || "",
         productId:
@@ -53,7 +58,7 @@ export default function ItemForm({
         description: defaultValues?.description || "",
         image: null,
       });
-      setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
+      setPreview(existingImage);
       setValue(
         "productId",
         defaultValues?.productId || defaultValues?.product?.id || ""
@@ -76,9 +81,20 @@ export default function ItemForm({
     const file = e.target.files?.[0];
     if (file) {
       setValue("image", file);
+      if (preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+      }
       setPreview(URL.createObjectURL(file));
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (preview?.startsWith("blob:")) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
