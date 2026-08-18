@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import RateTable from "./rate-table";
 import RateForm from "./rate-form";
 import DeleteModal from "../../../utils/DeleteModal";
@@ -18,6 +19,7 @@ import { getMetals } from "@/api/metal-api";
 export default function RatePage() {
   const [rates, setRates] = useState([]);
   const [metals, setMetals] = useState([]);
+  const [search, setSearch] = useState("");
 
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -112,10 +114,32 @@ export default function RatePage() {
     }
   };
 
+  const filteredRates = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rates;
+
+    return rates.filter((rate) =>
+      [
+        rate.metal?.name,
+        rate.purity?.name,
+        rate.grade?.name,
+        rate.unit,
+        rate.saleRate,
+        rate.exchangeRate,
+        rate.cashRate,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [rates, search]);
+
   return (
     <div>
-      <div className="flex justify-between mb-4">
-        <h1 className="text-xl font-semibold">Rate Master</h1>
+       <div className="flex justify-between mb-4">  <div>
+          <h1 className="text-xl font-semibold">Rate Master</h1>
+            </div>
         <Button
           onClick={() => {
             setEditData(null);
@@ -126,7 +150,16 @@ export default function RatePage() {
         </Button>
       </div>
 
-      <RateTable data={rates} onEdit={handleEdit} onDelete={handleDelete} />
+      <div className="mb-3 flex justify-between">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by metal, purity, ..."
+          className="w-64 "
+        />
+      </div>
+
+      <RateTable data={filteredRates} onEdit={handleEdit} onDelete={handleDelete} />
 
       <RateForm
         open={open}

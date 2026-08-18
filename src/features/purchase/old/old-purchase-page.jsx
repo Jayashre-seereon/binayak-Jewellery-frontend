@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import DeleteModal from "../../../utils/DeleteModal";
 import { notifyError, notifySuccess } from "@/utils/notify";
 
@@ -17,6 +18,7 @@ import {
 
 export default function OldPurchasePage() {
   const [data, setData] = useState([]);
+  const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -82,6 +84,28 @@ export default function OldPurchasePage() {
       notifyError(error, "Failed to delete purchase.");
     }
   };
+
+  const filteredData = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return data;
+
+    return data.filter((item) =>
+      [
+        item.invoiceNo,
+        item.customerName,
+        item.referenceNo,
+        item.purchaseType,
+        item.date,
+        item.party?.name,
+        item.voucher,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(q)
+    );
+  }, [data, search]);
+
 const handleDownload = async (id) => {
   try {
     const blob = await getPurchasePdf(id, 1);
@@ -104,12 +128,23 @@ const handleDownload = async (id) => {
   return (
     <div>
       <div className="flex justify-between mb-4">
-        <h1 className="text-xl font-semibold">Purchase</h1>
+            <div>
+          <h1 className="text-xl font-semibold">Purchase</h1>
+          </div>
         <Button onClick={() => setOpen(true)}>Add Purchase</Button>
       </div>
 
+     <div className="mb-3 flex justify-between">
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by invoice no..."
+          className="w-64 "
+        />
+      </div>
+
       <OldPurchaseTable
-        data={data}
+        data={filteredData}
         onEdit={handleEdit}
         onDelete={handleDelete}
        onDownload={handleDownload}
