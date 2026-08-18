@@ -1,14 +1,33 @@
-let stock = [];
+import http from "@/api/axios";
 
-export const getStock = () => Promise.resolve(stock);
-
-export const addStock = (data) => {
-  data.id = stock.length + 1;
-  stock.push(data);
-  return Promise.resolve(data);
+export const getStock = async () => {
+  const res = await http.get("/api/inventories/get");
+  return res.data?.inventories ?? [];
 };
 
-export const deleteStock = (id) => {
-  stock = stock.filter((s) => s.id !== id);
-  return Promise.resolve();
+export const getStockById = async (id) => {
+  const res = await http.get(`/api/inventories/getById/${id}`);
+  return res.data?.inventory ?? res.data?.data ?? null;
+};
+
+export const createStock = async (purchaseItemId) => {
+  const res = await http.post("/api/inventories/create", {
+    purchaseItemId,
+  });
+  return res.data?.inventory ?? null;
+};
+
+export const updateStock = async (id, data) => {
+  const res = await http.put(`/api/inventories/update/${id}`, data);
+  return res.data?.inventory ?? null;
+};
+
+export const updateStockStatus = async (id, status) => {
+  const res = await http.put(`/api/inventories/status/${id}`, { status });
+  return res.data?.inventory ?? null;
+};
+
+export const deleteStock = async (id) => {
+  const res = await http.delete(`/api/inventories/delete/${id}`);
+  return res.data;
 };

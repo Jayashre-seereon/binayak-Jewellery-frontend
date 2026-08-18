@@ -84,7 +84,7 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="flex flex-col h-full">
-          <div className="overflow-y-auto pr-2 space-y-4 max-h-[70vh]">
+          <div className="overflow-y-auto pr-2 space-y-4 max-h-[70vh] ">
             <div className="grid grid-cols-2 gap-4">
               {defaultValues?.empCode && (
                 <div>
@@ -152,8 +152,7 @@ export default function EmployeeForm({ open, setOpen, onSave, defaultValues }) {
               </div>
 
               <div>
-                <label className="text-sm">Bank Account Number</label>
-                <div>
+                 <div>
   <label className="text-sm">Bank Account Number</label>
   <Input
     type="text"

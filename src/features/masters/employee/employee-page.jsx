@@ -127,6 +127,8 @@ export default function EmployeePage() {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
+        className="w-[450px]"
+        
       />
 
       <DeleteModal

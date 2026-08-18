@@ -90,6 +90,11 @@ function createRow() {
     stoneAmount: "",
     otherAmount: "",
     discount: "",
+    igst: "",
+    cgst: "",
+    sgst: "",
+    taxAmount: "",
+    roundOff: "",
     totalAmount: 0,
     huidNo: "",
     tagNo: "",
@@ -118,7 +123,24 @@ function calcRow(row) {
   const pureWeight = netWeight * (effectivePurity / 100);
   const metalAmount = pureWeight * rate;
   const totalAmount = metalAmount + stoneAmount + otherAmount + makingCharges + hallmarkCharges - discount;
-  return { ...row, netWeight, pureWeight, metalAmount, totalAmount };
+  return {
+    ...row,
+    grossWeight,
+    stoneWeight,
+    dustWeight,
+    deductionWeight,
+    touchPercentage,
+    rate,
+    makingCharges,
+    hallmarkCharges,
+    stoneAmount,
+    otherAmount,
+    discount,
+    netWeight,
+    pureWeight,
+    metalAmount,
+    totalAmount,
+  };
 }
 
 function normalizeList(value) {
@@ -165,6 +187,11 @@ function buildInitialForm(defaultValues) {
       paymentMode: "CASH",
       paidAmount: "",
       discount: "",
+      igst: "",
+      cgst: "",
+      sgst: "",
+      taxAmount: "",
+      roundOff: "",
       narration: "",
       document: null,
     };
@@ -187,6 +214,11 @@ function buildInitialForm(defaultValues) {
     paymentMode: defaultValues.paymentMode || "CASH",
     paidAmount: defaultValues.paidAmount ?? "",
     discount: defaultValues.discount ?? "",
+    igst: defaultValues.igst ?? "",
+    cgst: defaultValues.cgst ?? "",
+    sgst: defaultValues.sgst ?? "",
+    taxAmount: defaultValues.taxAmount ?? "",
+    roundOff: defaultValues.roundOff ?? "",
     narration: defaultValues.narration || "",
     document: null,
   };
@@ -213,7 +245,7 @@ function buildInitialItems(defaultValues) {
     pieces: toFieldValue(item.pieces ?? ""),
     grossWeight: toFieldValue(item.grossWeight),
     stoneWeight: toFieldValue(item.stoneWeight),
-    netWeight: item.netWeight ?? 0,
+    netWeight: 0,
     dustWeight: toFieldValue(item.dustWeight),
     deductionWeight: toFieldValue(item.deductionWeight),
     purity: toFieldValue(item.purity),
@@ -228,7 +260,12 @@ function buildInitialItems(defaultValues) {
     stoneAmount: toFieldValue(item.stoneAmount),
     otherAmount: toFieldValue(item.otherAmount),
     discount: toFieldValue(item.discount),
-    totalAmount: item.totalAmount ?? 0,
+    igst: toFieldValue(item.igst),
+    cgst: toFieldValue(item.cgst),
+    sgst: toFieldValue(item.sgst),
+    taxAmount: toFieldValue(item.taxAmount),
+    roundOff: toFieldValue(item.roundOff),
+    totalAmount: 0,
     huidNo: toFieldValue(item.huidNo),
     tagNo: toFieldValue(item.tagNo),
     barSerialNo: toFieldValue(item.barSerialNo),
@@ -260,7 +297,7 @@ async function hydrateRowOptions(row) {
   if (next.productId && next.itemId) {
     next.stones = normalizeList(await getStonesByProductAndItem(next.productId, next.itemId).catch(() => []));
   }
-  return next;
+  return calcRow(next);
 }
 
 export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }) {
@@ -374,7 +411,13 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
   const totalPure = items.reduce((s, r) => s + (r.pureWeight || 0), 0);
   const subTotal = items.reduce((s, r) => s + (r.totalAmount || 0), 0);
   const invoiceDiscount = parseFloat(form.discount) || 0;
-  const grandTotal = subTotal - invoiceDiscount;
+  const taxTotal =
+    (parseFloat(form.igst) || 0) +
+    (parseFloat(form.cgst) || 0) +
+    (parseFloat(form.sgst) || 0) +
+    (parseFloat(form.taxAmount) || 0) +
+    (parseFloat(form.roundOff) || 0);
+  const grandTotal = subTotal - invoiceDiscount + taxTotal;
   const visibleFields = fieldsForType(form.purchaseType);
   const selectCls = "h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
@@ -454,8 +497,14 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       customerPhone: form.customerPhone,
       customerIdType: form.customerIdType,
       customerIdNumber: form.customerIdNumber,
+      igst: form.igst,
+      cgst: form.cgst,
+      sgst: form.sgst,
+      taxAmount: form.taxAmount,
+      roundOff: form.roundOff,
       subtotal: subTotal,
       discount: invoiceDiscount,
+      taxTotal,
       totalAmount: grandTotal,
       paymentMode: form.paymentMode,
       paidAmount: parseFloat(form.paidAmount) || 0,
@@ -552,6 +601,26 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
                 placeholder="ID Number"
               />
               {errors.customerIdNumber ? <p className="text-xs text-red-500">{errors.customerIdNumber}</p> : null}
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">IGST</label>
+              <Input type="number" value={form.igst} onChange={(e) => updateForm("igst", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">CGST</label>
+              <Input type="number" value={form.cgst} onChange={(e) => updateForm("cgst", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">SGST</label>
+              <Input type="number" value={form.sgst} onChange={(e) => updateForm("sgst", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Tax Amount</label>
+              <Input type="number" value={form.taxAmount} onChange={(e) => updateForm("taxAmount", e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Round Off</label>
+              <Input type="number" value={form.roundOff} onChange={(e) => updateForm("roundOff", e.target.value)} />
             </div>
           </div>
 

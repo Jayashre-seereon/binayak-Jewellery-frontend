@@ -12,8 +12,7 @@ export default function ProductTable({ data, onEdit, onDelete }) {
         <thead className="bg-gray-50">
           <tr>
             <th className="p-3 text-left">SL No</th>
-            <th className="p-3 text-left">Product Code</th>
-            <th className="p-3 text-left">Image</th>
+            <th className="p-3 text-left">Reference Image</th>
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Metal</th>
@@ -26,7 +25,6 @@ export default function ProductTable({ data, onEdit, onDelete }) {
           {data.map((item, index) => (
             <tr key={item.id} className="border-t">
               <td className="p-3">{index + 1}</td>
-              <td className="p-3">{item.productCode || "-"}</td>
               <td className="p-3">
                 {item.image ? (
                   <img

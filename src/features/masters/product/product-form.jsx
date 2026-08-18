@@ -125,7 +125,7 @@ export default function ProductForm({
           </div>
 
           <div>
-            <label className="text-sm">Image</label>
+            <label className="text-sm">Reference Image</label>
             <Input type="file" accept="image/*" onChange={handleImageChange} />
           </div>
 

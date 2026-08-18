@@ -6,8 +6,6 @@ const getLabel = (value) => {
   if (typeof value === "object") {
     return (
       value.name ||
-      value.productCode ||
-      value.itemCode ||
       value.description ||
       value.id ||
       "-"
@@ -32,9 +30,8 @@ export default function ItemTable({ data, onEdit, onDelete }) {
         <thead className="bg-gray-50">
           <tr>
             <th className="p-3 text-left">ID</th>
-            <th className="p-3 text-left">Alias</th>
             <th className="p-3 text-left">Item Name</th>
-            <th className="p-3 text-left">Image</th>
+            <th className="p-3 text-left">Reference Image</th>
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Design</th>
             <th className="p-3 text-left">Actions</th>
@@ -45,7 +42,6 @@ export default function ItemTable({ data, onEdit, onDelete }) {
         {data.map((item, index) => (
             <tr key={item.id} className="border-t hover:bg-gray-50">
               <td className="p-3">{index + 1}</td>
-               <td className="p-3">{getLabel(item.alias || item.itemCode)}</td>
               <td className="p-3">{getLabel(item.name)}</td>
               <td className="p-3">
                 {getImageSrc(item) ? (

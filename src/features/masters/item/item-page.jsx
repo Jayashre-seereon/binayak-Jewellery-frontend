@@ -59,10 +59,10 @@ export default function ItemPage() {
     }
   };
 
- const filtered = [...items]
+  const filtered = [...items]
   .sort((a, b) => b.id - a.id) // latest first
   .filter((i) =>
-    `${i.name || ""} ${i.itemCode || ""} ${i.description || ""}`
+    `${i.name || ""} ${i.description || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
@@ -74,7 +74,6 @@ export default function ItemPage() {
 
   setDeleteName(
     item.name ||
-    item.itemCode ||
     item.alias ||
     `#${item.id}`
   );

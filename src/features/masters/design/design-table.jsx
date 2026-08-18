@@ -7,7 +7,7 @@ export default function DesignTable({ data, onEdit, onDelete }) {
       <thead  className="bg-gray-50">
         <tr>
           <th className="p-2 border">SL No</th>
-          <th className="p-2 border">Image</th>
+          <th className="p-2 border">Reference Image</th>
           <th className="p-2 border">Design Name</th>
           <th className="p-2 border">Description</th>
           <th className="p-2 border">Actions</th>

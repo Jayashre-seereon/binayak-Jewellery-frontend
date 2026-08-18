@@ -47,6 +47,13 @@ export default function Sidebar() {
         ]
     },
     {
+      name: "Inventory",
+      icon: Boxes,
+      children: [
+        { name: "Inventory", path: "inventory/inventory" },
+      ],
+    },
+    {
       name: "Barcoding",
       icon: Barcode,
       children:[
@@ -56,15 +63,7 @@ export default function Sidebar() {
         {name:"Branded Ornament",path:"barcoding/branded"}
       ]
     },
-    {
-      name: "Inventory",
-      icon: Boxes,
-      children: [
-        { name: "Stock Summary", path: "inventory/stock" },
-        { name: "Item Status", path: "inventory/itemstatus"},
-        { name: "Add Stock", path: "inventory/additem" },
-      ],
-    },
+    
     {
       name: "Stock Movement",
       icon: ArrowLeftRight,

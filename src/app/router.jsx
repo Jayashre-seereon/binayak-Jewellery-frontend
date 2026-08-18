@@ -99,7 +99,7 @@ export const router = createBrowserRouter([
       // inventory routes
       { path: "inventory/stock", element: <StockSummaryPage /> },
       { path: "inventory/itemstatus", element: <ItemStatusPage /> },
-      { path: "inventory/additem", element: <StockPage /> },
+      { path: "inventory/inventory", element: <StockPage /> },
       // counter transfer route will be added here
       { path: "stock/transfer", element: <TransferPage /> },
       // sales routes will be added here

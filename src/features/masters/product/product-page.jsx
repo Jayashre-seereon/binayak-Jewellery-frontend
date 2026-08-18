@@ -83,7 +83,7 @@ export default function ProductPage() {
   };
 
   const filteredData = products.filter((p) =>
-    `${p.name || ""} ${p.productCode || ""}`
+    `${p.name || ""}`
       .toLowerCase()
       .includes(search.toLowerCase())
   );
