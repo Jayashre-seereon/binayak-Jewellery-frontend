@@ -74,18 +74,18 @@ function createRow() {
     pieces: "",
     grossWeight: "",
     stoneWeight: "",
-    netWeight: 0,
+    netWeight: "",
     dustWeight: "",
     deductionWeight: "",
     purity: "",
     touchPercentage: "",
     fineness: "",
-    pureWeight: 0,
+    pureWeight: "",
     rate: "",
     makingCharges: "",
     wastagePercentage: "",
     hallmarkCharges: "",
-    metalAmount: 0,
+    metalAmount: "",
     stoneAmount: "",
     otherAmount: "",
     discount: "",
@@ -94,7 +94,7 @@ function createRow() {
     sgst: "",
     taxAmount: "",
     roundOff: "",
-    totalAmount: 0,
+    totalAmount: "",
     huidNo: "",
     barSerialNo: "",
     assayCertNo: "",
@@ -104,6 +104,20 @@ function createRow() {
 }
 
 function calcRow(row) {
+  const hasAnyInput =
+    row.grossWeight !== "" ||
+    row.stoneWeight !== "" ||
+    row.dustWeight !== "" ||
+    row.deductionWeight !== "" ||
+    row.purity !== "" ||
+    row.touchPercentage !== "" ||
+    row.rate !== "" ||
+    row.makingCharges !== "" ||
+    row.hallmarkCharges !== "" ||
+    row.stoneAmount !== "" ||
+    row.otherAmount !== "" ||
+    row.discount !== "";
+
   const grossWeight = parseFloat(row.grossWeight) || 0;
   const stoneWeight = parseFloat(row.stoneWeight) || 0;
   const dustWeight = parseFloat(row.dustWeight) || 0;
@@ -121,6 +135,28 @@ function calcRow(row) {
   const pureWeight = netWeight * (effectivePurity / 100);
   const metalAmount = pureWeight * rate;
   const totalAmount = metalAmount + stoneAmount + otherAmount + makingCharges + hallmarkCharges - discount;
+
+  if (!hasAnyInput) {
+    return {
+      ...row,
+      grossWeight: "",
+      stoneWeight: "",
+      dustWeight: "",
+      deductionWeight: "",
+      touchPercentage: "",
+      rate: "",
+      makingCharges: "",
+      hallmarkCharges: "",
+      stoneAmount: "",
+      otherAmount: "",
+      discount: "",
+      netWeight: "",
+      pureWeight: "",
+      metalAmount: "",
+      totalAmount: "",
+    };
+  }
+
   return {
     ...row,
     grossWeight,
