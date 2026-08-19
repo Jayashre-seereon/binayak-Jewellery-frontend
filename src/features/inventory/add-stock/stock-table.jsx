@@ -1,5 +1,16 @@
 import { PencilLine, Trash2 } from "lucide-react";
 
+const STATUS_OPTIONS = [
+  "AVAILABLE",
+  "RESERVED",
+  "SOLD",
+  "TRANSFERRED",
+  "RETURNED",
+  "MELTED",
+  "REFINED",
+  "DAMAGED",
+];
+
 const label = (value) => {
   if (!value) return "-";
   if (typeof value === "object") {
@@ -25,12 +36,15 @@ const formatPurchaseType = (value) => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-export default function StockTable({ data, onEdit, onDelete }) {
+export default function StockTable({
+  data,
+  onEdit,
+  onDelete,
+  onStatusChange,
+}) {
   return (
     <div className="overflow-hidden rounded border bg-white">
-
       <table className="w-full text-sm">
-
         <thead className="bg-gray-50">
           <tr>
             <th className="p-3 text-left">Inventory Code</th>
@@ -56,7 +70,20 @@ export default function StockTable({ data, onEdit, onDelete }) {
                 <td className="p-3">{getProductName(row)}</td>
                 <td className="p-3">{row.tagNo || "-"}</td>
                 <td className="p-3">{row.barcodeNo || "-"}</td>
-                <td className="p-3">{row.status || "-"}</td>
+                <td className="p-3">
+                  <select
+                    value={row.status || "AVAILABLE"}
+                    onChange={(e) => onStatusChange?.(row.id, e.target.value)}
+                    className="min-w-36 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
+                  >
+                    {!row.status ? <option value="AVAILABLE">AVAILABLE</option> : null}
+                    {STATUS_OPTIONS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </td>
                 <td className="p-3">
                   <div className="flex items-center justify-end gap-3">
                     <button
@@ -89,9 +116,7 @@ export default function StockTable({ data, onEdit, onDelete }) {
             </tr>
           )}
         </tbody>
-
       </table>
-
     </div>
   );
 }
