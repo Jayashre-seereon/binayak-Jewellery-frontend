@@ -44,10 +44,9 @@ const ITEM_FIELDS = [
   { key: "otherAmount", label: "Other Amt", kind: "number", step: "0.01" },
   { key: "discount", label: "Discount", kind: "number", step: "0.01" },
   { key: "totalAmount", label: "Total", kind: "calc", money: true },
-  { key: "huidNo", label: "HUID No.", kind: "text", types: ["ORNAMENT"] },
+  { key: "huidNo", label: "HUID No.", kind: "text" },
   { key: "barSerialNo", label: "Bar Serial", kind: "text", types: ["BULLION"] },
   { key: "assayCertNo", label: "Assay Cert", kind: "text", types: ["BULLION"] },
-  { key: "tagNo", label: "Tag No.", kind: "text" },
   { key: "itemPhoto", label: "Photo", kind: "file" },
   { key: "narration", label: "Narration", kind: "text" },
 ];
@@ -97,7 +96,6 @@ function createRow() {
     roundOff: "",
     totalAmount: 0,
     huidNo: "",
-    tagNo: "",
     barSerialNo: "",
     assayCertNo: "",
     narration: "",
@@ -161,6 +159,21 @@ function toId(value) {
 
 function toFieldValue(value) {
   return value === undefined || value === null ? "" : String(value);
+}
+
+function normalizeDecimalInput(value = "") {
+  const cleaned = String(value).replace(/[^\d.]/g, "");
+  if (!cleaned) return "";
+
+  const [wholePartRaw, ...fractionParts] = cleaned.split(".");
+  const wholePart = wholePartRaw.replace(/^0+(?=\d)/, "") || "0";
+
+  if (!fractionParts.length) {
+    return wholePart;
+  }
+
+  const fractionPart = fractionParts.join("").replace(/\./g, "");
+  return `${wholePart}.${fractionPart}`;
 }
 
 function pickNestedId(item, directKey, nestedKey) {
@@ -267,7 +280,6 @@ function buildInitialItems(defaultValues) {
     roundOff: toFieldValue(item.roundOff),
     totalAmount: 0,
     huidNo: toFieldValue(item.huidNo),
-    tagNo: toFieldValue(item.tagNo),
     barSerialNo: toFieldValue(item.barSerialNo),
     assayCertNo: toFieldValue(item.assayCertNo),
     narration: toFieldValue(item.narration),
@@ -445,12 +457,18 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     if (field.kind === "file") {
       return <Input type="file" onChange={(e) => updateItem(row.id, field.key, e.target.files?.[0] ?? null)} />;
     }
+    const handleNumberChange = (e) => {
+      updateItem(row.id, field.key, normalizeDecimalInput(e.target.value));
+    };
+    const inputType = field.kind === "number" ? "text" : "text";
     return (
       <Input
-        type={field.kind === "number" ? "number" : "text"}
+        type={inputType}
+        inputMode={field.kind === "number" ? "decimal" : undefined}
+        pattern={field.kind === "number" ? "[0-9]*[.]?[0-9]*" : undefined}
         step={field.step}
         value={row[field.key]}
-        onChange={(e) => updateItem(row.id, field.key, e.target.value)}
+        onChange={field.kind === "number" ? handleNumberChange : (e) => updateItem(row.id, field.key, e.target.value)}
       />
     );
   };
@@ -509,7 +527,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       paymentMode: form.paymentMode,
       paidAmount: parseFloat(form.paidAmount) || 0,
       narration: form.narration,
-      items: items.map(({ id, itemPhoto, products, items, purities, grades, stones, ...rest }) => rest),
+      items: items.map(({ id, itemPhoto, products, items, purities, grades, stones, tagNo, ...rest }) => rest),
     };
 
     const fd = new FormData();
@@ -683,8 +701,8 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <select className={selectCls} value={form.paymentMode} onChange={(e) => updateForm("paymentMode", e.target.value)}>
                 {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
               </select>
-              <Input type="number" placeholder="Paid Amount" value={form.paidAmount} onChange={(e) => updateForm("paidAmount", onlyDecimal(e.target.value))} />
-              <Input type="number" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", onlyDecimal(e.target.value))} />
+              <Input type="text" inputMode="decimal" placeholder="Paid Amount" value={form.paidAmount} onChange={(e) => updateForm("paidAmount", normalizeDecimalInput(e.target.value))} />
+              <Input type="text" inputMode="decimal" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", normalizeDecimalInput(e.target.value))} />
             </div>
             <Input placeholder="Narration" value={form.narration} onChange={(e) => updateForm("narration", e.target.value)} />
           </div>

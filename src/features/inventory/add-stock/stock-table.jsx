@@ -1,4 +1,4 @@
-import { PencilLine, Trash2 } from "lucide-react";
+import { PencilLine, Printer, Trash2 } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "AVAILABLE",
@@ -41,6 +41,7 @@ export default function StockTable({
   onEdit,
   onDelete,
   onStatusChange,
+  onPrintLabel,
 }) {
   return (
     <div className="overflow-hidden rounded border bg-white">
@@ -103,6 +104,15 @@ export default function StockTable({
                       title="Delete"
                     >
                       <Trash2 size={16} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onPrintLabel?.(row)}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-md text-emerald-600 transition hover:bg-emerald-50 hover:text-emerald-700"
+                      aria-label="Print inventory label"
+                      title="Print Label"
+                    >
+                      <Printer size={16} />
                     </button>
                   </div>
                 </td>

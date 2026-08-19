@@ -31,3 +31,11 @@ export const deleteStock = async (id) => {
   const res = await http.delete(`/api/inventories/delete/${id}`);
   return res.data;
 };
+
+export const getStockLabelPdf = async (id) => {
+  const res = await http.get(`/api/inventories/label/${id}`, {
+    responseType: "blob",
+  });
+
+  return res.data;
+};

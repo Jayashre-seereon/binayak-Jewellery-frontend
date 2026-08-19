@@ -53,7 +53,7 @@ const mapPurchaseItemToForm = (purchase, purchaseItem) => ({
   gradeId: purchaseItem?.gradeId ? String(purchaseItem.gradeId) : "",
   stoneId: purchaseItem?.stoneId ? String(purchaseItem.stoneId) : "",
   purchaseItemCode: purchaseItem?.purchaseItemCode || "",
-  inventoryCode: purchaseItem?.inventoryCode || "",
+  inventoryCode: "",
   grossWeight: purchaseItem?.grossWeight ?? "",
   stoneWeight: purchaseItem?.stoneWeight ?? "",
   netWeight: purchaseItem?.netWeight ?? "",
@@ -66,14 +66,9 @@ const mapPurchaseItemToForm = (purchase, purchaseItem) => ({
   touchPercentage: purchaseItem?.touchPercentage ?? "",
   fineness: purchaseItem?.fineness ?? "",
   huidNo: purchaseItem?.huidNo ?? "",
-  tagNo: purchaseItem?.tagNo ?? "",
-  barcodeNo:
-    purchaseItem?.barcodeNo ??
-    purchaseItem?.barcode ??
-    purchaseItem?.barCodeNo ??
-    purchaseItem?.barSerialNo ??
-    "",
-  barSerialNo: purchaseItem?.barSerialNo ?? purchaseItem?.barcodeNo ?? "",
+  tagNo: "",
+  barcodeNo: "",
+  barSerialNo: purchaseItem?.barSerialNo ?? "",
   assayCertNo: purchaseItem?.assayCertNo ?? "",
 });
 
@@ -111,11 +106,23 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
     );
   }, []);
 
-  const applyPurchaseItem = useCallback((purchase, purchaseItem, inventoryBarcode = "") => {
+  const applyPurchaseItem = useCallback((purchase, purchaseItem, inventoryValues = null) => {
     if (!purchaseItem) return;
     const mapped = mapPurchaseItemToForm(purchase, purchaseItem);
-    if (inventoryBarcode) {
-      mapped.barcodeNo = inventoryBarcode;
+    if (inventoryValues) {
+      mapped.inventoryCode = inventoryValues.inventoryCode ?? mapped.inventoryCode;
+      mapped.tagNo = inventoryValues.tagNo ?? mapped.tagNo;
+      mapped.barcodeNo =
+        inventoryValues.barcodeNo ??
+        inventoryValues.barcode ??
+        inventoryValues.barCodeNo ??
+        inventoryValues.barSerialNo ??
+        mapped.barcodeNo;
+      mapped.huidNo = inventoryValues.huidNo ?? mapped.huidNo;
+      mapped.purchaseItemCode =
+        inventoryValues.purchaseItem?.purchaseItemCode ??
+        inventoryValues.purchaseItemCode ??
+        mapped.purchaseItemCode;
     }
     Object.entries(mapped).forEach(([key, value]) => {
       setValue(key, value, { shouldDirty: true, shouldValidate: true });
@@ -189,7 +196,7 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
         const matchedItem =
           items.find((row) => String(row.id) === purchaseItemIdValue) || defaultValues.purchaseItem || null;
         if (matchedItem) {
-          applyPurchaseItem(defaultPurchase, matchedItem, resolveBarcode(defaultValues, matchedItem));
+          applyPurchaseItem(defaultPurchase, matchedItem, defaultValues);
         }
       });
       return;

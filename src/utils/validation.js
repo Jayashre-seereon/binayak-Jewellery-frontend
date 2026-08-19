@@ -17,7 +17,20 @@ export const validationMessages = {
 };
 
 export const onlyDigits = (value = "") => String(value).replace(/\D/g, "");
-export const onlyDecimal = (value = "") => String(value).replace(/[^\d.]/g, "");
+export const onlyDecimal = (value = "") => {
+  const cleaned = String(value).replace(/[^\d.]/g, "");
+  if (!cleaned) return "";
+
+  const [wholePartRaw, ...fractionParts] = cleaned.split(".");
+  const wholePart = wholePartRaw.replace(/^0+(?=\d)/, "") || "0";
+
+  if (!fractionParts.length) {
+    return wholePart;
+  }
+
+  const fractionPart = fractionParts.join("").replace(/\./g, "");
+  return `${wholePart}.${fractionPart}`;
+};
 export const onlyLetters = (value = "") => String(value).replace(/[^A-Za-z\s.]/g, "");
 export const onlyAlphaNumeric = (value = "") => String(value).replace(/[^A-Za-z0-9\s.-]/g, "");
 

@@ -11,6 +11,7 @@ import {
   deleteStock,
   getStock,
   getStockById,
+  getStockLabelPdf,
   updateStock,
   updateStockStatus,
 } from "./stock-api";
@@ -101,6 +102,17 @@ export default function StockPage() {
     }
   };
 
+  const handlePrintLabel = async (row) => {
+    try {
+      const pdfBlob = await getStockLabelPdf(row.id);
+      const pdfUrl = window.URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000);
+    } catch (error) {
+      notifyError(error, "Failed to generate inventory label.");
+    }
+  };
+
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
     return data.filter((item) =>
@@ -154,6 +166,7 @@ export default function StockPage() {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
+          onPrintLabel={handlePrintLabel}
         />
       )}
 
