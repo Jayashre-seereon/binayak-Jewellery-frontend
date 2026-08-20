@@ -1,16 +1,14 @@
 import { PencilLine, Printer, Trash2 } from "lucide-react";
 
-const STATUS_OPTIONS = [
-  "AVAILABLE",
-  "PENDING",
-  "RESERVED",
-  "SOLD",
-  "TRANSFERRED",
-  "RETURNED",
-  "MELTED",
-  "REFINED",
-  "DAMAGED",
-];
+const ALLOWED_NEXT_STATUSES = {
+  AVAILABLE: ["RESERVED", "SOLD", "MELTED", "REFINED", "DAMAGED"],
+  RESERVED: ["AVAILABLE", "SOLD"],
+  PENDING: [],
+  SOLD: [],
+  MELTED: [],
+  REFINED: [],
+  DAMAGED: [],
+};
 
 const label = (value) => {
   if (!value) return "-";
@@ -73,18 +71,36 @@ export default function StockTable({
                 <td className="p-3">{row.tagNo || "-"}</td>
                 <td className="p-3">{row.barcodeNo || "-"}</td>
                 <td className="p-3">
+                  {(() => {
+                    const currentStatus = row.status || "AVAILABLE";
+                    const allowedStatuses = ALLOWED_NEXT_STATUSES[currentStatus] || [];
+                    if (!allowedStatuses.length) {
+                      return (
+                        <select
+                          value={currentStatus}
+                          disabled
+                          className="min-w-36 rounded border border-gray-300 bg-gray-100 px-2 py-1 text-sm text-gray-700"
+                        >
+                          <option value={currentStatus}>{currentStatus}</option>
+                        </select>
+                      );
+                    }
+
+                    return (
                   <select
-                    value={row.status || ""}
+                    value={currentStatus}
                     onChange={(e) => onStatusChange?.(row.id, e.target.value)}
                     className="min-w-36 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
                   >
-                    {!row.status ? <option value="">Select status</option> : null}
-                    {STATUS_OPTIONS.map((status) => (
+                    <option value={currentStatus}>{currentStatus}</option>
+                    {allowedStatuses.map((status) => (
                       <option key={status} value={status}>
                         {status}
                       </option>
                     ))}
                   </select>
+                    );
+                  })()}
                 </td>
                 <td className="p-3">
                   <div className="flex items-center justify-end gap-3">
