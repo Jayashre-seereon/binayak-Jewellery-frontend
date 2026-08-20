@@ -2,6 +2,7 @@ import { PencilLine, Printer, Trash2 } from "lucide-react";
 
 const STATUS_OPTIONS = [
   "AVAILABLE",
+  "PENDING",
   "RESERVED",
   "SOLD",
   "TRANSFERRED",
@@ -73,11 +74,11 @@ export default function StockTable({
                 <td className="p-3">{row.barcodeNo || "-"}</td>
                 <td className="p-3">
                   <select
-                    value={row.status || "AVAILABLE"}
+                    value={row.status || ""}
                     onChange={(e) => onStatusChange?.(row.id, e.target.value)}
                     className="min-w-36 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
                   >
-                    {!row.status ? <option value="AVAILABLE">AVAILABLE</option> : null}
+                    {!row.status ? <option value="">Select status</option> : null}
                     {STATUS_OPTIONS.map((status) => (
                       <option key={status} value={status}>
                         {status}

@@ -53,16 +53,16 @@ export default function Sidebar() {
         { name: "Inventory", path: "inventory/inventory" },
       ],
     },
-    {
-      name: "Barcoding",
-      icon: Barcode,
-      children:[
-        {name:"Gold Ornament",path:"barcoding/gold"},
-        {name:"Dimond Ornament",path:"barcoding/diamond"},
-        {name:"MRP Barcoding",path:"barcoding/mrp"},
-        {name:"Branded Ornament",path:"barcoding/branded"}
-      ]
-    },
+    // {
+    //   name: "Barcoding",
+    //   icon: Barcode,
+    //   children:[
+    //     {name:"Gold Ornament",path:"barcoding/gold"},
+    //     {name:"Dimond Ornament",path:"barcoding/diamond"},
+    //     {name:"MRP Barcoding",path:"barcoding/mrp"},
+    //     {name:"Branded Ornament",path:"barcoding/branded"}
+    //   ]
+    // },
     
     {
       name: "Stock Movement",
