@@ -5,9 +5,9 @@ const ALLOWED_NEXT_STATUSES = {
   RESERVED: ["AVAILABLE", "SOLD"],
   PENDING: [],
   SOLD: [],
-  MELTED: [],
-  REFINED: [],
-  DAMAGED: [],
+  MELTED: ["AVAILABLE"],
+  REFINED: ["AVAILABLE"],
+  DAMAGED: ["AVAILABLE"],
 };
 
 const label = (value) => {
