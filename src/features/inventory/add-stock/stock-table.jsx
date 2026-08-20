@@ -70,38 +70,50 @@ export default function StockTable({
                 <td className="p-3">{getProductName(row)}</td>
                 <td className="p-3">{row.tagNo || "-"}</td>
                 <td className="p-3">{row.barcodeNo || "-"}</td>
-                <td className="p-3">
-                  {(() => {
-                    const currentStatus = row.status || "AVAILABLE";
-                    const allowedStatuses = ALLOWED_NEXT_STATUSES[currentStatus] || [];
-                    if (!allowedStatuses.length) {
-                      return (
-                        <select
-                          value={currentStatus}
-                          disabled
-                          className="min-w-36 rounded border border-gray-300 bg-gray-100 px-2 py-1 text-sm text-gray-700"
-                        >
-                          <option value={currentStatus}>{currentStatus}</option>
-                        </select>
-                      );
-                    }
+               <td className="p-3">
+  {(() => {
+    const currentStatus = row.status || "AVAILABLE";
 
-                    return (
-                  <select
-                    value={currentStatus}
-                    onChange={(e) => onStatusChange?.(row.id, e.target.value)}
-                    className="min-w-36 rounded border border-gray-300 bg-white px-2 py-1 text-sm"
-                  >
-                    <option value={currentStatus}>{currentStatus}</option>
-                    {allowedStatuses.map((status) => (
-                      <option key={status} value={status}>
-                        {status}
-                      </option>
-                    ))}
-                  </select>
-                    );
-                  })()}
-                </td>
+    const allowedStatuses =
+      ALLOWED_NEXT_STATUSES[currentStatus] || [];
+
+    const STATUS_COLORS = {
+      AVAILABLE: "border-green-300 bg-green-50 text-green-700",
+      RESERVED: "border-yellow-300 bg-yellow-50 text-yellow-700",
+      PENDING: "border-orange-300 bg-orange-50 text-orange-700",
+      SOLD: "border-red-300 bg-red-50 text-red-700",
+      MELTED: "border-purple-300 bg-purple-50 text-purple-700",
+      REFINED: "border-blue-300 bg-blue-50 text-blue-700",
+      DAMAGED: "border-gray-300 bg-gray-100 text-gray-700",
+    };
+
+    const statusColor =
+      STATUS_COLORS[currentStatus] ||
+      "border-gray-300 bg-white text-gray-700";
+
+    return (
+      <select
+        value={currentStatus}
+        onChange={(e) =>
+          onStatusChange?.(row.id, e.target.value)
+        }
+        className={`min-w-36 rounded-md border px-3 py-1.5 text-sm font-medium outline-none ${statusColor}`}
+      >
+        {/* Current status */}
+        <option value={currentStatus}>
+          {currentStatus}
+        </option>
+
+        {/* Only allowed next statuses */}
+        {allowedStatuses.map((status) => (
+          <option key={status} value={status}>
+            {status}
+          </option>
+        ))}
+      </select>
+    );
+  })()}
+</td>
                 <td className="p-3">
                   <div className="flex items-center justify-end gap-3">
                     <button

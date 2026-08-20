@@ -204,7 +204,7 @@ export default function TransferForm({ open, setOpen, onSave, defaultValues }) {
                       <Row label="Product" value={inventory.product?.name} />
                       <Row label="Item" value={inventory.item?.name} />
                       <Row label="Metal" value={inventory.metal?.name} />
-                      <Row label="Net Weight" value={inventory.netWeight} />
+                      <Row label="Weight" value={inventory.netWeight} />
                       <Row label="Purity" value={inventory.purity} />
                     </div>
                   </div>
