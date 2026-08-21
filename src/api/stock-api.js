@@ -39,3 +39,12 @@ export const getStockLabelPdf = async (id) => {
 
   return res.data;
 };
+
+export const getStockLabelsBulkPdf = async (ids) => {
+  const res = await http.post(
+    "/api/inventories/labels/bulk",
+    { ids },
+    { responseType: "blob" }
+  );
+  return res.data;
+};

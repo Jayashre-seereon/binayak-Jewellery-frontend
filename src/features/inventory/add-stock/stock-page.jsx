@@ -14,7 +14,8 @@ import {
   getStockLabelPdf,
   updateStock,
   updateStockStatus,
-} from "./stock-api";
+  getStockLabelsBulkPdf
+} from "../../../api/stock-api";
 import { getPurchases } from "@/api/purchase-api";
 
 export default function StockPage() {
@@ -26,7 +27,7 @@ export default function StockPage() {
   const [search, setSearch] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
-
+  const [selectedIds, setSelectedIds] = useState([]);
   const loadData = async () => {
     setLoading(true);
     try {
@@ -113,6 +114,29 @@ export default function StockPage() {
     }
   };
 
+const handleToggleSelect = (id) => {
+  setSelectedIds((prev) =>
+    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+  );
+};
+
+const handleToggleSelectAll = (checked) => {
+  setSelectedIds(checked ? filteredData.map((row) => row.id) : []);
+};
+const handleBulkPrintLabels = async () => {
+  if (!selectedIds.length) {
+    notifyError(null, "Select at least one inventory item first.");
+    return;
+  }
+  try {
+    const pdfBlob = await getStockLabelsBulkPdf(selectedIds);
+    const pdfUrl = window.URL.createObjectURL(pdfBlob);
+    window.open(pdfUrl, "_blank", "noopener,noreferrer");
+    setTimeout(() => window.URL.revokeObjectURL(pdfUrl), 10000);
+  } catch (error) {
+    notifyError(error, "Failed to generate bulk inventory labels.");
+  }
+};
   const filteredData = useMemo(() => {
     const q = search.toLowerCase();
     return data.filter((item) =>
@@ -139,14 +163,24 @@ export default function StockPage() {
           <h1 className="text-2xl font-semibold">Inventory</h1>
          
         </div>
-        <Button
-          onClick={() => {
-            setEditData(null);
-            setOpen(true);
-          }}
-        >
-          Add Inventory
-        </Button>
+       <div className="flex gap-2">
+  <Button
+    variant="outline"
+    onClick={handleBulkPrintLabels}
+    disabled={!selectedIds.length}
+  >
+    Print Barcode ({selectedIds.length})
+  </Button>
+  <Button
+    onClick={() => {
+      setEditData(null);
+      setOpen(true);
+    }}
+  >
+    Add Inventory
+  </Button>
+</div>
+        
       </div>
 
       <div className="mb-3 flex justify-between">
@@ -162,12 +196,15 @@ export default function StockPage() {
         <p className="text-sm text-gray-500">Loading inventory...</p>
       ) : (
         <StockTable
-          data={filteredData}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onStatusChange={handleStatusChange}
-          onPrintLabel={handlePrintLabel}
-        />
+  data={filteredData}
+  onEdit={handleEdit}
+  onDelete={handleDelete}
+  onStatusChange={handleStatusChange}
+  onPrintLabel={handlePrintLabel}
+  selectedIds={selectedIds}
+  onToggleSelect={handleToggleSelect}
+  onToggleSelectAll={handleToggleSelectAll}
+/>
       )}
 
       <StockForm
