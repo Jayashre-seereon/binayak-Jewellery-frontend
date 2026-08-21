@@ -9,16 +9,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect } from "react";
-
+import { makePhoneRules } from "@/utils/validation";
 export default function AdvanceForm({
   open,
   setOpen,
   onSave,
   defaultValues,
 }) {
-  const { register, handleSubmit, reset } = useForm({
-    defaultValues,
-  });
+ const {
+  register,
+  handleSubmit,
+  reset,
+  formState: { errors },
+} = useForm({
+  defaultValues,
+});
 
   useEffect(() => {
     reset(defaultValues);
@@ -43,15 +48,27 @@ export default function AdvanceForm({
           {/* Customer */}
           <div>
             <label className="text-xs">Customer Name *</label>
-            <Input {...register("customer")} className="mt-1" />
-          </div>
+           <Input {...register("customerName")} className="mt-1" /></div>
 
           {/* Contact */}
-          <div>
-            <label className="text-xs">Contact Number</label>
-            <Input {...register("contact")} className="mt-1" />
-          </div>
+        <div>
+  <label className="text-xs">Contact Number</label>
 
+  <Input
+    {...register(
+      "contactNumber",
+      makePhoneRules("Contact Number")
+    )}
+    className="mt-1"
+    maxLength={10}
+  />
+
+  {errors.contactNumber && (
+    <p className="mt-1 text-xs text-red-500">
+      {errors.contactNumber.message}
+    </p>
+  )}
+</div>
           {/* Address */}
           <div className="col-span-2">
             <label className="text-xs">Address</label>
@@ -68,12 +85,12 @@ export default function AdvanceForm({
           <div>
             <label className="text-xs">Payment Mode</label>
             <select
-              {...register("paymentMode")}
-              className="w-full border h-10 rounded mt-1 px-2"
-            >
-              <option value="Cash">Cash</option>
-              <option value="Online">Online</option>
-            </select>
+  {...register("paymentMode")}
+  className="w-full border h-10 rounded mt-1 px-2"
+>
+  <option value="CASH">Cash</option>
+  <option value="ONLINE">Online</option>
+</select>
           </div>
 
           {/* Specification */}
