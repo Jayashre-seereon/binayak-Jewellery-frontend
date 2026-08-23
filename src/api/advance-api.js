@@ -13,6 +13,14 @@ export const getAdvanceById = async (id) => {
   return res.data?.data ?? null;
 };
 
+export const getAdvancesByContact = async (contactNumber) => {
+  const res = await http.get("/api/advance-receives/by-contact", {
+    params: { contactNumber },
+  });
+
+  return res.data?.data ?? [];
+};
+
 export const addAdvance = async (data) => {
   const payload = {
     customerName: data.customerName,
