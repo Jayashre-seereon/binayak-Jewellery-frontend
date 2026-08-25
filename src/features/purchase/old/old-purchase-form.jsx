@@ -806,10 +806,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <input type="checkbox" className="h-4 w-4 rounded border-input" checked={form.isRCM} onChange={(e) => updateForm("isRCM", e.target.checked)} />
-            <span className="text-xs text-muted-foreground">Reverse Charge (RCM)</span>
-          </div>
+         
         </div>
 
         <div className="border rounded-lg mt-2">

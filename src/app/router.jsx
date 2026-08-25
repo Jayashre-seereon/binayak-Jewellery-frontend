@@ -103,7 +103,7 @@ export const router = createBrowserRouter([
       // counter transfer route will be added here
       { path: "stock/transfer", element: <TransferPage /> },
       // sales routes will be added here
-      { path: "sales/estimate", element: <SalesPage /> },
+      { path: "sales", element: <SalesPage /> },
       // advance routes will be added here
       { path: "advance/recieve", element: <AdvancePage /> },
       // accounts routes will be added here

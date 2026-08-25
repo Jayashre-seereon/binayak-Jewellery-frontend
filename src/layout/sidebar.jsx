@@ -76,9 +76,9 @@ export default function Sidebar() {
       name: "Sales",
       icon: ShoppingBag,
       children:[
-        {name:"Sales Estimate", path:"sales/estimate"},
-        {name:"Sales Invoice", path:"sales/invoice"},
-      ]
+        {name:"Sales", path:"sales"},
+      //   {name:"Sales Invoice", path:"sales/invoice"},
+       ]
     },
     {
       name: "Advance ",

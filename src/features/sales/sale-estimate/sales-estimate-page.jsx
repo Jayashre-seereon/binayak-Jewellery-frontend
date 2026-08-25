@@ -1,76 +1,82 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import {
+  Plus,
+  Trash2,
+  ScanBarcode,
+  Search,
+  Printer,
+  Download,
+  Eye,
+  ShoppingBag,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  HelpCircle,
+  Clock,
+  History,
+  UserCheck,
+  Coins,
+  Receipt,
+  Wallet,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  Layers,
+  ArrowRight,
+  RotateCcw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { notifyError, notifySuccess } from "@/utils/notify";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuthStore } from "@/store/authStore";
+import { notifySuccess, notifyError } from "@/utils/notify";
+import { numberToWordsIndian } from "@/utils/numberToWords";
+import {
+  getSales,
+  getSalePdf,
+  createSale,
+} from "./sale-estimate-api";
 import { getParties } from "@/api/party-api";
 import { getStock } from "@/api/stock-api";
-import { getRates } from "@/api/rate-api";
-import { createSale, getSalePdf, getSales } from "./sale-estimate-api";
-import { Download, Eye, Plus, Trash2, ScanBarcode, Printer, Search, CheckCircle2, AlertCircle, ShoppingBag } from "lucide-react";
+import { lookupCustomerByPhone } from "@/api/customer-api";
 import SalesInvoicePreviewModal from "./sales-invoice-preview-modal";
 
-const PAYMENT_MODES = ["CASH", "ONLINE", "CARD", "UPI", "CHEQUE", "OTHER"];
-const PAYMENT_CHANNELS = ["PhonePe", "GooglePay", "PayTM", "UPI", "Debit Card", "Credit Card", "Cash", "Net Banking", "Cheque", "Other"];
+const roundMoney = (val) =>
+  Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
 
-// Validation Patterns
-const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
-const PHONE_REGEX = /^[6-9]\d{9}$/;
-
-const roundMoney = (val) => Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
-const money = (val) => Number(val || 0).toFixed(2);
+const money = (val) => roundMoney(val).toFixed(2);
 const weightStr = (val) => Number(val || 0).toFixed(3);
 
-const numberToWordsClient = (amount) => {
-  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-  const num = Math.round(Number(amount || 0) * 100) / 100;
-  if (isNaN(num) || num <= 0) return "Zero Rupees Only.";
+const PAYMENT_MODES = [
+  { label: "Cash", value: "CASH" },
+  { label: "Online / UPI", value: "ONLINE" },
+  { label: "Card", value: "CARD" },
+  { label: "Cheque", value: "CHEQUE" },
+  { label: "Other", value: "OTHER" },
+];
 
-  const integerPart = Math.floor(num);
-  const paisePart = Math.round((num - integerPart) * 100);
+const PAYMENT_CHANNELS = [
+  "PhonePe",
+  "Google Pay",
+  "Paytm",
+  "Bank Transfer (NEFT/RTGS)",
+  "HDFC POS",
+  "SBI POS",
+  "ICICI QR",
+  "Cash Drawer",
+  "Other",
+];
 
-  const convertTwoDigits = (n) => {
-    if (n === 0) return "";
-    if (n < 20) return ones[n];
-    return `${tens[Math.floor(n / 10)]}${n % 10 > 0 ? " " + ones[n % 10] : ""}`.trim();
-  };
-
-  const convertThreeDigits = (n) => {
-    const hundred = Math.floor(n / 100);
-    const rem = n % 100;
-    let s = hundred > 0 ? `${ones[hundred]} Hundred` : "";
-    if (rem > 0) s += (s ? " and " : "") + convertTwoDigits(rem);
-    return s.trim();
-  };
-
-  let remaining = integerPart;
-  const crore = Math.floor(remaining / 10000000);
-  remaining %= 10000000;
-  const lakh = Math.floor(remaining / 100000);
-  remaining %= 100000;
-  const thousand = Math.floor(remaining / 1000);
-  remaining %= 1000;
-  const hundred = remaining;
-
-  const parts = [];
-  if (crore > 0) parts.push(`${convertTwoDigits(crore)} Crore`);
-  if (lakh > 0) parts.push(`${convertTwoDigits(lakh)} Lakh`);
-  if (thousand > 0) parts.push(`${convertTwoDigits(thousand)} Thousand`);
-  if (hundred > 0) parts.push(convertThreeDigits(hundred));
-
-  let words = parts.join(" ").trim() || "Zero";
-  words += " Rupees";
-  if (paisePart > 0) words += ` and ${convertTwoDigits(paisePart)} Paise`;
-  return words + " Only.";
-};
-
-const emptyPayment = (defaultAmount = 0) => ({
+const emptyPayment = (amount = 0) => ({
   paymentMode: "ONLINE",
   paymentChannel: "PhonePe",
-  amount: defaultAmount,
+  amount: amount || "",
   transactionId: "",
   referenceNo: "",
   description: "UPI/QR CODE RECEIPT",
@@ -81,6 +87,7 @@ const emptyPayment = (defaultAmount = 0) => ({
 const initialState = () => ({
   saleDate: new Date().toISOString().slice(0, 10),
   partyId: "",
+  customerId: null,
   customerName: "",
   customerPhone: "",
   customerAddress: "",
@@ -112,7 +119,6 @@ export default function SalesPage() {
   const [sales, setSales] = useState([]);
   const [parties, setParties] = useState([]);
   const [inventories, setInventories] = useState([]);
-  const [rateMasters, setRateMasters] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -124,16 +130,33 @@ export default function SalesPage() {
   const [previewSale, setPreviewSale] = useState(null);
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  // Customer lookup & adjustment states
+  const [customerLookupLoading, setCustomerLookupLoading] = useState(false);
+  const [customerFound, setCustomerFound] = useState(null); // customer object or null
+  const [availableAdvances, setAvailableAdvances] = useState([]);
+  const [availableOldJewellery, setAvailableOldJewellery] = useState([]);
+  const [allAdvancesHistory, setAllAdvancesHistory] = useState([]);
+  const [allOldJewelleryHistory, setAllOldJewelleryHistory] = useState([]);
+  const [adjustmentLogsHistory, setAdjustmentLogsHistory] = useState([]);
+  const [pastSalesHistory, setPastSalesHistory] = useState([]);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyActiveTab, setHistoryActiveTab] = useState("logs"); // "logs" | "advances" | "oldGold" | "sales"
+
+  // Selected adjustments state:
+  // advances: { [id]: { isSelected: boolean, adjustedAmount: number|string } }
+  // oldGold: { [id]: { isSelected: boolean, adjustedAmount: number|string } }
+  const [advanceAdjustmentsState, setAdvanceAdjustmentsState] = useState({});
+  const [oldGoldAdjustmentsState, setOldGoldAdjustmentsState] = useState({});
+
   const barcodeInputRef = useRef(null);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [saleData, partyData, stockData, rateData] = await Promise.all([
+      const [saleData, partyData, stockData] = await Promise.all([
         getSales().catch(() => []),
         getParties(storeId).catch(() => []),
         getStock().catch(() => []),
-        getRates ? getRates().catch(() => []) : Promise.resolve([]),
       ]);
 
       setSales(Array.isArray(saleData) ? saleData : []);
@@ -147,13 +170,6 @@ export default function SalesPage() {
               : []
       );
       setInventories(Array.isArray(stockData) ? stockData : []);
-      setRateMasters(
-        Array.isArray(rateData?.rates)
-          ? rateData.rates
-          : Array.isArray(rateData)
-            ? rateData
-            : []
-      );
     } catch (error) {
       notifyError(error, "Failed to load sales data.");
     } finally {
@@ -169,6 +185,86 @@ export default function SalesPage() {
     () => inventories.filter((inv) => inv.status === "AVAILABLE"),
     [inventories]
   );
+
+  // Phone Lookup trigger with Debounce
+  const handlePhoneLookup = async (phone) => {
+    const cleanPhone = String(phone || "").trim().replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setCustomerFound(null);
+      setAvailableAdvances([]);
+      setAvailableOldJewellery([]);
+      setAdvanceAdjustmentsState({});
+      setOldGoldAdjustmentsState({});
+      return;
+    }
+
+    try {
+      setCustomerLookupLoading(true);
+      const res = await lookupCustomerByPhone(cleanPhone, storeId);
+
+      if (res?.success) {
+        const cust = res.customer;
+        const hasRecords =
+          res.exists ||
+          Boolean(cust?.id) ||
+          (res.availableAdvances && res.availableAdvances.length > 0) ||
+          (res.availableOldJewellery && res.availableOldJewellery.length > 0);
+
+        if (hasRecords) {
+          setCustomerFound(cust || { id: cust?.id || "", name: state.customerName, phone: cleanPhone });
+          setState((prev) => ({
+            ...prev,
+            customerId: cust?.id || prev.customerId || null,
+            customerName: prev.partyId && prev.customerName ? prev.customerName : (cust?.name || prev.customerName || ""),
+            customerAddress: prev.customerAddress || cust?.address || "",
+            customerCity: prev.customerCity || cust?.city || "Bhubaneswar - 766001",
+            customerPan: prev.customerPan || cust?.pan || "",
+            customerGst: prev.customerGst || cust?.gst || "",
+            customerState: cust?.state || prev.customerState || "ODISHA",
+            placeOfSupply: cust?.state || prev.placeOfSupply || "ODISHA",
+          }));
+        } else {
+          setCustomerFound(null);
+        }
+
+        const avAdv = res.availableAdvances || [];
+        const avOj = res.availableOldJewellery || [];
+        setAvailableAdvances(avAdv);
+        setAvailableOldJewellery(avOj);
+        setAllAdvancesHistory(res.allAdvances || []);
+        setAllOldJewelleryHistory(res.allOldJewellery || []);
+        setAdjustmentLogsHistory(res.adjustmentLogs || []);
+        setPastSalesHistory(res.pastSales || []);
+
+        // Initialize adjustment selections
+        const initAdvState = {};
+        avAdv.forEach((a) => {
+          initAdvState[a.id] = { isSelected: false, adjustedAmount: a.balanceAmount };
+        });
+        setAdvanceAdjustmentsState(initAdvState);
+
+        const initOjState = {};
+        avOj.forEach((oj) => {
+          initOjState[oj.id] = { isSelected: false, adjustedAmount: oj.balanceAmount };
+        });
+        setOldGoldAdjustmentsState(initOjState);
+      }
+    } catch (err) {
+      console.error("Customer lookup failed:", err);
+    } finally {
+      setCustomerLookupLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const phone = String(state.customerPhone || "").trim().replace(/\D/g, "");
+    if (phone.length === 10) {
+      const timer = setTimeout(() => {
+        handlePhoneLookup(phone);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [state.customerPhone, storeId]);
 
   const handlePartyChange = (pId) => {
     setValidationErrors((prev) => ({ ...prev, customerName: null, customerPhone: null }));
@@ -191,6 +287,9 @@ export default function SalesPage() {
         customerState: party.state || prev.customerState,
         placeOfSupply: party.state || prev.placeOfSupply,
       }));
+      if (party.phone && String(party.phone).replace(/\D/g, "").length === 10) {
+        handlePhoneLookup(party.phone);
+      }
     }
   };
 
@@ -201,122 +300,150 @@ export default function SalesPage() {
     }
   };
 
-  // ADD ITEM FROM INVENTORY OBJECT
+  const openCreateModal = () => {
+    setState(initialState());
+    setCustomerFound(null);
+    setAvailableAdvances([]);
+    setAvailableOldJewellery([]);
+    setAdvanceAdjustmentsState({});
+    setOldGoldAdjustmentsState({});
+    setValidationErrors({});
+    setOpen(true);
+    setTimeout(() => {
+      barcodeInputRef.current?.focus();
+    }, 150);
+  };
+
+  /*
+  ========================================
+  ITEM SELECTION & CALCULATIONS
+  ========================================
+  */
   const addInventoryItem = (inv) => {
     if (!inv) return;
-    const isAlreadyAdded = state.items.some((it) => String(it.inventoryId) === String(inv.id));
-    if (isAlreadyAdded) {
-      notifyError(null, `Item ${inv.barcodeNo || inv.inventoryCode} is already added in the table.`);
+
+    const alreadyAdded = state.items.some(
+      (it) => Number(it.inventoryId) === Number(inv.id)
+    );
+    if (alreadyAdded) {
+      notifyError(null, `Item "${inv.barcodeNo || inv.inventoryCode}" is already added to this invoice.`);
       return;
     }
 
-    let defaultRate = 0;
-    if (rateMasters.length && inv.purityId) {
-      const matchRate = rateMasters.find((rm) => String(rm.purityId) === String(inv.purityId));
-      if (matchRate) defaultRate = matchRate.saleRate || 0;
-    }
+    const grossWeight = Number(inv.grossWeight || 0);
+    const stoneWeight = Number(inv.stoneWeight || 0);
+    const netWeight = Number(inv.netWeight || Math.max(0, grossWeight - stoneWeight));
+    const rate = Number(inv.rate || inv.purityMaster?.baseRate || 0);
+    const metalAmount = roundMoney(netWeight * rate);
 
-    const grossWt = Number(inv.grossWeight || 0);
-    const stoneWt = Number(inv.stoneWeight || 0);
-    const netWt = Number(inv.netWeight || Math.max(0, grossWt - stoneWt));
-    const metalAmt = roundMoney(netWt * defaultRate);
+    const makingChargeType = "PERCENT";
+    const makingChargeRate = Number(inv.makingCharges || inv.item?.makingCharges || 10);
+    const makingCharges = roundMoney((metalAmount * makingChargeRate) / 100);
 
-    const newLine = {
+    const stoneAmount = roundMoney(Number(inv.stoneAmount || 0));
+    const otherCharges = roundMoney(Number(inv.otherCharges || 0));
+    const discount = 0;
+
+    const totalAmount = roundMoney(
+      metalAmount + makingCharges + stoneAmount + otherCharges - discount
+    );
+
+    const newItem = {
       inventoryId: inv.id,
-      particulars: (inv.item?.name || inv.product?.name || "Jewellery Item").toUpperCase(),
+      particulars: inv.item?.name || inv.product?.name || "Jewellery Item",
       itemCode: inv.barcodeNo || inv.tagNo || inv.inventoryCode || "",
-      huidNo: inv.huidNo || inv.purchaseItem?.huidNo || "",
-      hsnCode: inv.hsnCode || inv.purchaseItem?.hsnCode || "711319",
-      purityName: inv.purityMaster?.name || (inv.purity ? `${inv.purity}K` : "22K"),
-      pieces: Math.max(1, Number(inv.pieces || inv.purchaseItem?.pieces || 1)),
-      grossWeight: grossWt,
-      stoneWeight: stoneWt,
-      netWeight: netWt,
-      purity: inv.purity ?? "",
-      rate: defaultRate,
-      metalAmount: metalAmt,
-      makingChargeType: "PERCENT",
-      makingChargeRate: 0,
-      makingCharges: 0,
-      stoneAmount: Number(inv.purchaseItem?.stoneAmount || 0),
-      otherCharges: Number(inv.purchaseItem?.otherAmount || 0),
-      discount: 0,
-      totalAmount: roundMoney(metalAmt + Number(inv.purchaseItem?.stoneAmount || 0) + Number(inv.purchaseItem?.otherAmount || 0)),
+      huidNo: inv.huidNo || "",
+      hsnCode: inv.hsnCode || "711319",
+      purityName:
+        inv.purityMaster?.name ||
+        (inv.purity ? `${inv.purity}K` : "22K"),
+      pieces: inv.pieces || 1,
+      grossWeight,
+      stoneWeight,
+      netWeight,
+      purity: inv.purity || 22,
+      rate,
+      metalAmount,
+      makingChargeType,
+      makingChargeRate,
+      makingCharges,
+      stoneAmount,
+      otherCharges,
+      discount,
+      totalAmount,
     };
 
     setState((prev) => ({
       ...prev,
-      items: [...prev.items, newLine],
+      items: [newItem, ...prev.items],
     }));
-    notifySuccess(`Added: ${newLine.particulars} (${newLine.itemCode})`);
+
+    setBarcodeInput("");
   };
 
-  // BARCODE SCAN HANDLER
   const handleBarcodeScan = (e) => {
     if (e.key === "Enter" || e.type === "click") {
       e.preventDefault();
       const code = barcodeInput.trim();
       if (!code) return;
 
-      const found = availableInventories.find(
+      const found = inventories.find(
         (inv) =>
-          String(inv.barcodeNo || "").toLowerCase() === code.toLowerCase() ||
-          String(inv.tagNo || "").toLowerCase() === code.toLowerCase() ||
-          String(inv.inventoryCode || "").toLowerCase() === code.toLowerCase()
+          inv.status === "AVAILABLE" &&
+          ((inv.barcodeNo && inv.barcodeNo.toLowerCase() === code.toLowerCase()) ||
+            (inv.tagNo && inv.tagNo.toLowerCase() === code.toLowerCase()) ||
+            (inv.inventoryCode && inv.inventoryCode.toLowerCase() === code.toLowerCase()))
       );
 
       if (found) {
         addInventoryItem(found);
-        setBarcodeInput("");
       } else {
-        notifyError(null, `No available stock item found matching barcode "${code}".`);
+        notifyError(null, `No available inventory found matching barcode/code "${code}".`);
       }
     }
   };
 
-  // UPDATE LINE ITEM & LIVE ROW RECALCULATION
-  const updateItem = (index, field, value) => {
+  const handleItemChange = (index, field, value) => {
     setState((prev) => {
-      const items = [...prev.items];
-      const row = { ...items[index], [field]: value };
+      const updated = [...prev.items];
+      const it = { ...updated[index], [field]: value };
 
-      const grossWt = Math.max(0, Number(row.grossWeight || 0));
-      const stoneWt = Math.max(0, Number(row.stoneWeight || 0));
-      let netWt = Number(row.netWeight || 0);
+      const grossWeight = Number(it.grossWeight || 0);
+      const stoneWeight = Number(it.stoneWeight || 0);
+      let netWeight = Number(it.netWeight || 0);
 
       if (field === "grossWeight" || field === "stoneWeight") {
-        netWt = Math.max(0, roundMoney(grossWt - stoneWt));
-        row.netWeight = netWt;
+        netWeight = Math.max(0, grossWeight - stoneWeight);
+        it.netWeight = netWeight;
       }
 
-      const rate = Math.max(0, Number(row.rate || 0));
-      const metalAmt = roundMoney(netWt * rate);
-      row.metalAmount = metalAmt;
+      const rate = Number(it.rate || 0);
+      const metalAmount = roundMoney(netWeight * rate);
+      it.metalAmount = metalAmount;
 
-      const mType = row.makingChargeType || "PERCENT";
-      const mRate = Math.max(0, Number(row.makingChargeRate || 0));
-      let makingAmt = 0;
+      const makingChargeType = it.makingChargeType || "PERCENT";
+      const makingChargeRate = Number(it.makingChargeRate || 0);
 
-      if (field === "makingCharges" && mType === "FLAT") {
-        makingAmt = roundMoney(Math.max(0, Number(value || 0)));
-        row.makingCharges = makingAmt;
-      } else if (mType === "PERCENT") {
-        makingAmt = roundMoney((metalAmt * mRate) / 100);
-        row.makingCharges = makingAmt;
-      } else if (mType === "PER_GRAM") {
-        makingAmt = roundMoney(netWt * mRate);
-        row.makingCharges = makingAmt;
+      let makingCharges = 0;
+      if (makingChargeType === "PERCENT") {
+        makingCharges = roundMoney((metalAmount * makingChargeRate) / 100);
+      } else if (makingChargeType === "PER_GRAM") {
+        makingCharges = roundMoney(netWeight * makingChargeRate);
       } else {
-        makingAmt = roundMoney(Math.max(0, Number(row.makingCharges || 0)));
+        makingCharges = roundMoney(Number(it.makingCharges || 0));
       }
+      it.makingCharges = makingCharges;
 
-      const stoneAmt = Math.max(0, roundMoney(Number(row.stoneAmount || 0)));
-      const otherCharges = Math.max(0, roundMoney(Number(row.otherCharges || 0)));
-      const itemDisc = Math.max(0, roundMoney(Number(row.discount || 0)));
+      const stoneAmount = roundMoney(Number(it.stoneAmount || 0));
+      const otherCharges = roundMoney(Number(it.otherCharges || 0));
+      const discount = roundMoney(Number(it.discount || 0));
 
-      row.totalAmount = roundMoney(Math.max(0, metalAmt + makingAmt + stoneAmt + otherCharges - itemDisc));
-      items[index] = row;
-      return { ...prev, items };
+      it.totalAmount = roundMoney(
+        metalAmount + makingCharges + stoneAmount + otherCharges - discount
+      );
+
+      updated[index] = it;
+      return { ...prev, items: updated };
     });
   };
 
@@ -327,18 +454,35 @@ export default function SalesPage() {
     }));
   };
 
-  // TOTALS & LIVE ACCURATE GST CALCULATIONS
+  /*
+  ========================================
+  LIVE FINANCIAL & ADJUSTMENT CALCULATIONS
+  ========================================
+  */
   const calculations = useMemo(() => {
+    const isInterState =
+      state.placeOfSupply &&
+      state.customerState &&
+      state.placeOfSupply.trim().toUpperCase() !== "ODISHA";
+
+    const totalGrossWeight = state.items.reduce(
+      (sum, it) => sum + Number(it.grossWeight || 0),
+      0
+    );
+    const totalNetWeight = state.items.reduce(
+      (sum, it) => sum + Number(it.netWeight || 0),
+      0
+    );
+
     const grossAmount = roundMoney(
       state.items.reduce((sum, it) => sum + Number(it.totalAmount || 0), 0)
     );
-    const offerDiscount = Math.max(0, roundMoney(Number(state.offerDiscount || 0)));
-    const discount = Math.max(0, roundMoney(Number(state.discount || 0)));
-    const taxableAmount = roundMoney(Math.max(0, grossAmount - offerDiscount - discount));
 
-    const storeState = (selectedStore?.state || "ODISHA").trim().toUpperCase();
-    const placeOfSupply = (state.placeOfSupply || state.customerState || storeState).trim().toUpperCase();
-    const isInterState = placeOfSupply !== "" && placeOfSupply !== storeState;
+    const offerDiscount = roundMoney(Number(state.offerDiscount || 0));
+    const discount = roundMoney(Number(state.discount || 0));
+    const taxableAmount = roundMoney(
+      Math.max(0, grossAmount - offerDiscount - discount)
+    );
 
     let cgstPercent = 0;
     let cgstAmount = 0;
@@ -359,24 +503,54 @@ export default function SalesPage() {
 
     const totalTax = roundMoney(cgstAmount + sgstAmount + igstAmount);
     const subTotal = roundMoney(taxableAmount + totalTax);
-    const lessUrd = Math.max(0, roundMoney(Number(state.lessUrd || 0)));
-    const unroundedNet = roundMoney(subTotal - lessUrd);
 
-    let roundOff = roundMoney(Number(state.roundOff || 0));
-    if (!state.isManualRoundOff) {
+    // Calculate selected Advance Adjustments
+    let totalAdvanceAdjusted = 0;
+    Object.keys(advanceAdjustmentsState).forEach((advId) => {
+      const item = advanceAdjustmentsState[advId];
+      if (item?.isSelected) {
+        totalAdvanceAdjusted = roundMoney(
+          totalAdvanceAdjusted + Number(item.adjustedAmount || 0)
+        );
+      }
+    });
+
+    // Calculate selected Old Jewellery Adjustments
+    let totalOldGoldAdjusted = 0;
+    Object.keys(oldGoldAdjustmentsState).forEach((ojId) => {
+      const item = oldGoldAdjustmentsState[ojId];
+      if (item?.isSelected) {
+        totalOldGoldAdjusted = roundMoney(
+          totalOldGoldAdjusted + Number(item.adjustedAmount || 0)
+        );
+      }
+    });
+
+    const totalAdjustments = roundMoney(totalAdvanceAdjusted + totalOldGoldAdjusted);
+    const lessUrd = roundMoney(Number(state.lessUrd || 0) + totalOldGoldAdjusted);
+
+    const unroundedNet = roundMoney(Math.max(0, subTotal - totalAdjustments));
+
+    let roundOff = 0;
+    if (state.isManualRoundOff) {
+      roundOff = roundMoney(Number(state.roundOff || 0));
+    } else {
       const roundedInt = Math.round(unroundedNet);
       roundOff = roundMoney(roundedInt - unroundedNet);
     }
 
     const netPayable = roundMoney(Math.max(0, unroundedNet + roundOff));
-    const inWords = numberToWordsClient(netPayable);
 
     const paidAmount = roundMoney(
       state.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0)
     );
     const dueAmount = roundMoney(Math.max(0, netPayable - paidAmount));
+    const inWords = numberToWordsIndian(netPayable);
 
     return {
+      isInterState,
+      totalGrossWeight,
+      totalNetWeight,
       grossAmount,
       offerDiscount,
       discount,
@@ -389,6 +563,9 @@ export default function SalesPage() {
       igstAmount,
       totalTax,
       subTotal,
+      totalAdvanceAdjusted,
+      totalOldGoldAdjusted,
+      totalAdjustments,
       lessUrd,
       roundOff,
       netPayable,
@@ -396,86 +573,47 @@ export default function SalesPage() {
       dueAmount,
       inWords,
     };
-  }, [state, selectedStore]);
+  }, [
+    state.items,
+    state.offerDiscount,
+    state.discount,
+    state.lessUrd,
+    state.roundOff,
+    state.isManualRoundOff,
+    state.placeOfSupply,
+    state.customerState,
+    state.payments,
+    advanceAdjustmentsState,
+    oldGoldAdjustmentsState,
+  ]);
 
-  // SYNC PAYMENT TO NET PAYABLE
+  // Sync payments with net payable
   const syncPaymentAmount = () => {
-    setState((prev) => {
-      if (prev.payments.length === 1) {
-        return {
-          ...prev,
-          payments: [{ ...prev.payments[0], amount: calculations.netPayable }],
-        };
-      }
-      return prev;
-    });
+    setState((prev) => ({
+      ...prev,
+      payments: [
+        {
+          ...prev.payments[0],
+          amount: calculations.netPayable,
+        },
+        ...prev.payments.slice(1).map((p) => ({ ...p, amount: "" })),
+      ],
+    }));
   };
 
-  const openCreateModal = () => {
-    setState(initialState());
-    setValidationErrors({});
-    setOpen(true);
-    setTimeout(() => {
-      barcodeInputRef.current?.focus();
-    }, 250);
-  };
-
-  // STRICT VALIDATION
+  /*
+  ========================================
+  FORM SUBMISSION WITH ADJUSTMENTS
+  ========================================
+  */
   const validateForm = () => {
     const errors = {};
-
-    if (!state.customerName?.trim() && !state.partyId) {
-      errors.customerName = "Customer name is required.";
+    if (!state.customerName?.trim()) errors.customerName = "Customer Name is required";
+    if (state.customerPhone && state.customerPhone.trim().length !== 10) {
+      errors.customerPhone = "Contact number must be exactly 10 digits";
     }
-
-    if (state.customerPhone?.trim()) {
-      const cleanedPhone = state.customerPhone.trim().replace(/\D/g, "");
-      if (cleanedPhone.length !== 10) {
-        errors.customerPhone = "Contact number must be exactly 10 digits.";
-      }
-    }
-
-    if (state.customerPan?.trim()) {
-      const cleanedPan = state.customerPan.trim().toUpperCase();
-      if (!PAN_REGEX.test(cleanedPan)) {
-        errors.customerPan = "Invalid PAN format (e.g. ABCDE1234F).";
-      }
-    }
-
-    if (state.customerGst?.trim()) {
-      const cleanedGst = state.customerGst.trim().toUpperCase();
-      if (!GSTIN_REGEX.test(cleanedGst)) {
-        errors.customerGst = "Invalid GSTIN format (e.g. 21AAFCA3795A1Z5).";
-      }
-    }
-
-    if (!state.placeOfSupply?.trim()) {
-      errors.placeOfSupply = "Place of Supply is required for tax calculation.";
-    }
-
-    if (state.items.length === 0) {
-      errors.items = "Please add at least one jewellery item.";
-    } else {
-      state.items.forEach((it, idx) => {
-        if (!it.inventoryId) {
-          errors[`item_${idx}`] = `Item #${idx + 1} has no inventory ID selected.`;
-        }
-        if (Number(it.netWeight || 0) <= 0) {
-          errors[`item_weight_${idx}`] = `Item #${idx + 1} net weight must be greater than 0.`;
-        }
-        if (Number(it.rate || 0) <= 0) {
-          errors[`item_rate_${idx}`] = `Item #${idx + 1} rate must be greater than 0.`;
-        }
-      });
-    }
-
-    if (calculations.offerDiscount + calculations.discount > calculations.grossAmount) {
-      errors.discount = "Total discount cannot exceed gross amount.";
-    }
-
-    if (calculations.lessUrd > calculations.subTotal) {
-      errors.lessUrd = "Less URD cannot exceed subtotal amount.";
-    }
+    if (!state.placeOfSupply?.trim()) errors.placeOfSupply = "Place of supply is required";
+    if (!state.items.length) errors.items = "Add at least one item to generate an invoice";
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -483,19 +621,49 @@ export default function SalesPage() {
 
   const handleSubmitSale = async () => {
     if (!validateForm()) {
-      notifyError(null, "Please fix the highlighted validation errors before proceeding.");
+      notifyError(null, "Please correct the highlighted fields.");
       return;
     }
 
     try {
       setSaving(true);
+
+      // Prepare Advance Adjustments payload
+      const advanceAdjustments = [];
+      Object.keys(advanceAdjustmentsState).forEach((advId) => {
+        const item = advanceAdjustmentsState[advId];
+        if (item?.isSelected && Number(item.adjustedAmount) > 0) {
+          advanceAdjustments.push({
+            advanceReceiveId: Number(advId),
+            amount: Number(item.adjustedAmount),
+            notes: item.notes || null,
+          });
+        }
+      });
+
+      // Prepare Old Jewellery Adjustments payload
+      const oldGoldAdjustments = [];
+      Object.keys(oldGoldAdjustmentsState).forEach((ojId) => {
+        const item = oldGoldAdjustmentsState[ojId];
+        if (item?.isSelected && Number(item.adjustedAmount) > 0) {
+          const originalOj = availableOldJewellery.find((x) => String(x.id) === String(ojId));
+          oldGoldAdjustments.push({
+            purchaseId: Number(ojId),
+            amount: Number(item.adjustedAmount),
+            description: originalOj?.itemSummary || "Old Jewellery Value Adjusted",
+            notes: item.notes || null,
+          });
+        }
+      });
+
       const payload = {
         saleDate: state.saleDate,
         partyId: state.partyId ? Number(state.partyId) : null,
+        customerId: state.customerId || null,
         customerName: state.customerName.trim(),
         customerPhone: state.customerPhone?.trim() || null,
         customerAddress: state.customerAddress?.trim() || null,
-        customerCity: state.customerCity?.trim() || null,
+        customerCity: state.customerCity?.trim() || "Bhubaneswar - 766001",
         customerPan: state.customerPan?.trim().toUpperCase() || null,
         customerGst: state.customerGst?.trim().toUpperCase() || null,
         customerState: state.customerState?.trim().toUpperCase() || "ODISHA",
@@ -509,6 +677,9 @@ export default function SalesPage() {
         discount: calculations.discount,
         lessUrd: calculations.lessUrd,
         roundOff: calculations.roundOff,
+
+        advanceAdjustments,
+        oldGoldAdjustments,
 
         items: state.items.map((it) => ({
           inventoryId: Number(it.inventoryId),
@@ -552,8 +723,8 @@ export default function SalesPage() {
       await loadData();
       setOpen(false);
 
-      if (result?.sale) {
-        setPreviewSale(result.sale);
+      if (result?.sale || result) {
+        setPreviewSale(result?.sale || result);
         setPreviewOpen(true);
       }
     } catch (error) {
@@ -593,26 +764,13 @@ export default function SalesPage() {
 
   return (
     <div className="space-y-4 font-sans">
-      {/* PAGE HEADER */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
-            <ShoppingBag className="h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Sales Invoice Management</h1>
-            <p className="text-xs text-slate-500">
-              Tax invoice creation with barcode scanner, live GST breakdown, and real jewellery format.
-            </p>
-          </div>
-        </div>
-        <Button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm font-semibold">
-          <Plus className="h-4 w-4" /> Create Sale
-        </Button>
-      </div>
 
+     
+ <div>
+          <h1 className="text-xl font-semibold">Sales</h1>
+        </div>
       {/* FILTER & SEARCH BAR */}
-      <div className="flex items-center justify-between gap-4 rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between ">
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
           <Input
@@ -622,9 +780,10 @@ export default function SalesPage() {
             className="pl-9 text-xs focus-visible:ring-blue-500"
           />
         </div>
-        <div className="text-xs text-slate-600 font-medium">
-          Total Invoices: <span className="font-bold text-blue-600">{filteredSales.length}</span>
-        </div>
+          <Button onClick={openCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white gap-2 shadow-sm font-semibold">
+          <Plus className="h-4 w-4" /> Create Sale
+        </Button>
+       
       </div>
 
       {/* SALES LIST TABLE */}
@@ -637,7 +796,7 @@ export default function SalesPage() {
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-center">Items</th>
               <th className="p-3 text-right">Taxable (₹)</th>
-              <th className="p-3 text-right">Tax (₹)</th>
+              <th className="p-3 text-right">Adjustments (₹)</th>
               <th className="p-3 text-right">Net Payable (₹)</th>
               <th className="p-3 text-center">Status</th>
               <th className="p-3 text-center">Actions</th>
@@ -651,47 +810,58 @@ export default function SalesPage() {
                 </td>
               </tr>
             ) : filteredSales.length ? (
-              filteredSales.map((sale) => (
-                <tr key={sale.id} className="hover:bg-blue-50/40 transition">
-                  <td className="p-3 font-semibold text-blue-700">{sale.invoiceNo}</td>
-                  <td className="p-3">
-                    <div className="font-medium text-slate-900">{sale.party?.name || sale.customerName || "-"}</div>
-                    {sale.customerPhone && <div className="text-xs text-slate-400">{sale.customerPhone}</div>}
-                  </td>
-                  <td className="p-3 text-xs text-slate-600">{sale.saleDate ? new Date(sale.saleDate).toLocaleDateString("en-IN") : "-"}</td>
-                  <td className="p-3 text-center font-medium text-slate-800">{sale.items?.length || 0}</td>
-                  <td className="p-3 text-right">{money(sale.taxableAmount || sale.grossTotal)}</td>
-                  <td className="p-3 text-right">{money(sale.totalTax || sale.taxAmount)}</td>
-                  <td className="p-3 text-right font-bold text-slate-900">₹{money(sale.netPayable || sale.grossTotal)}</td>
-                  <td className="p-3 text-center">
-                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <CheckCircle2 className="h-3 w-3" /> {sale.status || "COMPLETED"}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleViewInvoice(sale)}
-                        title="View / Print Tax Invoice"
-                        className="hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDownloadInvoice(sale)}
-                        title="Download PDF"
-                        className="hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              filteredSales.map((sale) => {
+                const totalAdj = Number(sale.advanceAmount || 0) + Number(sale.oldGoldAmount || 0);
+                return (
+                  <tr key={sale.id} className="hover:bg-blue-50/40 transition">
+                    <td className="p-3 font-semibold text-blue-700">{sale.invoiceNo}</td>
+                    <td className="p-3">
+                      <div className="font-medium text-slate-900">{sale.party?.name || sale.customerName || "-"}</div>
+                      {sale.customerPhone && <div className="text-xs text-slate-400">{sale.customerPhone}</div>}
+                    </td>
+                    <td className="p-3 text-xs text-slate-600">{sale.saleDate ? new Date(sale.saleDate).toLocaleDateString("en-IN") : "-"}</td>
+                    <td className="p-3 text-center font-medium text-slate-800">{sale.items?.length || 0}</td>
+                    <td className="p-3 text-right">{money(sale.taxableAmount || sale.grossTotal)}</td>
+                    <td className="p-3 text-right">
+                      {totalAdj > 0 ? (
+                        <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded text-xs">
+                          -₹{money(totalAdj)}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </td>
+                    <td className="p-3 text-right font-bold text-slate-900">₹{money(sale.netPayable || sale.grossTotal)}</td>
+                    <td className="p-3 text-center">
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 className="h-3 w-3" /> {sale.status || "COMPLETED"}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleViewInvoice(sale)}
+                          title="View / Print Tax Invoice"
+                          className="hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDownloadInvoice(sale)}
+                          title="Download PDF"
+                          className="hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td className="p-8 text-center text-slate-400" colSpan={9}>
@@ -705,7 +875,7 @@ export default function SalesPage() {
 
       {/* CREATE SALE MODAL */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="!w-[96vw] !max-w-[1400px] h-[92vh] p-0 flex flex-col bg-slate-50 border border-slate-300">
+        <DialogContent className="!w-[96vw] !max-w-[1440px] h-[94vh] p-0 flex flex-col bg-slate-50 border border-slate-300">
           {/* MODAL HEADER */}
           <DialogHeader className="border-b border-slate-200 px-6 py-3.5 bg-white flex flex-row items-center justify-between">
             <div className="flex items-center gap-2.5">
@@ -714,7 +884,9 @@ export default function SalesPage() {
               </div>
               <div>
                 <DialogTitle className="text-base font-bold text-slate-900">Create Jewellery Tax Invoice</DialogTitle>
-                <p className="text-xs text-slate-500">Scan barcode or pick inventory, fill customer details and review live calculation.</p>
+                <p className="text-xs text-slate-500">
+                  Scan barcode, auto-check customer history & adjustments, and complete payment.
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -726,7 +898,7 @@ export default function SalesPage() {
                 disabled={saving || state.items.length === 0}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-sm"
               >
-                {saving ? "Generating Invoice..." : "Complete & Generate Tax Invoice"}
+                {saving ? "Generating Invoice..." : "Create"}
               </Button>
             </div>
           </DialogHeader>
@@ -780,13 +952,36 @@ export default function SalesPage() {
 
             {/* 2. CUSTOMER & INVOICE HEADER DETAILS */}
             <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  Customer & Invoice Information
-                </h3>
-                <span className="text-[11px] text-blue-600 font-semibold">
-                  Place of Supply determines CGST+SGST (Intra-state) vs IGST (Inter-state)
-                </span>
+              <div className="flex flex-wrap items-center justify-between border-b border-slate-100 pb-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Customer & Invoice Information
+                  </h3>
+                  {customerFound ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      Existing Customer: #{customerFound.id} {customerFound.customerCode ? `(${customerFound.customerCode})` : ""}
+                    </span>
+                  ) : state.customerPhone && state.customerPhone.length === 10 ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                      New Customer (Auto-registers on sale)
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* VIEW HISTORY BUTTON */}
+                {(customerFound || pastSalesHistory.length > 0 || allAdvancesHistory.length > 0 || allOldJewelleryHistory.length > 0 || adjustmentLogsHistory.length > 0) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryModalOpen(true)}
+                    className="h-7 text-xs font-semibold text-blue-700 border-blue-300 bg-blue-50 hover:bg-blue-100 gap-1.5"
+                  >
+                    <History className="h-3.5 w-3.5 text-blue-600" />
+                    View Customer History & Balance Logs
+                  </Button>
+                )}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 text-xs">
@@ -821,16 +1016,31 @@ export default function SalesPage() {
                   )}
                 </div>
 
-                {/* CONTACT NUMBER */}
+                {/* CONTACT NUMBER (WITH AUTO-CHECK) */}
                 <div>
-                  <label className="text-slate-600 font-semibold block mb-1">Contact No.</label>
-                  <Input
-                    placeholder="10-digit mobile"
-                    value={state.customerPhone}
-                    maxLength={10}
-                    onChange={(e) => updateField("customerPhone", e.target.value.replace(/\D/g, ""))}
-                    className={`h-9 text-xs ${validationErrors.customerPhone ? "border-red-500 focus-visible:ring-red-400" : ""}`}
-                  />
+                  <label className="text-slate-600 font-semibold block mb-1 flex items-center justify-between">
+                    <span>Contact No. (Phone)</span>
+                    {customerLookupLoading && <span className="text-[10px] text-blue-600 font-normal animate-pulse">Checking...</span>}
+                  </label>
+                  <div className="relative">
+                    <Input
+                      placeholder="10-digit mobile number"
+                      value={state.customerPhone}
+                      maxLength={10}
+                      onChange={(e) => updateField("customerPhone", e.target.value.replace(/\D/g, ""))}
+                      className={`h-9 text-xs pr-8 ${validationErrors.customerPhone ? "border-red-500 focus-visible:ring-red-400" : ""}`}
+                    />
+                    {state.customerPhone?.length === 10 && (
+                      <button
+                        type="button"
+                        onClick={() => handlePhoneLookup(state.customerPhone)}
+                        className="absolute right-2 top-2 text-slate-400 hover:text-blue-600"
+                        title="Check Phone"
+                      >
+                        <Search className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                   {validationErrors.customerPhone && (
                     <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.customerPhone}</span>
                   )}
@@ -868,9 +1078,6 @@ export default function SalesPage() {
                     onChange={(e) => updateField("customerPan", e.target.value.toUpperCase())}
                     className={`h-9 text-xs uppercase ${validationErrors.customerPan ? "border-red-500 focus-visible:ring-red-400" : ""}`}
                   />
-                  {validationErrors.customerPan && (
-                    <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.customerPan}</span>
-                  )}
                 </div>
 
                 {/* GSTIN */}
@@ -883,9 +1090,6 @@ export default function SalesPage() {
                     onChange={(e) => updateField("customerGst", e.target.value.toUpperCase())}
                     className={`h-9 text-xs uppercase ${validationErrors.customerGst ? "border-red-500 focus-visible:ring-red-400" : ""}`}
                   />
-                  {validationErrors.customerGst && (
-                    <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.customerGst}</span>
-                  )}
                 </div>
 
                 {/* PLACE OF SUPPLY */}
@@ -899,257 +1103,408 @@ export default function SalesPage() {
                     onChange={(e) => updateField("placeOfSupply", e.target.value.toUpperCase())}
                     className={`h-9 text-xs uppercase font-medium ${validationErrors.placeOfSupply ? "border-red-500 focus-visible:ring-red-400" : ""}`}
                   />
-                  {validationErrors.placeOfSupply && (
-                    <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.placeOfSupply}</span>
-                  )}
-                </div>
-
-                {/* INVOICE DATE */}
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">Invoice Date</label>
-                  <Input
-                    type="date"
-                    value={state.saleDate}
-                    onChange={(e) => updateField("saleDate", e.target.value)}
-                    className="h-9 text-xs font-medium"
-                  />
-                </div>
-
-                {/* STORE CIN */}
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">Store CIN No.</label>
-                  <Input
-                    value={state.cinNo}
-                    onChange={(e) => updateField("cinNo", e.target.value)}
-                    className="h-9 text-xs text-slate-600"
-                  />
-                </div>
-
-                {/* STORE GST */}
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">Store GST No.</label>
-                  <Input
-                    value={state.storeGst}
-                    onChange={(e) => updateField("storeGst", e.target.value)}
-                    className="h-9 text-xs text-slate-600"
-                  />
-                </div>
-
-                {/* IRN */}
-                <div>
-                  <label className="text-slate-600 font-semibold block mb-1">IRN No. (Optional)</label>
-                  <Input
-                    placeholder="e-Invoice IRN"
-                    value={state.irnNo}
-                    onChange={(e) => updateField("irnNo", e.target.value)}
-                    className="h-9 text-xs"
-                  />
                 </div>
               </div>
             </div>
 
-            {/* 3. JEWELLERY ITEMS LIST (HORIZONTALLY SCROLLABLE TABLE) */}
-            <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                    Jewellery Items List ({state.items.length})
-                  </span>
-                  <span className="text-xs text-slate-500 font-medium">
-                    Total Gross: <strong className="text-slate-800">{weightStr(state.items.reduce((s, it) => s + Number(it.grossWeight || 0), 0))}g</strong> |
-                    Total Net: <strong className="text-blue-700">{weightStr(state.items.reduce((s, it) => s + Number(it.netWeight || 0), 0))}g</strong>
+            {/* 3. AVAILABLE ADJUSTMENTS SECTION (ADVANCE & OLD JEWELLERY) */}
+            {(availableAdvances.length > 0 || availableOldJewellery.length > 0) && (
+              <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50/40 p-4 shadow-sm space-y-3">
+                <div className="flex items-center justify-between border-b border-emerald-200 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Coins className="h-4 w-4 text-emerald-700" />
+                    <h3 className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                      Available Customer Adjustments
+                    </h3>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-800">
+                    Total Selected Deductions: ₹{money(calculations.totalAdjustments)}
                   </span>
                 </div>
-                {validationErrors.items && (
-                  <span className="text-xs text-red-500 font-semibold flex items-center gap-1">
-                    <AlertCircle className="h-3.5 w-3.5" /> {validationErrors.items}
-                  </span>
-                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* AVAILABLE ADVANCES CARD */}
+                  <div className="bg-white rounded-lg border border-emerald-200 p-3 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                        <Receipt className="h-3.5 w-3.5 text-emerald-600" />
+                        <span>Advance Payments ({availableAdvances.length})</span>
+                      </div>
+                      <span className="text-[11px] text-emerald-700 font-semibold">
+                        Available: ₹{money(availableAdvances.reduce((s, a) => s + a.balanceAmount, 0))}
+                      </span>
+                    </div>
+
+                    {availableAdvances.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-2 text-center italic">No unused advance receipts available.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {availableAdvances.map((adv) => {
+                          const currentSel = advanceAdjustmentsState[adv.id] || { isSelected: false, adjustedAmount: adv.balanceAmount };
+                          return (
+                            <div
+                              key={adv.id}
+                              className={`p-2.5 rounded border transition flex flex-col gap-1.5 ${
+                                currentSel.isSelected
+                                  ? "bg-emerald-50 border-emerald-400 shadow-xs"
+                                  : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-900">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(currentSel.isSelected)}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setAdvanceAdjustmentsState((prev) => ({
+                                        ...prev,
+                                        [adv.id]: {
+                                          ...prev[adv.id],
+                                          isSelected: checked,
+                                          adjustedAmount: checked ? adv.balanceAmount : 0,
+                                        },
+                                      }));
+                                    }}
+                                    className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                                  />
+                                  <span>{adv.receiptNo}</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">
+                                    ({adv.date ? new Date(adv.date).toLocaleDateString("en-IN") : "-"})
+                                  </span>
+                                </label>
+                                <div className="text-right">
+                                  <span className="text-slate-500 text-[10px]">Bal: </span>
+                                  <span className="font-bold text-emerald-700">₹{money(adv.balanceAmount)}</span>
+                                  <span className="text-slate-400 text-[10px]"> / ₹{money(adv.totalAmount)}</span>
+                                </div>
+                              </div>
+
+                              {currentSel.isSelected && (
+                                <div className="flex items-center gap-2 pt-1 border-t border-emerald-200 text-xs">
+                                  <span className="text-slate-600 text-[11px] font-medium">Adjust (₹):</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max={adv.balanceAmount}
+                                    value={currentSel.adjustedAmount}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setAdvanceAdjustmentsState((prev) => ({
+                                        ...prev,
+                                        [adv.id]: {
+                                          ...prev[adv.id],
+                                          adjustedAmount: val,
+                                        },
+                                      }));
+                                    }}
+                                    className="h-7 w-28 text-xs font-bold text-emerald-800"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setAdvanceAdjustmentsState((prev) => ({
+                                        ...prev,
+                                        [adv.id]: {
+                                          ...prev[adv.id],
+                                          adjustedAmount: adv.balanceAmount,
+                                        },
+                                      }));
+                                    }}
+                                    className="h-6 text-[10px] text-emerald-700 hover:bg-emerald-100 px-2"
+                                  >
+                                    Full
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AVAILABLE OLD JEWELLERY CARD */}
+                  <div className="bg-white rounded-lg border border-amber-200 p-3 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-100">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800">
+                        <Wallet className="h-3.5 w-3.5 text-amber-600" />
+                        <span>Old Jewellery Purchases ({availableOldJewellery.length})</span>
+                      </div>
+                      <span className="text-[11px] text-amber-700 font-semibold">
+                        Available: ₹{money(availableOldJewellery.reduce((s, oj) => s + oj.balanceAmount, 0))}
+                      </span>
+                    </div>
+
+                    {availableOldJewellery.length === 0 ? (
+                      <p className="text-xs text-slate-400 py-2 text-center italic">No unused old jewellery purchases available.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                        {availableOldJewellery.map((oj) => {
+                          const currentSel = oldGoldAdjustmentsState[oj.id] || { isSelected: false, adjustedAmount: oj.balanceAmount };
+                          return (
+                            <div
+                              key={oj.id}
+                              className={`p-2.5 rounded border transition flex flex-col gap-1.5 ${
+                                currentSel.isSelected
+                                  ? "bg-amber-50 border-amber-400 shadow-xs"
+                                  : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                              }`}
+                            >
+                              <div className="flex items-center justify-between text-xs">
+                                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-900">
+                                  <input
+                                    type="checkbox"
+                                    checked={Boolean(currentSel.isSelected)}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setOldGoldAdjustmentsState((prev) => ({
+                                        ...prev,
+                                        [oj.id]: {
+                                          ...prev[oj.id],
+                                          isSelected: checked,
+                                          adjustedAmount: checked ? oj.balanceAmount : 0,
+                                        },
+                                      }));
+                                    }}
+                                    className="rounded text-amber-600 focus:ring-amber-500 h-4 w-4"
+                                  />
+                                  <span>{oj.invoiceNo}</span>
+                                  <span className="text-[10px] text-slate-400 font-normal">
+                                    ({oj.date ? new Date(oj.date).toLocaleDateString("en-IN") : "-"})
+                                  </span>
+                                </label>
+                                <div className="text-right">
+                                  <span className="text-slate-500 text-[10px]">Bal: </span>
+                                  <span className="font-bold text-amber-700">₹{money(oj.balanceAmount)}</span>
+                                  <span className="text-slate-400 text-[10px]"> / ₹{money(oj.totalValuation)}</span>
+                                </div>
+                              </div>
+
+                              <div className="text-[11px] text-slate-600 truncate pl-6">
+                                {oj.itemSummary} (Gross: {weightStr(oj.totalGrossWeight)}g)
+                              </div>
+
+                              {currentSel.isSelected && (
+                                <div className="flex items-center gap-2 pt-1 border-t border-amber-200 text-xs">
+                                  <span className="text-slate-600 text-[11px] font-medium">Adjust (₹):</span>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    max={oj.balanceAmount}
+                                    value={currentSel.adjustedAmount}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setOldGoldAdjustmentsState((prev) => ({
+                                        ...prev,
+                                        [oj.id]: {
+                                          ...prev[oj.id],
+                                          adjustedAmount: val,
+                                        },
+                                      }));
+                                    }}
+                                    className="h-7 w-28 text-xs font-bold text-amber-800"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setOldGoldAdjustmentsState((prev) => ({
+                                        ...prev,
+                                        [oj.id]: {
+                                          ...prev[oj.id],
+                                          adjustedAmount: oj.balanceAmount,
+                                        },
+                                      }));
+                                    }}
+                                    className="h-6 text-[10px] text-amber-700 hover:bg-amber-100 px-2"
+                                  >
+                                    Full
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. ITEM ENTRY TABLE */}
+            <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Invoice Items List ({state.items.length})
+                </h3>
+                <div className="text-xs font-semibold text-slate-600 flex gap-4">
+                  <span>Gross Wt: <strong className="text-slate-900">{weightStr(calculations.totalGrossWeight)}g</strong></span>
+                  <span>Net Wt: <strong className="text-slate-900">{weightStr(calculations.totalNetWeight)}g</strong></span>
+                  <span>Gross Total: <strong className="text-blue-600">₹{money(calculations.grossAmount)}</strong></span>
+                </div>
               </div>
 
-              {/* HORIZONTAL SCROLL CONTAINER */}
-              <div className="w-full overflow-x-auto">
-                <table className="w-full min-w-[1460px] text-xs border-collapse">
-                  <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                    <tr>
-                      <th className="p-2.5 text-center w-12 border-r border-slate-200">#</th>
-                      <th className="p-2.5 text-left min-w-[180px] border-r border-slate-200">Particulars</th>
-                      <th className="p-2.5 text-left min-w-[140px] border-r border-slate-200">Item Code / Barcode</th>
-                      <th className="p-2.5 text-center w-28 border-r border-slate-200">HUID No.</th>
-                      <th className="p-2.5 text-center w-24 border-r border-slate-200">HSN/SAC</th>
-                      <th className="p-2.5 text-center w-20 border-r border-slate-200">Purity</th>
-                      <th className="p-2.5 text-center w-16 border-r border-slate-200">Pcs</th>
-                      <th className="p-2.5 text-right w-24 border-r border-slate-200">Gross Wt (g)</th>
-                      <th className="p-2.5 text-right w-24 border-r border-slate-200">Net Wt (g)</th>
-                      <th className="p-2.5 text-right w-28 border-r border-slate-200">Rate (₹/g)</th>
-                      <th className="p-2.5 text-right w-36 border-r border-slate-200">Making Charges</th>
-                      <th className="p-2.5 text-right w-24 border-r border-slate-200">Other Chg (₹)</th>
-                      <th className="p-2.5 text-right w-24 border-r border-slate-200">Discount (₹)</th>
-                      <th className="p-2.5 text-right w-28 border-r border-slate-200">Total (₹)</th>
-                      <th className="p-2.5 text-center w-12">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-800">
-                    {state.items.length === 0 ? (
-                      <tr>
-                        <td colSpan={15} className="p-8 text-center text-slate-400 font-medium">
-                          No jewellery items added yet. Please scan barcode or pick from stock dropdown above.
-                        </td>
+              {state.items.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 border border-dashed border-slate-200 rounded-lg">
+                  <ShoppingBag className="h-8 w-8 mx-auto mb-2 text-slate-300" />
+                  <p className="text-xs font-medium">No items added yet. Please scan barcode or select available stock above.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase">
+                        <th className="p-2 text-center w-8">#</th>
+                        <th className="p-2 text-left min-w-[140px]">Item Particulars</th>
+                        <th className="p-2 text-left min-w-[90px]">Code / Tag</th>
+                        <th className="p-2 text-left min-w-[70px]">Purity</th>
+                        <th className="p-2 text-right w-14">Pcs</th>
+                        <th className="p-2 text-right min-w-[70px]">Gross Wt(g)</th>
+                        <th className="p-2 text-right min-w-[65px]">Stone Wt(g)</th>
+                        <th className="p-2 text-right min-w-[70px]">Net Wt(g)</th>
+                        <th className="p-2 text-right min-w-[75px]">Rate(₹/g)</th>
+                        <th className="p-2 text-right min-w-[80px]">Metal Amt(₹)</th>
+                        <th className="p-2 text-center min-w-[95px]">MC Type / Rate</th>
+                        <th className="p-2 text-right min-w-[80px]">Making Ch.(₹)</th>
+                        <th className="p-2 text-right min-w-[70px]">Stone Amt(₹)</th>
+                        <th className="p-2 text-right min-w-[65px]">Other Ch.(₹)</th>
+                        <th className="p-2 text-right min-w-[65px]">Disc.(₹)</th>
+                        <th className="p-2 text-right min-w-[95px]">Total Amt(₹)</th>
+                        <th className="p-2 text-center w-8"></th>
                       </tr>
-                    ) : (
-                      state.items.map((row, idx) => (
-                        <tr key={idx} className="hover:bg-blue-50/20 transition align-middle">
-                          <td className="p-2 text-center font-bold text-slate-400 border-r border-slate-100">{idx + 1}</td>
-                          <td className="p-2 border-r border-slate-100">
-                            <Input
-                              value={row.particulars}
-                              onChange={(e) => updateItem(idx, "particulars", e.target.value)}
-                              className="h-8 text-xs font-semibold focus-visible:ring-blue-500"
-                            />
-                          </td>
-                          <td className="p-2 border-r border-slate-100">
-                            <Input
-                              value={row.itemCode}
-                              readOnly
-                              className="h-8 text-xs bg-slate-50 text-slate-600 font-mono"
-                            />
-                          </td>
-                          <td className="p-2 border-r border-slate-100">
-                            <Input
-                              value={row.huidNo || ""}
-                              placeholder="HUID"
-                              onChange={(e) => updateItem(idx, "huidNo", e.target.value)}
-                              className="h-8 text-xs text-center font-mono font-semibold text-blue-900 focus-visible:ring-blue-500"
-                            />
-                          </td>
-                          <td className="p-2 border-r border-slate-100">
-                            <Input
-                              value={row.hsnCode}
-                              onChange={(e) => updateItem(idx, "hsnCode", e.target.value)}
-                              className="h-8 text-xs text-center"
-                            />
-                          </td>
-                          <td className="p-2 border-r border-slate-100">
-                            <Input
-                              value={row.purityName}
-                              onChange={(e) => updateItem(idx, "purityName", e.target.value)}
-                              className="h-8 text-xs text-center font-semibold text-blue-900"
-                            />
-                          </td>
-                          <td className="p-2 border-r border-slate-100">
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {state.items.map((it, idx) => (
+                        <tr key={it.inventoryId || idx} className="hover:bg-blue-50/20">
+                          <td className="p-2 text-center font-semibold text-slate-400">{idx + 1}</td>
+                          <td className="p-2 font-medium text-slate-900">{it.particulars}</td>
+                          <td className="p-2 font-mono text-[11px] text-blue-700">{it.itemCode}</td>
+                          <td className="p-2 font-semibold text-amber-700">{it.purityName}</td>
+                          <td className="p-2">
                             <Input
                               type="number"
                               min="1"
-                              value={row.pieces}
-                              onChange={(e) => updateItem(idx, "pieces", Math.max(1, parseInt(e.target.value) || 1))}
-                              className="h-8 text-xs text-center"
+                              value={it.pieces}
+                              onChange={(e) => handleItemChange(idx, "pieces", e.target.value)}
+                              className="h-7 text-right text-xs w-12 px-1"
                             />
                           </td>
-                          <td className="p-2 border-r border-slate-100">
+                          <td className="p-2">
                             <Input
                               type="number"
                               step="0.001"
-                              min="0"
-                              value={row.grossWeight}
-                              onChange={(e) => updateItem(idx, "grossWeight", e.target.value)}
-                              className="h-8 text-xs text-right"
+                              value={it.grossWeight}
+                              onChange={(e) => handleItemChange(idx, "grossWeight", e.target.value)}
+                              className="h-7 text-right text-xs w-16 px-1 font-medium"
                             />
                           </td>
-                          <td className="p-2 border-r border-slate-100">
+                          <td className="p-2">
                             <Input
                               type="number"
                               step="0.001"
-                              min="0"
-                              value={row.netWeight}
-                              onChange={(e) => updateItem(idx, "netWeight", e.target.value)}
-                              className="h-8 text-xs text-right font-semibold text-blue-900"
+                              value={it.stoneWeight}
+                              onChange={(e) => handleItemChange(idx, "stoneWeight", e.target.value)}
+                              className="h-7 text-right text-xs w-14 px-1"
                             />
                           </td>
-                          <td className="p-2 border-r border-slate-100">
+                          <td className="p-2 text-right font-bold text-slate-900">{weightStr(it.netWeight)}</td>
+                          <td className="p-2">
                             <Input
                               type="number"
                               step="0.01"
-                              min="0"
-                              value={row.rate}
-                              onChange={(e) => updateItem(idx, "rate", e.target.value)}
-                              className="h-8 text-xs text-right font-medium"
+                              value={it.rate}
+                              onChange={(e) => handleItemChange(idx, "rate", e.target.value)}
+                              className="h-7 text-right text-xs w-16 px-1 font-semibold"
                             />
                           </td>
-                          <td className="p-2 border-r border-slate-100">
-                            <div className="flex items-center gap-1">
+                          <td className="p-2 text-right font-semibold text-slate-900">{money(it.metalAmount)}</td>
+                          <td className="p-2">
+                            <div className="flex gap-1 items-center justify-center">
                               <select
-                                className="h-8 rounded border border-slate-300 text-[10px] px-1 bg-white font-medium focus:ring-1 focus:ring-blue-500"
-                                value={row.makingChargeType}
-                                onChange={(e) => updateItem(idx, "makingChargeType", e.target.value)}
+                                value={it.makingChargeType}
+                                onChange={(e) => handleItemChange(idx, "makingChargeType", e.target.value)}
+                                className="h-7 text-[10px] rounded border border-slate-300 bg-white px-1"
                               >
                                 <option value="PERCENT">%</option>
-                                <option value="PER_GRAM">/Gm</option>
+                                <option value="PER_GRAM">/g</option>
                                 <option value="FLAT">Flat</option>
                               </select>
                               <Input
                                 type="number"
                                 step="0.01"
-                                min="0"
-                                placeholder={row.makingChargeType === "PERCENT" ? "19.99%" : "Amount"}
-                                value={row.makingChargeRate || (row.makingChargeType === "FLAT" ? row.makingCharges : "")}
-                                onChange={(e) => updateItem(idx, "makingChargeRate", e.target.value)}
-                                className="h-8 text-xs text-right"
+                                value={it.makingChargeRate}
+                                onChange={(e) => handleItemChange(idx, "makingChargeRate", e.target.value)}
+                                className="h-7 text-right text-xs w-12 px-1"
                               />
                             </div>
                           </td>
-                          <td className="p-2 border-r border-slate-100">
+                          <td className="p-2 text-right font-medium">{money(it.makingCharges)}</td>
+                          <td className="p-2">
                             <Input
                               type="number"
                               step="0.01"
-                              min="0"
-                              value={row.otherCharges}
-                              onChange={(e) => updateItem(idx, "otherCharges", e.target.value)}
-                              className="h-8 text-xs text-right"
+                              value={it.stoneAmount}
+                              onChange={(e) => handleItemChange(idx, "stoneAmount", e.target.value)}
+                              className="h-7 text-right text-xs w-14 px-1"
                             />
                           </td>
-                          <td className="p-2 border-r border-slate-100">
+                          <td className="p-2">
                             <Input
                               type="number"
                               step="0.01"
-                              min="0"
-                              value={row.discount}
-                              onChange={(e) => updateItem(idx, "discount", e.target.value)}
-                              className="h-8 text-xs text-right text-red-600"
+                              value={it.otherCharges}
+                              onChange={(e) => handleItemChange(idx, "otherCharges", e.target.value)}
+                              className="h-7 text-right text-xs w-14 px-1"
                             />
                           </td>
-                          <td className="p-2 text-right font-bold text-blue-950 text-xs border-r border-slate-100">
-                            ₹{money(row.totalAmount)}
+                          <td className="p-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={it.discount}
+                              onChange={(e) => handleItemChange(idx, "discount", e.target.value)}
+                              className="h-7 text-right text-xs w-14 px-1 text-red-600 font-medium"
+                            />
                           </td>
+                          <td className="p-2 text-right font-bold text-blue-900">₹{money(it.totalAmount)}</td>
                           <td className="p-2 text-center">
                             <Button
                               variant="ghost"
                               size="icon"
                               onClick={() => removeItem(idx)}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-7 w-7"
+                              className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
-            {/* 4. BOTTOM SECTION: PAYMENTS & HSN SUMMARY VS REAL JEWELLERY AMOUNT BREAKDOWN */}
+            {/* 5. BOTTOM SECTION: PAYMENTS & SUMMARY */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-              {/* LEFT 7 COLS: PAYMENTS, HSN SUMMARY & IN-WORDS */}
-              <div className="lg:col-span-7 space-y-4">
-                {/* PAYMENTS BOX */}
+              {/* LEFT 7 COLS: PAYMENTS & TAX */}
+              <div className="lg:col-span-7 space-y-3">
+                {/* PAYMENT SECTION */}
                 <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                      Payment Mode & Transaction Details
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <Wallet className="h-3.5 w-3.5 text-blue-600" /> Payment Collection
                     </h3>
                     <Button
-                      variant="outline"
+                      type="button"
+                      variant="ghost"
                       size="sm"
                       onClick={() =>
                         setState((prev) => ({
@@ -1157,19 +1512,19 @@ export default function SalesPage() {
                           payments: [...prev.payments, emptyPayment(0)],
                         }))
                       }
-                      className="h-7 text-xs gap-1 border-blue-200 text-blue-600 hover:bg-blue-50"
+                      className="text-xs text-blue-600 hover:text-blue-700 font-semibold h-7 gap-1"
                     >
-                      <Plus className="h-3 w-3" /> Add Payment Row
+                      <Plus className="h-3.5 w-3.5" /> Add Payment Mode
                     </Button>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {state.payments.map((pRow, pIdx) => (
-                      <div key={pIdx} className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-2.5 rounded-lg border border-slate-200 bg-slate-50/60 items-center text-xs">
+                      <div key={pIdx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 bg-slate-50 p-2.5 rounded border border-slate-200 items-center">
                         <div>
                           <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Mode</label>
                           <select
-                            className="h-8 w-full rounded border border-slate-300 px-2 bg-white text-xs font-medium focus:ring-1 focus:ring-blue-500"
+                            className="h-8 w-full rounded border border-slate-300 px-2 text-xs bg-white"
                             value={pRow.paymentMode}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -1181,14 +1536,14 @@ export default function SalesPage() {
                               }));
                             }}
                           >
-                            {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                            {PAYMENT_MODES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                           </select>
                         </div>
 
                         <div>
-                          <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Channel / Wallet</label>
+                          <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Channel</label>
                           <select
-                            className="h-8 w-full rounded border border-slate-300 px-2 bg-white text-xs focus:ring-1 focus:ring-blue-500"
+                            className="h-8 w-full rounded border border-slate-300 px-2 text-xs bg-white"
                             value={pRow.paymentChannel}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -1205,7 +1560,7 @@ export default function SalesPage() {
                         </div>
 
                         <div>
-                          <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Paid Amount (₹) *</label>
+                          <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Amount (₹) *</label>
                           <Input
                             type="number"
                             step="0.01"
@@ -1225,40 +1580,22 @@ export default function SalesPage() {
                           />
                         </div>
 
-                        <div>
-                          <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Tr. / Reference ID</label>
-                          <Input
-                            placeholder="e.g. 565708411501"
-                            value={pRow.transactionId}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setState((prev) => ({
-                                ...prev,
-                                payments: prev.payments.map((p, i) =>
-                                  i === pIdx ? { ...p, transactionId: val, referenceNo: val } : p
-                                ),
-                              }));
-                            }}
-                            className="h-8 text-xs font-mono"
-                          />
-                        </div>
-
                         <div className="flex items-center gap-1">
                           <div className="flex-1">
-                            <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Description</label>
+                            <label className="text-[10px] text-slate-500 font-semibold block mb-0.5">Ref / Tr. ID</label>
                             <Input
-                              placeholder="e.g. UPI/QR RECEIPT"
-                              value={pRow.description}
+                              placeholder="Tr. ID / Ref"
+                              value={pRow.transactionId}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 setState((prev) => ({
                                   ...prev,
                                   payments: prev.payments.map((p, i) =>
-                                    i === pIdx ? { ...p, description: val } : p
+                                    i === pIdx ? { ...p, transactionId: val, referenceNo: val } : p
                                   ),
                                 }));
                               }}
-                              className="h-8 text-xs"
+                              className="h-8 text-xs font-mono"
                             />
                           </div>
                           {state.payments.length > 1 && (
@@ -1288,7 +1625,7 @@ export default function SalesPage() {
                   </div>
                 </div>
 
-                {/* HSN / GST SUMMARY TABLE */}
+                {/* HSN / GST SUMMARY */}
                 <div className="rounded-lg border border-slate-200 bg-white p-3.5 shadow-sm space-y-2">
                   <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-1">
                     HSN / Tax Summary Table
@@ -1413,6 +1750,22 @@ export default function SalesPage() {
                       <span>₹{money(calculations.subTotal)}</span>
                     </div>
 
+                    {/* ADVANCE ADJUSTMENT ROW */}
+                    {calculations.totalAdvanceAdjusted > 0 && (
+                      <div className="flex justify-between py-1 text-emerald-700 font-semibold bg-emerald-50/60 px-2 rounded">
+                        <span>Advance Adjusted [-]</span>
+                        <span>-₹{money(calculations.totalAdvanceAdjusted)}</span>
+                      </div>
+                    )}
+
+                    {/* OLD JEWELLERY ADJUSTMENT ROW */}
+                    {calculations.totalOldGoldAdjusted > 0 && (
+                      <div className="flex justify-between py-1 text-amber-700 font-semibold bg-amber-50/60 px-2 rounded">
+                        <span>Old Jewellery Value [-]</span>
+                        <span>-₹{money(calculations.totalOldGoldAdjusted)}</span>
+                      </div>
+                    )}
+
                     {/* LESS URD */}
                     <div className="flex justify-between items-center py-1">
                       <span className="text-slate-700 font-medium">Less URD [-]</span>
@@ -1469,6 +1822,286 @@ export default function SalesPage() {
         </DialogContent>
       </Dialog>
 
+      {/* CUSTOMER HISTORY & ADJUSTMENT LOGS DIALOG */}
+      <Dialog open={historyModalOpen} onOpenChange={setHistoryModalOpen}>
+        <DialogContent className="!w-[90vw] !max-w-[1050px] max-h-[88vh] flex flex-col p-0 bg-white">
+          <DialogHeader className="border-b border-slate-200 px-6 py-4 bg-slate-50 flex flex-row items-center justify-between">
+            <div>
+              <DialogTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <History className="h-5 w-5 text-blue-600" />
+                Customer History & Adjustment Tracking
+              </DialogTitle>
+              <p className="text-xs text-slate-500">
+                Customer: <strong>{state.customerName || "Customer"}</strong> ({state.customerPhone || "-"}) | ID: #{customerFound?.id || state.customerId || "-"}
+              </p>
+            </div>
+            <div className="flex gap-2 text-xs">
+              <div className="bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded border border-emerald-200 font-medium">
+                Unused Advance: <strong>₹{money(availableAdvances.reduce((s, a) => s + a.balanceAmount, 0))}</strong>
+              </div>
+              <div className="bg-amber-50 text-amber-800 px-2.5 py-1 rounded border border-amber-200 font-medium">
+                Unused Old Gold: <strong>₹{money(availableOldJewellery.reduce((s, oj) => s + oj.balanceAmount, 0))}</strong>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {/* TABS HEADER */}
+          <div className="flex border-b border-slate-200 px-6 bg-slate-50 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setHistoryActiveTab("logs")}
+              className={`py-2.5 px-4 border-b-2 transition ${
+                historyActiveTab === "logs"
+                  ? "border-blue-600 text-blue-600 bg-white"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              Adjustment History Logs ({adjustmentLogsHistory.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryActiveTab("advances")}
+              className={`py-2.5 px-4 border-b-2 transition ${
+                historyActiveTab === "advances"
+                  ? "border-blue-600 text-blue-600 bg-white"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              All Advance Receipts ({allAdvancesHistory.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryActiveTab("oldGold")}
+              className={`py-2.5 px-4 border-b-2 transition ${
+                historyActiveTab === "oldGold"
+                  ? "border-blue-600 text-blue-600 bg-white"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              All Old Jewellery Invoices ({allOldJewelleryHistory.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryActiveTab("sales")}
+              className={`py-2.5 px-4 border-b-2 transition ${
+                historyActiveTab === "sales"
+                  ? "border-blue-600 text-blue-600 bg-white"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              Past Sales ({pastSalesHistory.length})
+            </button>
+          </div>
+
+          {/* TAB CONTENT */}
+          <div className="flex-1 overflow-y-auto p-6 text-xs">
+            {historyActiveTab === "logs" && (
+              <div className="space-y-3">
+                {adjustmentLogsHistory.length === 0 ? (
+                  <p className="text-center text-slate-400 py-8 italic">No previous adjustment logs found for this customer.</p>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-left">
+                        <th className="p-2.5">Date & Time</th>
+                        <th className="p-2.5">Type</th>
+                        <th className="p-2.5">Reference Doc</th>
+                        <th className="p-2.5">Sale Invoice</th>
+                        <th className="p-2.5 text-right">Adjusted (₹)</th>
+                        <th className="p-2.5 text-right">Remaining Bal (₹)</th>
+                        <th className="p-2.5">Cashier</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {adjustmentLogsHistory.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-50">
+                          <td className="p-2.5 text-slate-600">
+                            {log.adjustmentDate ? new Date(log.adjustmentDate).toLocaleString("en-IN") : "-"}
+                          </td>
+                          <td className="p-2.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                log.adjustmentType === "ADVANCE"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-amber-50 text-amber-700 border border-amber-200"
+                              }`}
+                            >
+                              {log.adjustmentType === "ADVANCE" ? "Advance Adjustment" : "Old Jewellery"}
+                            </span>
+                          </td>
+                          <td className="p-2.5 font-mono text-blue-700 font-semibold">{log.referenceDocNo || `#${log.referenceId}`}</td>
+                          <td className="p-2.5 font-semibold text-slate-900">{log.saleInvoiceNo || `#${log.saleId}`}</td>
+                          <td className="p-2.5 text-right font-bold text-emerald-700">₹{money(log.adjustedAmount)}</td>
+                          <td className="p-2.5 text-right font-semibold text-slate-700">₹{money(log.remainingBalance)}</td>
+                          <td className="p-2.5 text-slate-500">{log.cashierName || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {historyActiveTab === "advances" && (
+              <div className="space-y-3">
+                {allAdvancesHistory.length === 0 ? (
+                  <p className="text-center text-slate-400 py-8 italic">No advance payment records found.</p>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-left">
+                        <th className="p-2.5">Receipt No</th>
+                        <th className="p-2.5">Date</th>
+                        <th className="p-2.5 text-right">Total Amount (₹)</th>
+                        <th className="p-2.5 text-right">Used Amount (₹)</th>
+                        <th className="p-2.5 text-right">Available Bal (₹)</th>
+                        <th className="p-2.5 text-center">Status</th>
+                        <th className="p-2.5">Used In Invoices</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {allAdvancesHistory.map((adv) => (
+                        <tr key={adv.id} className="hover:bg-slate-50">
+                          <td className="p-2.5 font-mono font-bold text-blue-700">{adv.receiptNo}</td>
+                          <td className="p-2.5 text-slate-600">{adv.date ? new Date(adv.date).toLocaleDateString("en-IN") : "-"}</td>
+                          <td className="p-2.5 text-right font-semibold">₹{money(adv.totalAmount)}</td>
+                          <td className="p-2.5 text-right text-slate-600">₹{money(adv.adjustedAmount)}</td>
+                          <td className="p-2.5 text-right font-bold text-emerald-700">₹{money(adv.balanceAmount)}</td>
+                          <td className="p-2.5 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                adv.status === "FULLY_ADJUSTED"
+                                  ? "bg-slate-100 text-slate-600"
+                                  : adv.status === "PARTIALLY_ADJUSTED"
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              }`}
+                            >
+                              {adv.status}
+                            </span>
+                          </td>
+                          <td className="p-2.5 text-slate-500">
+                            {adv.adjustments?.length > 0 ? (
+                              <div className="space-y-0.5">
+                                {adv.adjustments.map((a) => (
+                                  <div key={a.id} className="text-[11px]">
+                                    {a.invoiceNo} (₹{money(a.amount)}) on {a.saleDate ? new Date(a.saleDate).toLocaleDateString("en-IN") : ""}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {historyActiveTab === "oldGold" && (
+              <div className="space-y-3">
+                {allOldJewelleryHistory.length === 0 ? (
+                  <p className="text-center text-slate-400 py-8 italic">No old jewellery purchase records found.</p>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-left">
+                        <th className="p-2.5">Invoice No</th>
+                        <th className="p-2.5">Date</th>
+                        <th className="p-2.5">Items Summary</th>
+                        <th className="p-2.5 text-right">Valuation (₹)</th>
+                        <th className="p-2.5 text-right">Used Value (₹)</th>
+                        <th className="p-2.5 text-right">Available Bal (₹)</th>
+                        <th className="p-2.5 text-center">Status</th>
+                        <th className="p-2.5">Used In Invoices</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {allOldJewelleryHistory.map((oj) => (
+                        <tr key={oj.id} className="hover:bg-slate-50">
+                          <td className="p-2.5 font-mono font-bold text-amber-700">{oj.invoiceNo}</td>
+                          <td className="p-2.5 text-slate-600">{oj.date ? new Date(oj.date).toLocaleDateString("en-IN") : "-"}</td>
+                          <td className="p-2.5 text-slate-800">{oj.itemSummary}</td>
+                          <td className="p-2.5 text-right font-semibold">₹{money(oj.totalValuation)}</td>
+                          <td className="p-2.5 text-right text-slate-600">₹{money(oj.adjustedAmount)}</td>
+                          <td className="p-2.5 text-right font-bold text-amber-700">₹{money(oj.balanceAmount)}</td>
+                          <td className="p-2.5 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                oj.status === "FULLY_ADJUSTED"
+                                  ? "bg-slate-100 text-slate-600"
+                                  : oj.status === "PARTIALLY_ADJUSTED"
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              }`}
+                            >
+                              {oj.status}
+                            </span>
+                          </td>
+                          <td className="p-2.5 text-slate-500">
+                            {oj.adjustments?.length > 0 ? (
+                              <div className="space-y-0.5">
+                                {oj.adjustments.map((a) => (
+                                  <div key={a.id} className="text-[11px]">
+                                    {a.invoiceNo} (₹{money(a.amount)}) on {a.saleDate ? new Date(a.saleDate).toLocaleDateString("en-IN") : ""}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+
+            {historyActiveTab === "sales" && (
+              <div className="space-y-3">
+                {pastSalesHistory.length === 0 ? (
+                  <p className="text-center text-slate-400 py-8 italic">No previous sales invoices found for this customer.</p>
+                ) : (
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-left">
+                        <th className="p-2.5">Invoice No</th>
+                        <th className="p-2.5">Date</th>
+                        <th className="p-2.5 text-right">Gross Total (₹)</th>
+                        <th className="p-2.5 text-right">Adv Adj (₹)</th>
+                        <th className="p-2.5 text-right">Old Gold Adj (₹)</th>
+                        <th className="p-2.5 text-right">Net Payable (₹)</th>
+                        <th className="p-2.5 text-right">Paid (₹)</th>
+                        <th className="p-2.5 text-right">Due (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {pastSalesHistory.map((s) => (
+                        <tr key={s.id} className="hover:bg-slate-50">
+                          <td className="p-2.5 font-mono font-bold text-blue-700">{s.invoiceNo}</td>
+                          <td className="p-2.5 text-slate-600">{s.saleDate ? new Date(s.saleDate).toLocaleDateString("en-IN") : "-"}</td>
+                          <td className="p-2.5 text-right font-semibold">₹{money(s.subTotal || s.grossAmount)}</td>
+                          <td className="p-2.5 text-right text-emerald-700 font-medium">{Number(s.advanceAmount || 0) > 0 ? `₹${money(s.advanceAmount)}` : "-"}</td>
+                          <td className="p-2.5 text-right text-amber-700 font-medium">{Number(s.oldGoldAmount || 0) > 0 ? `₹${money(s.oldGoldAmount)}` : "-"}</td>
+                          <td className="p-2.5 text-right font-bold text-slate-900">₹{money(s.netPayable)}</td>
+                          <td className="p-2.5 text-right text-emerald-700 font-semibold">₹{money(s.paidAmount)}</td>
+                          <td className="p-2.5 text-right text-red-600 font-bold">{Number(s.dueAmount || 0) > 0 ? `₹${money(s.dueAmount)}` : "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* INVOICE PREVIEW MODAL */}
       <SalesInvoicePreviewModal
         open={previewOpen}
@@ -1478,5 +2111,3 @@ export default function SalesPage() {
     </div>
   );
 }
-
-

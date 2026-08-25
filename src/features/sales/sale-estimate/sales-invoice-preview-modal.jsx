@@ -114,6 +114,15 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
           <div className="grid grid-cols-2 gap-4 pb-3 mb-2 text-xs border-b border-gray-300">
             {/* LEFT: CUSTOMER DETAILS */}
             <div className="space-y-1">
+              {(sale.customerId || sale.customer?.id || sale.customer?.customerCode) && (
+                <div className="grid grid-cols-[85px_10px_1fr]">
+                  <span className="font-semibold text-gray-700">Customer ID</span>
+                  <span>:</span>
+                  <span className="font-bold text-blue-700">
+                    #{sale.customerId || sale.customer?.id} {sale.customer?.customerCode ? `(${sale.customer?.customerCode})` : ""}
+                  </span>
+                </div>
+              )}
               <div className="grid grid-cols-[85px_10px_1fr]">
                 <span className="font-semibold text-gray-700">Name</span>
                 <span>:</span>
@@ -355,10 +364,18 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
                 <span>Sub Total</span>
                 <span>{money(subTotalAmt)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Less URD [-]</span>
-                <span>{money(lessUrdAmt)}</span>
-              </div>
+              {Number(sale.advanceAmount || 0) > 0 && (
+                <div className="flex justify-between text-emerald-700 font-medium">
+                  <span>Advance Adj. [-]</span>
+                  <span>{money(sale.advanceAmount)}</span>
+                </div>
+              )}
+              {Number(sale.oldGoldAmount || lessUrdAmt || 0) > 0 && (
+                <div className="flex justify-between text-amber-700 font-medium">
+                  <span>Old Jewellery / Less URD [-]</span>
+                  <span>{money(sale.oldGoldAmount || lessUrdAmt)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Round Off [ +/- ]</span>
                 <span>{money(roundOffAmt)}</span>
@@ -367,6 +384,16 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
                 <span>Net Payable</span>
                 <span>{money(netPayableAmt)}</span>
               </div>
+              <div className="flex justify-between font-semibold text-emerald-700">
+                <span>Paid Amount</span>
+                <span>{money(sale.paidAmount || paidAmountVal)}</span>
+              </div>
+              {Number(sale.dueAmount ?? Math.max(0, netPayableAmt - (sale.paidAmount || paidAmountVal))) > 0 && (
+                <div className="flex justify-between font-bold text-red-600">
+                  <span>Due Amount</span>
+                  <span>{money(sale.dueAmount ?? Math.max(0, netPayableAmt - (sale.paidAmount || paidAmountVal)))}</span>
+                </div>
+              )}
 
               <div className="pt-2 text-xs">
                 <div className="font-bold">Cashier : {sale.cashierName || "AdityaSahoo"}</div>
