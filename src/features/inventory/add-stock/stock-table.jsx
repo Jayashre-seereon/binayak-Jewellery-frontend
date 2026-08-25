@@ -65,8 +65,13 @@ export default function StockTable({
             <th className="p-3 text-left">Purchase Type</th>
             <th className="p-3 text-left">Purchase Item</th>
             <th className="p-3 text-left">Product</th>
+            <th className="p-3 text-center">Pcs</th>
+            <th className="p-3 text-right">Gross Wt</th>
+            <th className="p-3 text-right">Net Wt</th>
             <th className="p-3 text-left">Tag No</th>
             <th className="p-3 text-left">Barcode</th>
+            <th className="p-3 text-left">HSN/SAC</th>
+            <th className="p-3 text-left">HUID No</th>
             <th className="p-3 text-left">Status</th>
             <th className="p-3 text-right">Action</th>
           </tr>
@@ -98,8 +103,13 @@ export default function StockTable({
                     "-"}
                 </td>
                 <td className="p-3">{getProductName(row)}</td>
+                <td className="p-3 text-center font-semibold">{row.pieces ?? row.purchaseItem?.pieces ?? 1}</td>
+                <td className="p-3 text-right">{Number(row.grossWeight ?? row.purchaseItem?.grossWeight ?? 0).toFixed(3)}g</td>
+                <td className="p-3 text-right font-medium text-blue-900">{Number(row.netWeight ?? row.purchaseItem?.netWeight ?? 0).toFixed(3)}g</td>
                 <td className="p-3">{row.tagNo || "-"}</td>
                 <td className="p-3">{row.barcodeNo || "-"}</td>
+                <td className="p-3 font-mono text-xs">{row.hsnCode || row.purchaseItem?.hsnCode || "711319"}</td>
+                <td className="p-3 font-semibold text-blue-900">{row.huidNo || row.purchaseItem?.huidNo || "-"}</td>
                 <td className="p-3">
                   {(() => {
                     const currentStatus = row.status || "AVAILABLE";

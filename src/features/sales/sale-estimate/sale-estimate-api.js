@@ -21,3 +21,13 @@ export const getSalePdf = async (id) => {
   });
   return res.data;
 };
+
+export const getInventoryByBarcode = async (barcode) => {
+  try {
+    const res = await http.get(`/api/inventories/getByBarcode/${encodeURIComponent(barcode)}`);
+    return res.data?.inventory ?? null;
+  } catch (error) {
+    return null;
+  }
+};
+

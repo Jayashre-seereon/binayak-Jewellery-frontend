@@ -30,6 +30,8 @@ export default function PurchaseForm({ open, setOpen, onSave }) {
     setItems([
       ...items,
       {
+        hsnCode: "711319",
+        huidNo: "",
         grossWt: 0,
         stoneWt: 0,
         netWt: 0,
@@ -154,6 +156,8 @@ export default function PurchaseForm({ open, setOpen, onSave }) {
 
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="p-2 text-left">HSN/SAC</th>
+                    <th className="p-2 text-left">HUID No.</th>
                     <th className="p-2 text-left">Gross</th>
                     <th className="p-2 text-left">Stone</th>
                     <th className="p-2 text-left">Net</th>
@@ -168,6 +172,13 @@ export default function PurchaseForm({ open, setOpen, onSave }) {
                 <tbody>
                   {items.map((row, i) => (
                     <tr key={i} className="border-t">
+                      <td className="p-2">
+                        <Input className="h-8" value={row.hsnCode || "711319"} onChange={(e) => updateItem(i, "hsnCode", e.target.value)} />
+                      </td>
+
+                      <td className="p-2">
+                        <Input className="h-8" value={row.huidNo || ""} placeholder="HUID" onChange={(e) => updateItem(i, "huidNo", e.target.value)} />
+                      </td>
 
                       <td className="p-2">
                         <Input className="h-8" onChange={(e)=>updateItem(i,"grossWt",e.target.value)} />

@@ -3,10 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { onlyDecimal, onlyDigits, onlyAlphaNumeric } from "@/utils/validation";
-import {getEmployees} from "@/api/employee-api";
-import{getParties} from "@/api/party-api";
-import{getMetals} from "@/api/metal-api";
-import{getStones} from "@/api/stone-api";
+import { getEmployees } from "@/api/employee-api";
+import { getParties } from "@/api/party-api";
+import { getMetals } from "@/api/metal-api";
+import { getStones } from "@/api/stone-api";
 import {
   PURCHASE_TYPES,
   PAYMENT_MODES,
@@ -18,35 +18,45 @@ import { getProductsByMetal } from "@/api/product-api";
 import { getItemsByProduct } from "@/api/item-api";
 import { getStonesByProductAndItem } from "@/api/stone-api";
 
+const PAYMENT_CHANNELS = [
+  "Cash",
+  "PhonePe",
+  "GooglePay",
+  "PayTM",
+  "BHIM UPI",
+  "HDFC Bank",
+  "SBI Bank",
+  "ICICI Bank",
+  "Axis Bank",
+  "Net Banking",
+  "Debit Card",
+  "Credit Card",
+  "Cheque",
+  "Other",
+];
+
+const roundMoney = (v) => Math.round((Number(v || 0) + Number.EPSILON) * 100) / 100;
+const roundWeight = (v) => Math.round((Number(v || 0) + Number.EPSILON) * 1000) / 1000;
+
 const ITEM_FIELDS = [
-   { key: "metalId", label: "Metal", kind: "select", options: "metals" },
+  { key: "metalId", label: "Metal", kind: "select", options: "metals" },
   { key: "productId", label: "Product", kind: "select", options: "products" },
   { key: "itemId", label: "Item", kind: "select", options: "items" },
   { key: "purityId", label: "Purity", kind: "select", options: "purities" },
   { key: "gradeId", label: "Grade", kind: "select", options: "grades" },
   { key: "stoneId", label: "Stone", kind: "select", options: "stones" },
-  //{ key: "pieces", label: "Pcs", kind: "number" },
+  { key: "pieces", label: "Pcs", kind: "number", step: "1", min: "1" },
   { key: "grossWeight", label: "Gross Wt", kind: "number", step: "0.001" },
   { key: "stoneWeight", label: "Stone Wt", kind: "number", step: "0.001" },
-  { key: "dustWeight", label: "Dust Wt", kind: "number", step: "0.001", types: ["OLD"] },
-  { key: "deductionWeight", label: "Deduction Wt", kind: "number", step: "0.001", types: ["OLD"] },
   { key: "netWeight", label: "Net Wt", kind: "calc" },
-  //{ key: "purity", label: "Purity %", kind: "number", step: "0.01" },
-  { key: "touchPercentage", label: "Touch %", kind: "number", step: "0.01", types: ["OLD"] },
-  { key: "fineness", label: "Fineness", kind: "number", step: "0.001", types: ["BULLION"] },
-  { key: "pureWeight", label: "Pure Wt", kind: "calc" },
   { key: "rate", label: "Rate", kind: "number", step: "1" },
-  { key: "makingCharges", label: "Making Charges", kind: "number", types: ["ORNAMENT"] },
-  { key: "wastagePercentage", label: "Wastage %", kind: "number", types: ["ORNAMENT"] },
-  { key: "hallmarkCharges", label: "Hallmark Charges", kind: "number", types: ["ORNAMENT"] },
   { key: "metalAmount", label: "Metal Amt", kind: "calc", money: true },
   { key: "stoneAmount", label: "Stone Amt", kind: "number", step: "0.01" },
   { key: "otherAmount", label: "Other Amt", kind: "number", step: "0.01" },
   { key: "discount", label: "Discount", kind: "number", step: "0.01" },
   { key: "totalAmount", label: "Total", kind: "calc", money: true },
+  { key: "hsnCode", label: "HSN/SAC", kind: "text" },
   { key: "huidNo", label: "HUID No.", kind: "text" },
-  { key: "barSerialNo", label: "Bar Serial", kind: "text", types: ["BULLION"] },
-  { key: "assayCertNo", label: "Assay Cert", kind: "text", types: ["BULLION"] },
   { key: "itemPhoto", label: "Photo", kind: "file" },
   { key: "narration", label: "Narration", kind: "text" },
 ];
@@ -60,7 +70,7 @@ let rowCounter = 1;
 function createRow() {
   return {
     id: rowCounter++,
-     metalId: "",
+    metalId: "",
     productId: "",
     itemId: "",
     purityId: "",
@@ -71,33 +81,19 @@ function createRow() {
     purities: [],
     grades: [],
     stones: [],
-    pieces: "",
+    pieces: 1,
     grossWeight: "",
     stoneWeight: "",
     netWeight: "",
-    dustWeight: "",
-    deductionWeight: "",
     purity: "",
-    touchPercentage: "",
-    fineness: "",
-    pureWeight: "",
     rate: "",
-    makingCharges: "",
-    wastagePercentage: "",
-    hallmarkCharges: "",
     metalAmount: "",
     stoneAmount: "",
     otherAmount: "",
     discount: "",
-    igst: "",
-    cgst: "",
-    sgst: "",
-    taxAmount: "",
-    roundOff: "",
     totalAmount: "",
+    hsnCode: "711319",
     huidNo: "",
-    barSerialNo: "",
-    assayCertNo: "",
     narration: "",
     itemPhoto: null,
   };
@@ -107,51 +103,34 @@ function calcRow(row) {
   const hasAnyInput =
     row.grossWeight !== "" ||
     row.stoneWeight !== "" ||
-    row.dustWeight !== "" ||
-    row.deductionWeight !== "" ||
-    row.purity !== "" ||
-    row.touchPercentage !== "" ||
     row.rate !== "" ||
-    row.makingCharges !== "" ||
-    row.hallmarkCharges !== "" ||
     row.stoneAmount !== "" ||
     row.otherAmount !== "" ||
     row.discount !== "";
 
+  const pieces = Math.max(1, parseInt(row.pieces) || 1);
   const grossWeight = parseFloat(row.grossWeight) || 0;
   const stoneWeight = parseFloat(row.stoneWeight) || 0;
-  const dustWeight = parseFloat(row.dustWeight) || 0;
-  const deductionWeight = parseFloat(row.deductionWeight) || 0;
-  const purity = parseFloat(row.purity) || 0;
-  const touchPercentage = parseFloat(row.touchPercentage) || 0;
   const rate = parseFloat(row.rate) || 0;
-  const makingCharges = parseFloat(row.makingCharges) || 0;
-  const hallmarkCharges = parseFloat(row.hallmarkCharges) || 0;
   const stoneAmount = parseFloat(row.stoneAmount) || 0;
   const otherAmount = parseFloat(row.otherAmount) || 0;
   const discount = parseFloat(row.discount) || 0;
-  const netWeight = grossWeight - stoneWeight - dustWeight - deductionWeight;
-  const effectivePurity = purity || touchPercentage;
-  const pureWeight = netWeight * (effectivePurity / 100);
-  const metalAmount = pureWeight * rate;
-  const totalAmount = metalAmount + stoneAmount + otherAmount + makingCharges + hallmarkCharges - discount;
+
+  const netWeight = roundWeight(Math.max(0, grossWeight - stoneWeight));
+  const metalAmount = roundMoney(netWeight * rate);
+  const totalAmount = roundMoney(Math.max(0, metalAmount + stoneAmount + otherAmount - discount));
 
   if (!hasAnyInput) {
     return {
       ...row,
+      pieces,
       grossWeight: "",
       stoneWeight: "",
-      dustWeight: "",
-      deductionWeight: "",
-      touchPercentage: "",
       rate: "",
-      makingCharges: "",
-      hallmarkCharges: "",
       stoneAmount: "",
       otherAmount: "",
       discount: "",
       netWeight: "",
-      pureWeight: "",
       metalAmount: "",
       totalAmount: "",
     };
@@ -159,19 +138,14 @@ function calcRow(row) {
 
   return {
     ...row,
+    pieces,
     grossWeight,
     stoneWeight,
-    dustWeight,
-    deductionWeight,
-    touchPercentage,
     rate,
-    makingCharges,
-    hallmarkCharges,
     stoneAmount,
     otherAmount,
     discount,
     netWeight,
-    pureWeight,
     metalAmount,
     totalAmount,
   };
@@ -212,9 +186,16 @@ function normalizeDecimalInput(value = "") {
   return `${wholePart}.${fractionPart}`;
 }
 
-function pickNestedId(item, directKey, nestedKey) {
-  return toId(item?.[directKey] ?? item?.[nestedKey]?.id ?? item?.[nestedKey]?.itemId ?? "");
-}
+const emptyPayment = (defaultAmount = 0) => ({
+  paymentMode: "CASH",
+  paymentChannel: "Cash",
+  amount: defaultAmount,
+  transactionId: "",
+  referenceNo: "",
+  description: "Direct Payment",
+  paymentDate: new Date().toISOString().slice(0, 10),
+  narration: "",
+});
 
 function buildInitialForm(defaultValues) {
   const today = new Date().toISOString().split("T")[0];
@@ -274,13 +255,14 @@ function buildInitialForm(defaultValues) {
 }
 
 function buildInitialItems(defaultValues) {
-  if (!Array.isArray(defaultValues?.items) || defaultValues.items.length === 0) {
+  const rawItems = defaultValues?.items || defaultValues?.purchaseItems;
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
     return [createRow()];
   }
 
-  return defaultValues.items.map((item, index) => ({
+  return rawItems.map((item, index) => ({
     id: item.id ?? index + 1,
-     metalId: toId(item.metalId ?? item.metal?.id ?? item.product?.metalId ?? ""),
+    metalId: toId(item.metalId ?? item.metal?.id ?? item.product?.metalId ?? ""),
     productId: toId(item.productId ?? item.product?.id ?? item.stone?.productId ?? ""),
     itemId: toId(item.itemId ?? item.item?.id ?? item.stone?.itemId ?? ""),
     purityId: toId(item.purityId ?? item.purityMaster?.id ?? item.purity?.id ?? ""),
@@ -291,67 +273,88 @@ function buildInitialItems(defaultValues) {
     purities: [],
     grades: [],
     stones: [],
-    pieces: toFieldValue(item.pieces ?? ""),
+    pieces: Math.max(1, Number(item.pieces || 1)),
     grossWeight: toFieldValue(item.grossWeight),
     stoneWeight: toFieldValue(item.stoneWeight),
-    netWeight: 0,
-    dustWeight: toFieldValue(item.dustWeight),
-    deductionWeight: toFieldValue(item.deductionWeight),
+    netWeight: item.netWeight ?? "",
     purity: toFieldValue(item.purity),
-    touchPercentage: toFieldValue(item.touchPercentage),
-    fineness: toFieldValue(item.fineness),
-    pureWeight: item.pureWeight ?? 0,
     rate: toFieldValue(item.rate),
-    makingCharges: toFieldValue(item.makingCharges),
-    wastagePercentage: toFieldValue(item.wastagePercentage),
-    hallmarkCharges: toFieldValue(item.hallmarkCharges),
-    metalAmount: item.metalAmount ?? 0,
+    metalAmount: item.metalAmount ?? "",
     stoneAmount: toFieldValue(item.stoneAmount),
     otherAmount: toFieldValue(item.otherAmount),
     discount: toFieldValue(item.discount),
-    igst: toFieldValue(item.igst),
-    cgst: toFieldValue(item.cgst),
-    sgst: toFieldValue(item.sgst),
-    taxAmount: toFieldValue(item.taxAmount),
-    roundOff: toFieldValue(item.roundOff),
-    totalAmount: 0,
+    totalAmount: item.totalAmount ?? "",
+    hsnCode: toFieldValue(item.hsnCode) || "711319",
     huidNo: toFieldValue(item.huidNo),
-    barSerialNo: toFieldValue(item.barSerialNo),
-    assayCertNo: toFieldValue(item.assayCertNo),
     narration: toFieldValue(item.narration),
     itemPhoto: null,
   }));
 }
 
+function buildInitialPayments(defaultValues) {
+  if (Array.isArray(defaultValues?.payments) && defaultValues.payments.length > 0) {
+    return defaultValues.payments.map((p) => ({
+      paymentMode: p.paymentMode || "CASH",
+      paymentChannel: p.paymentChannel || "Cash",
+      amount: Number(p.amount || 0),
+      transactionId: p.transactionId || p.referenceNo || "",
+      referenceNo: p.referenceNo || p.transactionId || "",
+      description: p.description || "",
+      paymentDate: p.paymentDate ? String(p.paymentDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
+      narration: p.narration || "",
+    }));
+  }
+  if (Number(defaultValues?.paidAmount || 0) > 0) {
+    return [
+      {
+        paymentMode: defaultValues.paymentMode || "CASH",
+        paymentChannel: "Cash",
+        amount: Number(defaultValues.paidAmount),
+        transactionId: "",
+        referenceNo: "",
+        description: "Direct Payment",
+        paymentDate: new Date().toISOString().slice(0, 10),
+        narration: "",
+      },
+    ];
+  }
+  return [emptyPayment(0)];
+}
+
 async function hydrateRowOptions(row) {
   const next = { ...row };
-  if (next.metalId) {
-    const [purities, products] = await Promise.all([
-      getPuritiesByMetal(next.metalId).catch(() => []),
-      getProductsByMetal(next.metalId).catch(() => []),
-    ]);
-    next.purities = normalizeList(purities);
-    next.products = normalizeList(products);
-  }
-  if (next.productId) {
-    next.items = normalizeList(await getItemsByProduct(next.productId).catch(() => []));
-  }
-  if (next.productId && !next.itemId && next.items.length === 1) {
-    next.itemId = toId(next.items[0].id);
-  }
-  if (next.purityId) {
-    next.grades = normalizeList(await getGradesByPurity(next.purityId).catch(() => []));
-  }
-  if (next.productId && next.itemId) {
-    next.stones = normalizeList(await getStonesByProductAndItem(next.productId, next.itemId).catch(() => []));
+  try {
+    if (next.metalId) {
+      const [purities, products] = await Promise.all([
+        getPuritiesByMetal(next.metalId).catch(() => []),
+        getProductsByMetal(next.metalId).catch(() => []),
+      ]);
+      next.purities = normalizeList(purities);
+      next.products = normalizeList(products);
+    }
+    if (next.productId) {
+      next.items = normalizeList(await getItemsByProduct(next.productId).catch(() => []));
+    }
+    if (next.productId && !next.itemId && next.items.length === 1) {
+      next.itemId = toId(next.items[0].id);
+    }
+    if (next.purityId) {
+      next.grades = normalizeList(await getGradesByPurity(next.purityId).catch(() => []));
+    }
+    if (next.productId && next.itemId) {
+      next.stones = normalizeList(await getStonesByProductAndItem(next.productId, next.itemId).catch(() => []));
+    }
+  } catch (e) {
+    console.error("Hydrate error:", e);
   }
   return calcRow(next);
 }
 
 export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }) {
   const [form, setForm] = useState(buildInitialForm(defaultValues));
-  const [items, setItems] = useState(buildInitialItems(defaultValues));
-  const [options, setOptions] = useState({ employees: [], parties: [], metals: [] });
+  const [items, setItems] = useState(() => buildInitialItems(defaultValues));
+  const [payments, setPayments] = useState(() => buildInitialPayments(defaultValues));
+  const [options, setOptions] = useState({ employees: [], parties: [], metals: [], stones: [] });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -362,23 +365,27 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       setLoading(true);
       try {
         const [employees, parties, metals, stones] = await Promise.all([
-          getEmployees(),
-          getParties(),
-          getMetals(),
-          getStones(),
+          getEmployees().catch(() => []),
+          getParties().catch(() => []),
+          getMetals().catch(() => []),
+          getStones().catch(() => []),
         ]);
         const nextForm = buildInitialForm(defaultValues);
         const seededItems = buildInitialItems(defaultValues);
+        const seededPayments = buildInitialPayments(defaultValues);
         const hydratedItems = await Promise.all(seededItems.map((row) => hydrateRowOptions(row)));
         if (!active) return;
         setForm(nextForm);
-        setItems(hydratedItems);
+        setItems(hydratedItems.length > 0 ? hydratedItems : [createRow()]);
+        setPayments(seededPayments);
         setOptions({
           employees: normalizeList(employees),
           parties: normalizeList(parties),
           metals: normalizeList(metals),
           stones: normalizeList(stones),
         });
+      } catch (err) {
+        console.error("Options error:", err);
       } finally {
         if (active) setLoading(false);
       }
@@ -390,7 +397,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
 
   const updateForm = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
   const addRow = () => setItems((prev) => [...prev, createRow()]);
-  const deleteRow = (id) => setItems((prev) => prev.filter((r) => r.id !== id));
+  const deleteRow = (id) => setItems((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
 
   const updateItem = (id, field, value) => {
     setItems((prev) =>
@@ -454,18 +461,61 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     );
   };
 
+  // Payment handlers
+  const addPaymentRow = () => setPayments((prev) => [...prev, emptyPayment(0)]);
+  const removePaymentRow = (idx) => setPayments((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : [emptyPayment(0)]));
+  const updatePaymentRow = (idx, field, val) => setPayments((prev) => prev.map((p, i) => (i === idx ? { ...p, [field]: val } : p)));
+
+  const totalPieces = items.reduce((s, r) => s + (parseInt(r.pieces) || 1), 0);
   const totalGross = items.reduce((s, r) => s + (parseFloat(r.grossWeight) || 0), 0);
-  const totalNet = items.reduce((s, r) => s + (r.netWeight || 0), 0);
-  const totalPure = items.reduce((s, r) => s + (r.pureWeight || 0), 0);
-  const subTotal = items.reduce((s, r) => s + (r.totalAmount || 0), 0);
+  const totalNet = items.reduce((s, r) => s + (parseFloat(r.netWeight) || 0), 0);
+  const subTotal = items.reduce((s, r) => s + (parseFloat(r.totalAmount) || 0), 0);
   const invoiceDiscount = parseFloat(form.discount) || 0;
-  const taxTotal =
-    (parseFloat(form.igst) || 0) +
-    (parseFloat(form.cgst) || 0) +
-    (parseFloat(form.sgst) || 0) +
-    (parseFloat(form.taxAmount) || 0) +
-    (parseFloat(form.roundOff) || 0);
-  const grandTotal = subTotal - invoiceDiscount + taxTotal;
+  const taxableAmount = Math.max(0, subTotal - invoiceDiscount);
+
+  const isInterState =
+    form.placeOfSupply &&
+    form.placeOfSupply.trim().toUpperCase() !== "ODISHA" &&
+    form.placeOfSupply.trim().toUpperCase() !== "";
+
+  const autoIGST = isInterState ? roundMoney((taxableAmount * 3.0) / 100) : 0;
+  const autoCGST = !isInterState ? roundMoney((taxableAmount * 1.5) / 100) : 0;
+  const autoSGST = !isInterState ? roundMoney((taxableAmount * 1.5) / 100) : 0;
+
+  const manualIGST = parseFloat(form.igst);
+  const manualCGST = parseFloat(form.cgst);
+  const manualSGST = parseFloat(form.sgst);
+  const manualTax = parseFloat(form.taxAmount);
+  const manualRoundOff = parseFloat(form.roundOff);
+
+  const igst = !isNaN(manualIGST) && form.igst !== "" ? manualIGST : autoIGST;
+  const cgst = !isNaN(manualCGST) && form.cgst !== "" ? manualCGST : autoCGST;
+  const sgst = !isNaN(manualSGST) && form.sgst !== "" ? manualSGST : autoSGST;
+  const taxAmount = !isNaN(manualTax) && form.taxAmount !== "" ? manualTax : roundMoney(igst + cgst + sgst);
+
+  const rawSubTotal = roundMoney(taxableAmount + taxAmount);
+  const autoRoundOff = roundMoney(Math.round(rawSubTotal) - rawSubTotal);
+  const roundOff = !isNaN(manualRoundOff) && form.roundOff !== "" ? manualRoundOff : autoRoundOff;
+  const grandTotal = roundMoney(rawSubTotal + roundOff);
+
+  const paidAmount = roundMoney(payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0));
+  const dueAmount = roundMoney(Math.max(0, grandTotal - paidAmount));
+
+  const syncPaymentAmount = () => {
+    setPayments([
+      {
+        paymentMode: payments[0]?.paymentMode || "CASH",
+        paymentChannel: payments[0]?.paymentChannel || "Cash",
+        amount: grandTotal,
+        transactionId: payments[0]?.transactionId || "",
+        referenceNo: payments[0]?.referenceNo || "",
+        description: "Full Purchase Settlement",
+        paymentDate: new Date().toISOString().slice(0, 10),
+        narration: "",
+      },
+    ]);
+  };
+
   const visibleFields = fieldsForType(form.purchaseType);
   const selectCls = "h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
@@ -481,7 +531,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
           value={row[field.key]}
           onChange={(e) => updateItem(row.id, field.key, e.target.value)}
         >
-          <option value="">-</option>
+          <option value="">Select</option>
           {list.map((o) => (
             <option key={o.id} value={o.id}>
               {o.name}
@@ -490,13 +540,22 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
         </select>
       );
     }
+
     if (field.kind === "file") {
-      return <Input type="file" onChange={(e) => updateItem(row.id, field.key, e.target.files?.[0] ?? null)} />;
+      return (
+        <Input
+          type="file"
+          onChange={(e) => updateItem(row.id, field.key, e.target.files?.[0] ?? null)}
+        />
+      );
     }
-    const handleNumberChange = (e) => {
-      updateItem(row.id, field.key, normalizeDecimalInput(e.target.value));
-    };
+
     const inputType = field.kind === "number" ? "text" : "text";
+    const handleNumberChange = (e) => {
+      const normalized = normalizeDecimalInput(e.target.value);
+      updateItem(row.id, field.key, normalized);
+    };
+
     return (
       <Input
         type={inputType}
@@ -511,36 +570,29 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
 
   const handleSave = () => {
     const nextErrors = {};
-    const referenceNo = form.referenceNo.trim();
-    const customerName = form.customerName.trim();
+    const referenceNo = (form.referenceNo || "").trim();
+    const customerName = (form.customerName || "").trim();
     const customerPhone = String(form.customerPhone || "").trim();
     const customerIdType = String(form.customerIdType || "").trim();
     const customerIdNumber = String(form.customerIdNumber || "").trim();
 
     if (!form.partyId) nextErrors.partyId = "Party is required.";
     if (!customerName) nextErrors.customerName = "Customer name is required.";
-    if (referenceNo && !/^[A-Za-z0-9\s.-]+$/.test(referenceNo)) {
-      nextErrors.referenceNo = "Reference No. can contain only letters, numbers, spaces, dots, and hyphens.";
-    }
     if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
       nextErrors.customerPhone = "Phone must be exactly 10 digits.";
     }
     if (customerIdType && !customerIdNumber) {
       nextErrors.customerIdNumber = "ID number is required when ID type is selected.";
     }
-    if (customerIdNumber && !/^[A-Za-z0-9\s.-]+$/.test(customerIdNumber)) {
-      nextErrors.customerIdNumber = "ID number can contain only letters, numbers, spaces, dots, and hyphens.";
-    }
     if (!form.date) nextErrors.date = "Date is required.";
-    if (!form.referenceDate) nextErrors.referenceDate = "Reference date is required.";
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
     const payload = {
       purchaseType: form.purchaseType,
-      partyId: form.partyId || undefined,
-      employeeId: form.employeeId || undefined,
+      partyId: form.partyId ? Number(form.partyId) : undefined,
+      employeeId: form.employeeId ? Number(form.employeeId) : undefined,
       date: form.date,
       referenceNo: form.referenceNo,
       referenceDate: form.referenceDate,
@@ -551,19 +603,48 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       customerPhone: form.customerPhone,
       customerIdType: form.customerIdType,
       customerIdNumber: form.customerIdNumber,
-      igst: form.igst,
-      cgst: form.cgst,
-      sgst: form.sgst,
-      taxAmount: form.taxAmount,
-      roundOff: form.roundOff,
-      subtotal: subTotal,
+      grossAmount: subTotal,
+      taxableAmount,
+      subtotal: rawSubTotal,
       discount: invoiceDiscount,
-      taxTotal,
+      igst,
+      cgst,
+      sgst,
+      taxAmount,
+      roundOff,
       totalAmount: grandTotal,
-      paymentMode: form.paymentMode,
-      paidAmount: parseFloat(form.paidAmount) || 0,
+      netPayable: grandTotal,
+      paymentMode: payments[0]?.paymentMode || "CASH",
+      paidAmount,
+      dueAmount,
       narration: form.narration,
-      items: items.map(({ id, itemPhoto, products, items, purities, grades, stones, tagNo, ...rest }) => rest),
+      payments: payments
+        .filter((p) => Number(p.amount || 0) > 0)
+        .map((p) => ({
+          paymentMode: p.paymentMode,
+          paymentChannel: p.paymentChannel,
+          amount: Number(p.amount || 0),
+          transactionId: p.transactionId || p.referenceNo,
+          referenceNo: p.referenceNo || p.transactionId,
+          description: p.description,
+          paymentDate: p.paymentDate,
+          narration: p.narration,
+        })),
+      items: items.map(({ id, itemPhoto, products, items, purities, grades, stones, tagNo, ...rest }) => ({
+        ...rest,
+        pieces: Math.max(1, Number(rest.pieces || 1)),
+        grossWeight: Number(rest.grossWeight || 0),
+        stoneWeight: Number(rest.stoneWeight || 0),
+        netWeight: Number(rest.netWeight || 0),
+        rate: Number(rest.rate || 0),
+        metalAmount: Number(rest.metalAmount || 0),
+        stoneAmount: Number(rest.stoneAmount || 0),
+        otherAmount: Number(rest.otherAmount || 0),
+        discount: Number(rest.discount || 0),
+        totalAmount: Number(rest.totalAmount || 0),
+        hsnCode: rest.hsnCode || "711319",
+        huidNo: rest.huidNo || null,
+      })),
     };
 
     const fd = new FormData();
@@ -712,9 +793,11 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <div key={row.id} className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-medium">Item {index + 1}</h3>
-                  <Button size="sm" variant="ghost" className="h-8 px-2 text-destructive hover:bg-destructive/10" onClick={() => deleteRow(row.id)}>
-                    Remove
-                  </Button>
+                  {items.length > 1 && (
+                    <Button size="sm" variant="ghost" className="h-8 px-2 text-destructive hover:bg-destructive/10" onClick={() => deleteRow(row.id)}>
+                      Remove
+                    </Button>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -732,22 +815,54 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
 
         <div className="grid grid-cols-2 gap-4 mt-2">
           <div className="border rounded-lg p-4 space-y-3">
-            <h3 className="font-medium text-sm">Payment</h3>
-            <div className="grid grid-cols-3 gap-2">
-              <select className={selectCls} value={form.paymentMode} onChange={(e) => updateForm("paymentMode", e.target.value)}>
-                {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-              <Input type="text" inputMode="decimal" placeholder="Paid Amount" value={form.paidAmount} onChange={(e) => updateForm("paidAmount", normalizeDecimalInput(e.target.value))} />
-              <Input type="text" inputMode="decimal" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", normalizeDecimalInput(e.target.value))} />
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-sm">Payment Details</h3>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" type="button" onClick={syncPaymentAmount} className="h-7 text-xs">
+                  Sync Net Payable
+                </Button>
+                <Button size="sm" variant="outline" type="button" onClick={addPaymentRow} className="h-7 text-xs">
+                  + Add Mode
+                </Button>
+              </div>
             </div>
-            <Input placeholder="Narration" value={form.narration} onChange={(e) => updateForm("narration", e.target.value)} />
+
+            <div className="space-y-2">
+              {payments.map((pmt, idx) => (
+                <div key={idx} className="grid grid-cols-4 gap-2 items-center">
+                  <select className={selectCls} value={pmt.paymentMode} onChange={(e) => updatePaymentRow(idx, "paymentMode", e.target.value)}>
+                    {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                  <select className={selectCls} value={pmt.paymentChannel} onChange={(e) => updatePaymentRow(idx, "paymentChannel", e.target.value)}>
+                    {PAYMENT_CHANNELS.map((ch) => <option key={ch} value={ch}>{ch}</option>)}
+                  </select>
+                  <Input type="text" inputMode="decimal" placeholder="Paid Amount" value={pmt.amount} onChange={(e) => updatePaymentRow(idx, "amount", normalizeDecimalInput(e.target.value))} />
+                  <div className="flex gap-1">
+                    <Input placeholder="Txn / Ref No." value={pmt.transactionId} onChange={(e) => updatePaymentRow(idx, "transactionId", e.target.value)} />
+                    {payments.length > 1 && (
+                      <Button size="sm" variant="ghost" type="button" onClick={() => removePaymentRow(idx)} className="h-9 px-2 text-destructive">
+                        ×
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <Input type="text" inputMode="decimal" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", normalizeDecimalInput(e.target.value))} />
+              <Input placeholder="Narration" value={form.narration} onChange={(e) => updateForm("narration", e.target.value)} />
+            </div>
           </div>
 
           <div className="border rounded-lg p-4 space-y-1">
             {[
               { label: "Total Gross Wt", value: `${totalGross.toFixed(3)} gm` },
               { label: "Total Net Wt", value: `${totalNet.toFixed(3)} gm` },
-              { label: "Total Pure Wt", value: `${totalPure.toFixed(3)} gm` },
+              { label: "Total Pieces (Pcs)", value: `${totalPieces}` },
+              { label: "Gross Item Amount", value: `₹${subTotal.toFixed(2)}` },
+              { label: "Taxable Amount", value: `₹${taxableAmount.toFixed(2)}` },
+              { label: isInterState ? "IGST (3%)" : "CGST + SGST (3%)", value: `₹${taxAmount.toFixed(2)}` },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between text-sm py-1">
                 <span className="text-muted-foreground">{label}</span>
@@ -757,6 +872,14 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             <div className="flex justify-between font-semibold text-sm border-t pt-2 mt-1">
               <span>Total Amount</span>
               <span>₹{grandTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-green-600 font-medium">
+              <span>Paid Amount</span>
+              <span>₹{paidAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-destructive font-bold">
+              <span>Due Amount</span>
+              <span>₹{dueAmount.toFixed(2)}</span>
             </div>
           </div>
         </div>
