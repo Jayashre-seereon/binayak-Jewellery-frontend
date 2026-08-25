@@ -395,7 +395,35 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     };
   }, [open, defaultValues]);
 
-  const updateForm = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
+  const updateForm = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
+  const handlePartyChange = (pId) => {
+    setErrors((prev) => ({ ...prev, partyId: null, customerName: null, customerPhone: null }));
+    if (!pId) {
+      setForm((prev) => ({
+        ...prev,
+        partyId: "",
+      }));
+      return;
+    }
+    const party = options.parties.find((p) => String(p.id) === String(pId));
+    if (party) {
+      setForm((prev) => ({
+        ...prev,
+        partyId: pId,
+        customerName: party.name || prev.customerName,
+        customerPhone: party.phone || prev.customerPhone,
+        address: party.address || prev.address,
+        placeOfSupply: party.state || prev.placeOfSupply || "ODISHA",
+      }));
+    }
+  };
+
   const addRow = () => setItems((prev) => [...prev, createRow()]);
   const deleteRow = (id) => setItems((prev) => (prev.length > 1 ? prev.filter((r) => r.id !== id) : prev));
 
@@ -576,8 +604,9 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     const customerIdType = String(form.customerIdType || "").trim();
     const customerIdNumber = String(form.customerIdNumber || "").trim();
 
-    if (!form.partyId) nextErrors.partyId = "Party is required.";
-    if (!customerName) nextErrors.customerName = "Customer name is required.";
+    if (!form.partyId && !customerName) {
+      nextErrors.customerName = "Customer name or Party is required.";
+    }
     if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
       nextErrors.customerPhone = "Phone must be exactly 10 digits.";
     }
@@ -698,16 +727,19 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
 
           <div className="grid grid-cols-4 gap-3">
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Party</label>
-              <select className={selectCls} value={form.partyId} onChange={(e) => updateForm("partyId", e.target.value)}>
-                <option value="">Select</option>
-                {options.parties.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              <label className="text-xs text-muted-foreground">Party / Customer Master</label>
+              <select className={selectCls} value={form.partyId} onChange={(e) => handlePartyChange(e.target.value)}>
+                <option value="">-- Walk-in / New Customer --</option>
+                {options.parties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.phone ? `(${p.phone})` : ""}
+                  </option>
+                ))}
               </select>
-              {errors.partyId ? <p className="text-xs text-red-500">{errors.partyId}</p> : null}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Customer Name <span className="text-destructive">*</span></label>
-              <Input value={form.customerName} onChange={(e) => updateForm("customerName", e.target.value)} />
+              <Input value={form.customerName} onChange={(e) => updateForm("customerName", e.target.value)} placeholder="Customer name" />
               {errors.customerName ? <p className="text-xs text-red-500">{errors.customerName}</p> : null}
             </div>
             <div className="space-y-1">

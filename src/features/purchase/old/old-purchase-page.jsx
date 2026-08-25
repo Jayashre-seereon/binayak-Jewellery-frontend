@@ -6,6 +6,7 @@ import { notifyError, notifySuccess } from "@/utils/notify";
 
 import OldPurchaseTable from "./old-purchase-table";
 import OldPurchaseForm from "./old-purchase-form";
+import PurchaseInvoicePreviewModal from "./purchase-invoice-preview-modal";
 
 import {
   getOldPurchases,
@@ -24,6 +25,8 @@ export default function OldPurchasePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteName, setDeleteName] = useState("");
+  const [previewPurchase, setPreviewPurchase] = useState(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const loadData = async () => {
     try {
@@ -61,6 +64,17 @@ export default function OldPurchasePage() {
       setOpen(true);
     } catch (error) {
       notifyError(error, "Failed to load purchase details.");
+    }
+  };
+
+  const handlePreview = async (item) => {
+    try {
+      const purchase = await getOldPurchaseById(item.id);
+      setPreviewPurchase(purchase || item);
+      setPreviewOpen(true);
+    } catch (error) {
+      setPreviewPurchase(item);
+      setPreviewOpen(true);
     }
   };
 
@@ -106,35 +120,35 @@ export default function OldPurchasePage() {
     );
   }, [data, search]);
 
-const handleDownload = async (id) => {
-  try {
-    const blob = await getPurchasePdf(id, 1);
+  const handleDownload = async (id) => {
+    try {
+      const blob = await getPurchasePdf(id, 1);
 
-    const pdfBlob = new Blob([blob], {
-      type: "application/pdf",
-    });
+      const pdfBlob = new Blob([blob], {
+        type: "application/pdf",
+      });
 
-    const pdfUrl = window.URL.createObjectURL(pdfBlob);
+      const pdfUrl = window.URL.createObjectURL(pdfBlob);
 
-    window.open(pdfUrl, "_blank");
+      window.open(pdfUrl, "_blank");
 
-    setTimeout(() => {
-      window.URL.revokeObjectURL(pdfUrl);
-    }, 60000);
-  } catch (error) {
-    notifyError(error, "Failed to open purchase PDF.");
-  }
-};
+      setTimeout(() => {
+        window.URL.revokeObjectURL(pdfUrl);
+      }, 60000);
+    } catch (error) {
+      notifyError(error, "Failed to open purchase PDF.");
+    }
+  };
   return (
     <div>
       <div className="flex justify-between mb-4">
-            <div>
+        <div>
           <h1 className="text-xl font-semibold">Purchase</h1>
-          </div>
+        </div>
         <Button onClick={() => setOpen(true)}>Add Purchase</Button>
       </div>
 
-     <div className="mb-3 flex justify-between">
+      <div className="mb-3 flex justify-between">
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -147,7 +161,8 @@ const handleDownload = async (id) => {
         data={filteredData}
         onEdit={handleEdit}
         onDelete={handleDelete}
-       onDownload={handleDownload}
+        onDownload={handleDownload}
+        onPreview={handlePreview}
       />
 
       <OldPurchaseForm
@@ -155,7 +170,12 @@ const handleDownload = async (id) => {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
+      />
 
+      <PurchaseInvoicePreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        purchase={previewPurchase}
       />
 
       <DeleteModal

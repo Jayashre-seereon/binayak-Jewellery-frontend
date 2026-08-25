@@ -151,6 +151,12 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
     }
   }, []);
 
+  const eligiblePurchaseOptions = useMemo(() => {
+    return (Array.isArray(purchaseOptions) ? purchaseOptions : []).filter(
+      (p) => p.purchaseType === "ORNAMENT" || p.purchaseType === "BULLION"
+    );
+  }, [purchaseOptions]);
+
   useEffect(() => {
     if (!open) return;
 
@@ -189,7 +195,7 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
       });
 
       const defaultPurchase =
-        purchaseOptions.find((purchase) => String(purchase.id) === purchaseIdValue) || null;
+        eligiblePurchaseOptions.find((purchase) => String(purchase.id) === purchaseIdValue) || null;
       setSelectedPurchase(defaultPurchase);
 
       loadPurchaseItems(purchaseIdValue, defaultPurchase).then((items) => {
@@ -205,13 +211,13 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
     reset(emptyValues);
     setSelectedPurchase(null);
     setPurchaseItems([]);
-  }, [applyPurchaseItem, defaultValues, loadPurchaseItems, open, purchaseOptions, resolveBarcode, reset]);
+  }, [applyPurchaseItem, defaultValues, loadPurchaseItems, open, eligiblePurchaseOptions, resolveBarcode, reset]);
 
   useEffect(() => {
     if (!purchaseId || isEditMode) return;
-    const local = purchaseOptions.find((purchase) => String(purchase.id) === String(purchaseId));
+    const local = eligiblePurchaseOptions.find((purchase) => String(purchase.id) === String(purchaseId));
     loadPurchaseItems(purchaseId, local || null);
-  }, [isEditMode, loadPurchaseItems, purchaseId, purchaseOptions]);
+  }, [isEditMode, loadPurchaseItems, purchaseId, eligiblePurchaseOptions]);
 
   useEffect(() => {
     if (!purchaseId || !purchaseItemId || isEditMode) return;
@@ -224,9 +230,9 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
   const activePurchase = useMemo(
     () =>
       selectedPurchase ||
-      purchaseOptions.find((purchase) => String(purchase.id) === String(purchaseId)) ||
+      eligiblePurchaseOptions.find((purchase) => String(purchase.id) === String(purchaseId)) ||
       null,
-    [purchaseId, purchaseOptions, selectedPurchase]
+    [purchaseId, eligiblePurchaseOptions, selectedPurchase]
   );
 
   const selectedPurchaseItem = useMemo(
@@ -317,7 +323,7 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
                   onValueChange={async (value) => {
                     setValue("purchaseId", value, { shouldDirty: true, shouldValidate: true });
                     setValue("purchaseItemId", "", { shouldDirty: true, shouldValidate: true });
-                    const local = purchaseOptions.find((purchase) => String(purchase.id) === String(value));
+                    const local = eligiblePurchaseOptions.find((purchase) => String(purchase.id) === String(value));
                     await loadPurchaseItems(value, local || null);
                   }}
                   disabled={isEditMode}
@@ -326,9 +332,9 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
                     <SelectValue placeholder="Select invoice" />
                   </SelectTrigger>
                   <SelectContent>
-                    {purchaseOptions.map((purchase) => (
+                    {eligiblePurchaseOptions.map((purchase) => (
                       <SelectItem key={purchase.id} value={String(purchase.id)}>
-                        {purchase.invoiceNo || `#${purchase.id}`}
+                        {purchase.invoiceNo || `#${purchase.id}`} ({purchase.purchaseType})
                       </SelectItem>
                     ))}
                   </SelectContent>

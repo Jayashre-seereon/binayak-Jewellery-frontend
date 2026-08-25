@@ -35,8 +35,11 @@ export default function StockPage() {
         getStock(),
         getPurchases(),
       ]);
+      const validPurchases = (Array.isArray(purchases) ? purchases : []).filter(
+        (p) => p.purchaseType === "ORNAMENT" || p.purchaseType === "BULLION"
+      );
       setData(stocks);
-      setPurchaseOptions(purchases);
+      setPurchaseOptions(validPurchases);
     } catch (error) {
       notifyError(error, "Failed to load inventory.");
     } finally {

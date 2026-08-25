@@ -1,6 +1,6 @@
-import { Pencil, Trash, Download } from "lucide-react";
+import { Eye, Pencil, Trash, Download } from "lucide-react";
 
-export default function OldPurchaseTable({ data, onEdit, onDelete, onDownload }) {
+export default function OldPurchaseTable({ data, onEdit, onDelete, onDownload, onPreview }) {
   return (
     <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
       <table className="w-full text-xs">
@@ -50,9 +50,16 @@ export default function OldPurchaseTable({ data, onEdit, onDelete, onDownload })
                 <td className="p-3 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <button
+                      title="Preview Purchase Invoice"
+                      onClick={() => onPreview?.(p)}
+                      className="p-1 hover:bg-blue-50 rounded text-blue-700 transition"
+                    >
+                      <Eye size={15} />
+                    </button>
+                    <button
                       title="Edit Purchase"
                       onClick={() => onEdit(p)}
-                      className="p-1 hover:bg-blue-50 rounded text-blue-600 transition"
+                      className="p-1 hover:bg-slate-100 rounded text-slate-600 transition"
                     >
                       <Pencil size={15} />
                     </button>
