@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Printer, Download, X } from "lucide-react";
 import { getSalePdf } from "./sale-estimate-api";
 import { notifyError } from "@/utils/notify";
+import { formatCharge, formatWeight } from "@/utils/units";
 
 const money = (val) => Number(val || 0).toFixed(2);
-const weightStr = (val) => Number(val || 0).toFixed(3);
 
 const formatDateTime = (dateVal) => {
   if (!dateVal) return "-";
@@ -215,10 +215,7 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
                   const codeStr = it.itemCode || inv?.barcodeNo || inv?.tagNo || inv?.inventoryCode || "";
                   const purityStr = it.purityName || (inv?.purityMaster?.name || (it.purity ? `${it.purity}K` : "22K"));
                   const huidStr = it.huidNo || inv?.huidNo || "";
-                  const makingStr =
-                    it.makingChargeType === "PERCENT" || it.makingChargeRate > 0
-                      ? `${Number(it.makingChargeRate || 0).toFixed(3)} %`
-                      : money(it.makingCharges);
+                  const makingStr = formatCharge(it.makingCharges, it.makingChargeType, it.makingChargeRate);
 
                   return (
                     <tr key={idx} className="border-b border-gray-300 align-top">
@@ -233,12 +230,14 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
                       <td className="p-1.5 border-r border-gray-300 text-center">{it.hsnCode || "711319"}</td>
                       <td className="p-1.5 border-r border-gray-300 text-center">{purityStr}</td>
                       <td className="p-1.5 border-r border-gray-300 text-center">{it.pieces || 1}</td>
-                      <td className="p-1.5 border-r border-gray-300 text-right">{weightStr(it.grossWeight)}</td>
-                      <td className="p-1.5 border-r border-gray-300 text-right">{weightStr(it.netWeight)}</td>
+                      <td className="p-1.5 border-r border-gray-300 text-right">{formatWeight(it.grossWeight)}</td>
+                      <td className="p-1.5 border-r border-gray-300 text-right">{formatWeight(it.netWeight)}</td>
                       <td className="p-1.5 border-r border-gray-300 text-right">{money(it.rate)}</td>
                       <td className="p-1.5 border-r border-gray-300 text-right">
                         <div>{makingStr}</div>
-                        <div className="text-[10px] text-gray-500">0.00 /PG</div>
+                        <div className="text-[10px] text-gray-500">
+                          {it.makingChargeType === "PER_GRAM" ? "Per gram charge" : it.makingChargeType === "PERCENT" ? "Percent charge" : "Flat charge"}
+                        </div>
                       </td>
                       <td className="p-1.5 border-r border-gray-300 text-right">{money(it.otherCharges || it.otherAmount)}</td>
                       <td className="p-1.5 text-right font-bold">{money(it.totalAmount)}</td>
@@ -248,8 +247,8 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
                 {/* TOTAL ROW */}
                 <tr className="border-t border-gray-400 bg-gray-50 font-bold">
                   <td colSpan={5} className="p-1.5 border-r border-gray-400">Total</td>
-                  <td className="p-1.5 border-r border-gray-400 text-right">{weightStr(totalGrossWt)}</td>
-                  <td className="p-1.5 border-r border-gray-400 text-right">{weightStr(totalNetWt)}</td>
+                  <td className="p-1.5 border-r border-gray-400 text-right">{formatWeight(totalGrossWt)}</td>
+                  <td className="p-1.5 border-r border-gray-400 text-right">{formatWeight(totalNetWt)}</td>
                   <td colSpan={3} className="p-1.5 border-r border-gray-400"></td>
                   <td className="p-1.5 text-right">{money(totalAmountVal)}</td>
                 </tr>

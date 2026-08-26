@@ -85,6 +85,13 @@ export default function AdvancePage() {
         return;
       }
 
+      if ((advance.status || "").toUpperCase() === "FULLY_ADJUSTED") {
+        notifyError(
+          "This advance receive is fully adjusted and cannot be edited."
+        );
+        return;
+      }
+
       setEditData({
         ...advance,
         date: String(advance.receiveDate || advance.date || advance.createdAt || "").slice(0, 10),
@@ -102,6 +109,13 @@ export default function AdvancePage() {
 
   // OPEN DELETE MODAL
   const handleDeleteClick = (id) => {
+    const selected = data.find((item) => item.id === id);
+    if ((selected?.status || "").toUpperCase() === "FULLY_ADJUSTED") {
+      notifyError(
+        "This advance receive is fully adjusted and cannot be deleted."
+      );
+      return;
+    }
     setDeleteId(id);
     setDeleteOpen(true);
   };

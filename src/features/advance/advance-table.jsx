@@ -59,15 +59,32 @@ export default function AdvanceTable({ data, onEdit, onDelete }) {
                   </span>
                 </td>
                 <td className="p-3 flex gap-3">
-                  <Pencil
-                    size={16}
-                    className="text-blue-500 cursor-pointer"
-                    onClick={() => onEdit(a.id)}
-                  />
+                  {status === "FULLY_ADJUSTED" ? (
+                    <span className="text-[11px] font-semibold text-slate-400">
+                      <Pencil
+                      size={16}
+                      className="text-blue-500 cursor-pointer"
+                    
+                    />
+                    </span>
+                  ) : (
+                    <Pencil
+                      size={16}
+                      className="text-blue-500 cursor-pointer"
+                      onClick={() => onEdit(a.id)}
+                    />
+                  )}
                   <Trash
                     size={16}
-                    className="text-red-500 cursor-pointer"
-                    onClick={() => onDelete(a.id)}
+                    className={`${
+                      status === "FULLY_ADJUSTED"
+                        ? "text-red-300 cursor-not-allowed"
+                        : "text-red-500 cursor-pointer"
+                    }`}
+                    onClick={() => {
+                      if (status === "FULLY_ADJUSTED") return;
+                      onDelete(a.id);
+                    }}
                   />
                 </td>
               </tr>

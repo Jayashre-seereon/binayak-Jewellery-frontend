@@ -24,9 +24,31 @@ export const formatUnit = (val, unit) => {
   }
 };
 
+export const formatWeight = (val, unit = "gm") => {
+  const n = Number(val || 0);
+  const normalizedUnit = (unit || "gm").toString().toLowerCase();
+  if (normalizedUnit === "kg") {
+    return `${n.toFixed(3)} kg`;
+  }
+  return `${n.toFixed(3)} gm`;
+};
+
+export const formatCharge = (amount, type = "AMOUNT", rate = 0) => {
+  const normalizedType = (type || "").toString().toUpperCase();
+  if (normalizedType === "PERCENT") {
+    return `${Number(rate || 0).toFixed(3)} %`;
+  }
+  if (normalizedType === "PER_GRAM") {
+    return `${Number(rate || 0).toFixed(2)} /gm`;
+  }
+  return `₹${money(amount)}`;
+};
+
 export default {
   roundMoney,
   money,
   weightStr,
   formatUnit,
+  formatWeight,
+  formatCharge,
 };

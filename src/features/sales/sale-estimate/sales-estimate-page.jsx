@@ -47,6 +47,7 @@ import { getStock } from "@/api/stock-api";
 import { lookupCustomerByPhone } from "@/api/customer-api";
 import SalesInvoicePreviewModal from "./sales-invoice-preview-modal";
 import CustomerHistoryTracking from "./customer-history-tracking";
+import { formatCharge, formatWeight } from "@/utils/units";
 
 const roundMoney = (val) =>
   Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
@@ -103,6 +104,12 @@ const initialState = () => ({
   narration: "",
   offerDiscount: 0,
   discount: 0,
+  cgstPercent: "",
+  cgstAmount: "",
+  sgstPercent: "",
+  sgstAmount: "",
+  igstPercent: "",
+  igstAmount: "",
   lessUrd: 0,
   roundOff: 0,
   isManualRoundOff: false,
@@ -301,6 +308,46 @@ export default function SalesPage() {
     }
   };
 
+  const syncTaxField = (field, value) => {
+    setState((prev) => {
+      const next = { ...prev, [field]: value };
+      const taxableAmount = roundMoney(
+        Math.max(
+          0,
+          roundMoney(
+            prev.items.reduce((sum, it) => sum + Number(it.totalAmount || 0), 0)
+          ) -
+            roundMoney(Number(prev.offerDiscount || 0)) -
+            roundMoney(Number(prev.discount || 0))
+        )
+      );
+
+      const percentField =
+        field === "cgstPercent" || field === "cgstAmount"
+          ? "cgst"
+          : field === "sgstPercent" || field === "sgstAmount"
+            ? "sgst"
+            : "igst";
+
+      const percentKey = `${percentField}Percent`;
+      const amountKey = `${percentField}Amount`;
+      const numericValue = Number(value || 0);
+
+      if (field.endsWith("Percent")) {
+        next[amountKey] = taxableAmount > 0 ? roundMoney((taxableAmount * numericValue) / 100) : 0;
+      } else if (field.endsWith("Amount")) {
+        next[percentKey] = taxableAmount > 0 ? roundMoney((numericValue * 100) / taxableAmount) : 0;
+        next[amountKey] = numericValue;
+      }
+
+      return next;
+    });
+
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
   const openCreateModal = () => {
     setState(initialState());
     setCustomerFound(null);
@@ -337,9 +384,12 @@ export default function SalesPage() {
     const rate = Number(inv.rate || inv.purityMaster?.baseRate || 0);
     const metalAmount = roundMoney(netWeight * rate);
 
-    const makingChargeType = "PERCENT";
-    const makingChargeRate = Number(inv.makingCharges || inv.item?.makingCharges || 10);
-    const makingCharges = roundMoney((metalAmount * makingChargeRate) / 100);
+    const makingChargeType = (inv.makingChargeType || inv.item?.makingChargeType || "PERCENT").toString().toUpperCase();
+    const makingChargeRate = Number(inv.makingChargeRate || inv.makingCharges || inv.item?.makingChargeRate || inv.item?.makingCharges || 10);
+    const makingCharges =
+      makingChargeType === "PER_GRAM"
+        ? roundMoney(netWeight * makingChargeRate)
+        : roundMoney((metalAmount * makingChargeRate) / 100);
 
     const stoneAmount = roundMoney(Number(inv.stoneAmount || 0));
     const otherCharges = roundMoney(Number(inv.otherCharges || 0));
@@ -485,22 +535,13 @@ export default function SalesPage() {
       Math.max(0, grossAmount - offerDiscount - discount)
     );
 
-    let cgstPercent = 0;
-    let cgstAmount = 0;
-    let sgstPercent = 0;
-    let sgstAmount = 0;
-    let igstPercent = 0;
-    let igstAmount = 0;
+    const cgstPercent = state.cgstPercent === "" ? (isInterState ? 0 : 1.5) : Number(state.cgstPercent || 0);
+    const sgstPercent = state.sgstPercent === "" ? (isInterState ? 0 : 1.5) : Number(state.sgstPercent || 0);
+    const igstPercent = state.igstPercent === "" ? (isInterState ? 3.0 : 0) : Number(state.igstPercent || 0);
 
-    if (isInterState) {
-      igstPercent = 3.0;
-      igstAmount = roundMoney((taxableAmount * 3.0) / 100);
-    } else {
-      cgstPercent = 1.5;
-      cgstAmount = roundMoney((taxableAmount * 1.5) / 100);
-      sgstPercent = 1.5;
-      sgstAmount = roundMoney((taxableAmount * 1.5) / 100);
-    }
+    const cgstAmount = roundMoney((taxableAmount * cgstPercent) / 100);
+    const sgstAmount = roundMoney((taxableAmount * sgstPercent) / 100);
+    const igstAmount = roundMoney((taxableAmount * igstPercent) / 100);
 
     const totalTax = roundMoney(cgstAmount + sgstAmount + igstAmount);
     const subTotal = roundMoney(taxableAmount + totalTax);
@@ -527,8 +568,8 @@ export default function SalesPage() {
       }
     });
 
-    const totalAdjustments = roundMoney(totalAdvanceAdjusted + totalOldGoldAdjusted);
-    const lessUrd = roundMoney(Number(state.lessUrd || 0) + totalOldGoldAdjusted);
+    const lessUrd = roundMoney(Number(state.lessUrd || 0));
+    const totalAdjustments = roundMoney(totalAdvanceAdjusted + totalOldGoldAdjusted + lessUrd);
 
     const unroundedNet = roundMoney(Math.max(0, subTotal - totalAdjustments));
 
@@ -578,6 +619,12 @@ export default function SalesPage() {
     state.items,
     state.offerDiscount,
     state.discount,
+    state.cgstPercent,
+    state.cgstAmount,
+    state.sgstPercent,
+    state.sgstAmount,
+    state.igstPercent,
+    state.igstAmount,
     state.lessUrd,
     state.roundOff,
     state.isManualRoundOff,
@@ -676,6 +723,12 @@ export default function SalesPage() {
 
         offerDiscount: calculations.offerDiscount,
         discount: calculations.discount,
+        cgstPercent: calculations.cgstPercent,
+        cgstAmount: calculations.cgstAmount,
+        sgstPercent: calculations.sgstPercent,
+        sgstAmount: calculations.sgstAmount,
+        igstPercent: calculations.igstPercent,
+        igstAmount: calculations.igstAmount,
         lessUrd: calculations.lessUrd,
         roundOff: calculations.roundOff,
 
@@ -1373,7 +1426,7 @@ export default function SalesPage() {
                         <th className="p-2 text-right min-w-[75px]">Rate(₹/g)</th>
                         <th className="p-2 text-right min-w-[80px]">Metal Amt(₹)</th>
                         <th className="p-2 text-center min-w-[95px]">MC Type / Rate</th>
-                        <th className="p-2 text-right min-w-[80px]">Making Ch.(₹)</th>
+                        <th className="p-2 text-right min-w-[80px]">Making Ch.</th>
                         <th className="p-2 text-right min-w-[70px]">Stone Amt(₹)</th>
                         <th className="p-2 text-right min-w-[65px]">Other Ch.(₹)</th>
                         <th className="p-2 text-right min-w-[65px]">Disc.(₹)</th>
@@ -1415,7 +1468,7 @@ export default function SalesPage() {
                               className="h-7 text-right text-xs w-14 px-1"
                             />
                           </td>
-                          <td className="p-2 text-right font-bold text-slate-900">{weightStr(it.netWeight)}</td>
+                          <td className="p-2 text-right font-bold text-slate-900">{formatWeight(it.netWeight)}</td>
                           <td className="p-2">
                             <Input
                               type="number"
@@ -1446,7 +1499,12 @@ export default function SalesPage() {
                               />
                             </div>
                           </td>
-                          <td className="p-2 text-right font-medium">{money(it.makingCharges)}</td>
+                          <td className="p-2 text-right font-medium">
+                            <div>{money(it.makingCharges)}</div>
+                            <div className="text-[10px] text-slate-500">
+                              {formatCharge(it.makingCharges, it.makingChargeType, it.makingChargeRate)}
+                            </div>
+                          </td>
                           <td className="p-2">
                             <Input
                               type="number"
@@ -1725,25 +1783,91 @@ export default function SalesPage() {
                       <span>₹{money(calculations.taxableAmount)}</span>
                     </div>
 
-                    {/* CGST */}
-                    <div className="flex justify-between py-1 text-slate-600">
-                      <span>CGST Amt. [ + ] ({calculations.cgstPercent}%)</span>
-                      <span>₹{money(calculations.cgstAmount)}</span>
-                    </div>
-
-                    {/* SGST */}
-                    <div className="flex justify-between py-1 text-slate-600">
-                      <span>SGST Amt. [ + ] ({calculations.sgstPercent}%)</span>
-                      <span>₹{money(calculations.sgstAmount)}</span>
-                    </div>
-
-                    {/* IGST (IF INTER-STATE) */}
-                    {calculations.igstPercent > 0 && (
-                      <div className="flex justify-between py-1 text-slate-600">
-                        <span>IGST Amt. [ + ] ({calculations.igstPercent}%)</span>
-                        <span>₹{money(calculations.igstAmount)}</span>
+                    <div className="space-y-2 py-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-500 font-semibold block">CGST %</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={state.cgstPercent}
+                            onChange={(e) => syncTaxField("cgstPercent", e.target.value)}
+                            className="h-7 text-right text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-500 font-semibold block">CGST Amt</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={state.cgstAmount}
+                            onChange={(e) => syncTaxField("cgstAmount", e.target.value)}
+                            className="h-7 text-right text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-500 font-semibold block">SGST %</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={state.sgstPercent}
+                            onChange={(e) => syncTaxField("sgstPercent", e.target.value)}
+                            className="h-7 text-right text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-500 font-semibold block">SGST Amt</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={state.sgstAmount}
+                            onChange={(e) => syncTaxField("sgstAmount", e.target.value)}
+                            className="h-7 text-right text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-500 font-semibold block">IGST %</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={state.igstPercent}
+                            onChange={(e) => syncTaxField("igstPercent", e.target.value)}
+                            className="h-7 text-right text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-500 font-semibold block">IGST Amt</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={state.igstAmount}
+                            onChange={(e) => syncTaxField("igstAmount", e.target.value)}
+                            className="h-7 text-right text-xs"
+                          />
+                        </div>
                       </div>
-                    )}
+
+                      <div className="flex justify-between py-1 text-slate-600">
+                        <span>CGST Amt. [ + ] ({calculations.cgstPercent}%)</span>
+                        <span>₹{money(calculations.cgstAmount)}</span>
+                      </div>
+                      <div className="flex justify-between py-1 text-slate-600">
+                        <span>SGST Amt. [ + ] ({calculations.sgstPercent}%)</span>
+                        <span>₹{money(calculations.sgstAmount)}</span>
+                      </div>
+                      {(Number(calculations.igstPercent) > 0 || Number(calculations.igstAmount) > 0) && (
+                        <div className="flex justify-between py-1 text-slate-600">
+                          <span>IGST Amt. [ + ] ({calculations.igstPercent}%)</span>
+                          <span>₹{money(calculations.igstAmount)}</span>
+                        </div>
+                      )}
+                    </div>
 
                     {/* SUB TOTAL */}
                     <div className="flex justify-between py-1.5 font-bold bg-slate-50 px-2 rounded text-slate-800">
