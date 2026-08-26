@@ -662,6 +662,9 @@ export default function SalesPage() {
     }
     if (!state.placeOfSupply?.trim()) errors.placeOfSupply = "Place of supply is required";
     if (!state.items.length) errors.items = "Add at least one item to generate an invoice";
+    if (Math.abs(Number(calculations.paidAmount || 0) - Number(calculations.netPayable || 0)) > 0.01) {
+      errors.payments = "Paid Amount must exactly match Net Payable.";
+    }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -731,6 +734,8 @@ export default function SalesPage() {
         igstAmount: calculations.igstAmount,
         lessUrd: calculations.lessUrd,
         roundOff: calculations.roundOff,
+        paidAmount: calculations.paidAmount,
+        dueAmount: 0,
 
         advanceAdjustments,
         oldGoldAdjustments,
@@ -902,15 +907,7 @@ export default function SalesPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDownloadInvoice(sale)}
-                          title="Download PDF"
-                          className="hover:text-blue-600 hover:bg-blue-50 h-8 w-8"
-                        >
-                          <Download className="h-4 w-4" />
-                        </Button>
+                       
                       </div>
                     </td>
                   </tr>
@@ -1934,11 +1931,11 @@ export default function SalesPage() {
                       <span>₹{money(calculations.paidAmount)}</span>
                     </div>
 
-                    {/* DUE AMOUNT */}
-                    <div className="flex justify-between py-1 text-red-600 font-bold">
-                      <span>Due Amount</span>
-                      <span>₹{money(calculations.dueAmount)}</span>
-                    </div>
+                    {validationErrors.payments && (
+                      <div className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600">
+                        {validationErrors.payments}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

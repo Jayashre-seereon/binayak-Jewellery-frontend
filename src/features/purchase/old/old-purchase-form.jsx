@@ -617,6 +617,9 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       nextErrors.customerIdNumber = "ID number is required when ID type is selected.";
     }
     if (!form.date) nextErrors.date = "Date is required.";
+    if (Math.abs(Number(paidAmount || 0) - Number(grandTotal || 0)) > 0.01) {
+      nextErrors.payments = "Paid Amount must exactly match Total Amount.";
+    }
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
@@ -648,7 +651,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       netPayable: grandTotal,
       paymentMode: payments[0]?.paymentMode || "CASH",
       paidAmount,
-      dueAmount,
+      dueAmount: 0,
       narration: form.narration,
       payments: payments
         .filter((p) => Number(p.amount || 0) > 0)
@@ -921,10 +924,11 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <span>Paid Amount</span>
               <span>₹{paidAmount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm text-destructive font-bold">
-              <span>Due Amount</span>
-              <span>₹{dueAmount.toFixed(2)}</span>
-            </div>
+            {errors.payments ? (
+              <div className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600">
+                {errors.payments}
+              </div>
+            ) : null}
             <div className="pt-2 border-t mt-2 text-xs">
               <span className="font-bold">Invoice Value [ In Words ] : </span>
               <span className="italic">{amountWords}</span>

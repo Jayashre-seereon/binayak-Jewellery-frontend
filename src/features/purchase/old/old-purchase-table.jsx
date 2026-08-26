@@ -63,13 +63,7 @@ export default function OldPurchaseTable({ data, onEdit, onDelete, onDownload, o
                     >
                       <Pencil size={15} />
                     </button>
-                    <button
-                      title="Download PDF Invoice"
-                      onClick={() => onDownload(p.id)}
-                      className="p-1 hover:bg-emerald-50 rounded text-emerald-600 transition"
-                    >
-                      <Download size={15} />
-                    </button>
+                   
                     <button
                       title="Delete Purchase"
                       onClick={() => onDelete(p.id)}
