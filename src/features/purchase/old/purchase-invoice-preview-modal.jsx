@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Printer, Download } from "lucide-react";
 import { getPurchasePdf } from "@/api/old-purchase-api";
 import { notifyError } from "@/utils/notify";
+import { numberToWordsIndian } from "@/utils/numberToWords";
 
 const money = (val) => Number(val || 0).toFixed(2);
 const weightStr = (val) => Number(val || 0).toFixed(3);
@@ -89,6 +90,7 @@ export default function PurchaseInvoicePreviewModal({ open, onOpenChange, purcha
   const subTotalAmt = Number(purchase.subtotal || (taxableAmt + totalTaxA));
   const roundOffAmt = Number(purchase.roundOff || 0);
   const netPayableAmt = Number(purchase.netPayable || purchase.totalAmount || (subTotalAmt + roundOffAmt));
+  const amountWords = numberToWordsIndian(netPayableAmt);
   const dueAmt = Number(purchase.dueAmount ?? Math.max(0, netPayableAmt - paidAmountVal));
 
   return (
@@ -316,7 +318,7 @@ export default function PurchaseInvoicePreviewModal({ open, onOpenChange, purcha
               {/* INVOICE VALUE IN WORDS */}
               <div className="text-xs">
                 <span className="font-bold">Invoice Value [ In Words ] : </span>
-                <span className="italic">{purchase.amountInWords || "Rupees Only."}</span>
+                <span className="italic">{amountWords}</span>
               </div>
 
               {/* NARRATION */}

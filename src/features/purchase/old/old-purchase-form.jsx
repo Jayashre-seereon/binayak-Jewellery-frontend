@@ -17,6 +17,7 @@ import { getGradesByPurity } from "@/api/grade-api";
 import { getProductsByMetal } from "@/api/product-api";
 import { getItemsByProduct } from "@/api/item-api";
 import { getStonesByProductAndItem } from "@/api/stone-api";
+import { numberToWordsIndian } from "@/utils/numberToWords";
 
 const PAYMENT_CHANNELS = [
   "Cash",
@@ -528,6 +529,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
 
   const paidAmount = roundMoney(payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0));
   const dueAmount = roundMoney(Math.max(0, grandTotal - paidAmount));
+  const amountWords = numberToWordsIndian(grandTotal);
 
   const syncPaymentAmount = () => {
     setPayments([
@@ -541,6 +543,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
         paymentDate: new Date().toISOString().slice(0, 10),
         narration: "",
       },
+      ...payments.slice(1).map((p) => ({ ...p, amount: "" })),
     ]);
   };
 
@@ -848,7 +851,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <h3 className="font-medium text-sm">Payment Details</h3>
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" type="button" onClick={syncPaymentAmount} className="h-7 text-xs">
-                  Sync Net Payable
+                  Sync Net Payable into Payment
                 </Button>
                 <Button size="sm" variant="outline" type="button" onClick={addPaymentRow} className="h-7 text-xs">
                   + Add Mode
@@ -859,20 +862,32 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             <div className="space-y-2">
               {payments.map((pmt, idx) => (
                 <div key={idx} className="grid grid-cols-4 gap-2 items-center">
-                  <select className={selectCls} value={pmt.paymentMode} onChange={(e) => updatePaymentRow(idx, "paymentMode", e.target.value)}>
-                    {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  <select className={selectCls} value={pmt.paymentChannel} onChange={(e) => updatePaymentRow(idx, "paymentChannel", e.target.value)}>
-                    {PAYMENT_CHANNELS.map((ch) => <option key={ch} value={ch}>{ch}</option>)}
-                  </select>
-                  <Input type="text" inputMode="decimal" placeholder="Paid Amount" value={pmt.amount} onChange={(e) => updatePaymentRow(idx, "amount", normalizeDecimalInput(e.target.value))} />
-                  <div className="flex gap-1">
-                    <Input placeholder="Txn / Ref No." value={pmt.transactionId} onChange={(e) => updatePaymentRow(idx, "transactionId", e.target.value)} />
-                    {payments.length > 1 && (
-                      <Button size="sm" variant="ghost" type="button" onClick={() => removePaymentRow(idx)} className="h-9 px-2 text-destructive">
-                        ×
-                      </Button>
-                    )}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 font-semibold block">Mode</label>
+                    <select className={selectCls} value={pmt.paymentMode} onChange={(e) => updatePaymentRow(idx, "paymentMode", e.target.value)}>
+                      {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 font-semibold block">Channel</label>
+                    <select className={selectCls} value={pmt.paymentChannel} onChange={(e) => updatePaymentRow(idx, "paymentChannel", e.target.value)}>
+                      {PAYMENT_CHANNELS.map((ch) => <option key={ch} value={ch}>{ch}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 font-semibold block">Amount (₹) *</label>
+                    <Input type="text" inputMode="decimal" placeholder="Amount" value={pmt.amount} onChange={(e) => updatePaymentRow(idx, "amount", normalizeDecimalInput(e.target.value))} />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-500 font-semibold block">Ref / Tr. ID</label>
+                    <div className="flex gap-1">
+                      <Input placeholder="Txn / Ref No." value={pmt.transactionId} onChange={(e) => updatePaymentRow(idx, "transactionId", e.target.value)} />
+                      {payments.length > 1 && (
+                        <Button size="sm" variant="ghost" type="button" onClick={() => removePaymentRow(idx)} className="h-9 px-2 text-destructive">
+                          ×
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -909,6 +924,10 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             <div className="flex justify-between text-sm text-destructive font-bold">
               <span>Due Amount</span>
               <span>₹{dueAmount.toFixed(2)}</span>
+            </div>
+            <div className="pt-2 border-t mt-2 text-xs">
+              <span className="font-bold">Invoice Value [ In Words ] : </span>
+              <span className="italic">{amountWords}</span>
             </div>
           </div>
         </div>
