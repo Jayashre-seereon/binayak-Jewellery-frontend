@@ -85,7 +85,10 @@ export default function AdvancePage() {
         return;
       }
 
-      setEditData(advance);
+      setEditData({
+        ...advance,
+        date: String(advance.receiveDate || advance.date || advance.createdAt || "").slice(0, 10),
+      });
       setOpen(true);
     } catch (error) {
       notifyError(

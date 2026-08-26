@@ -10,111 +10,139 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect } from "react";
 import { makePhoneRules } from "@/utils/validation";
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+const toDateInput = (value) => {
+  if (!value) return today();
+  return String(value).slice(0, 10);
+};
+
 export default function AdvanceForm({
   open,
   setOpen,
   onSave,
   defaultValues,
 }) {
- const {
-  register,
-  handleSubmit,
-  reset,
-  formState: { errors },
-} = useForm({
-  defaultValues,
-});
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm({
+    defaultValues: {
+      customerName: "",
+      contactNumber: "",
+      address: "",
+      amount: "",
+      paymentMode: "CASH",
+      specification: "",
+      date: today(),
+    },
+  });
 
   useEffect(() => {
-    reset(defaultValues);
-  }, [defaultValues]);
+    reset({
+      customerName: defaultValues?.customerName || "",
+      contactNumber: defaultValues?.contactNumber || "",
+      address: defaultValues?.address || "",
+      amount: defaultValues?.amount ?? "",
+      paymentMode: defaultValues?.paymentMode || "CASH",
+      specification: defaultValues?.specification || "",
+      date: toDateInput(defaultValues?.date || defaultValues?.receiveDate),
+    });
+  }, [defaultValues, open, reset]);
 
   const submit = (data) => {
-    onSave(data);
-    reset();
+    onSave({
+      ...data,
+      date: data.date || today(),
+    });
+    reset({
+      customerName: "",
+      contactNumber: "",
+      address: "",
+      amount: "",
+      paymentMode: "CASH",
+      specification: "",
+      date: today(),
+    });
     setOpen(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="sm:max-w-[600px]">
-
         <DialogHeader>
           <DialogTitle>Advance Receive</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="grid grid-cols-2 gap-4">
-
-          {/* Customer */}
           <div>
             <label className="text-xs">Customer Name *</label>
-           <Input {...register("customerName")} className="mt-1" /></div>
+            <Input {...register("customerName", { required: "Customer name is required" })} className="mt-1" />
+            {errors.customerName && (
+              <p className="mt-1 text-xs text-red-500">{errors.customerName.message}</p>
+            )}
+          </div>
 
-          {/* Contact */}
-        <div>
-  <label className="text-xs">Contact Number</label>
+          <div>
+            <label className="text-xs">Contact Number</label>
+            <Input
+              {...register("contactNumber", makePhoneRules("Contact Number"))}
+              className="mt-1"
+              maxLength={10}
+            />
+            {errors.contactNumber && (
+              <p className="mt-1 text-xs text-red-500">{errors.contactNumber.message}</p>
+            )}
+          </div>
 
-  <Input
-    {...register(
-      "contactNumber",
-      makePhoneRules("Contact Number")
-    )}
-    className="mt-1"
-    maxLength={10}
-  />
-
-  {errors.contactNumber && (
-    <p className="mt-1 text-xs text-red-500">
-      {errors.contactNumber.message}
-    </p>
-  )}
-</div>
-          {/* Address */}
           <div className="col-span-2">
             <label className="text-xs">Address</label>
             <Textarea {...register("address")} className="mt-1" />
           </div>
 
-          {/* Amount */}
           <div>
             <label className="text-xs">Amount *</label>
-            <Input type="number" {...register("amount")} className="mt-1" />
+            <Input type="number" step="0.01" min="0.01" {...register("amount", { required: "Amount is required" })} className="mt-1" />
+            {errors.amount && (
+              <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>
+            )}
           </div>
 
-          {/* Payment Mode */}
           <div>
             <label className="text-xs">Payment Mode</label>
-            <select
-  {...register("paymentMode")}
-  className="w-full border h-10 rounded mt-1 px-2"
->
-  <option value="CASH">Cash</option>
-  <option value="ONLINE">Online</option>
-</select>
+            <select {...register("paymentMode")} className="w-full border h-10 rounded mt-1 px-2">
+              <option value="CASH">Cash</option>
+              <option value="ONLINE">Online</option>
+            </select>
           </div>
 
-          {/* Specification */}
+          <div>
+            <label className="text-xs">Date *</label>
+            <Input
+              type="date"
+              {...register("date", { required: "Date is required" })}
+              className="mt-1"
+            />
+            {errors.date && (
+              <p className="mt-1 text-xs text-red-500">{errors.date.message}</p>
+            )}
+          </div>
+
           <div className="col-span-2">
             <label className="text-xs">Specification</label>
             <Textarea {...register("specification")} className="mt-1" />
           </div>
 
-          {/* Date */}
-          <div>
-            <label className="text-xs">Date</label>
-            <Input type="date" {...register("date")} className="mt-1" />
-          </div>
-
-          {/* FOOTER */}
           <div className="col-span-2 flex justify-end gap-2 mt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
             <Button type="submit">Save</Button>
           </div>
-
         </form>
-
       </DialogContent>
     </Dialog>
   );

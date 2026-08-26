@@ -29,6 +29,7 @@ export const addAdvance = async (data) => {
     amount: Number(data.amount),
     paymentMode: data.paymentMode,
     specification: data.specification,
+    date: data.date || data.receiveDate || null,
   };
 
   const res = await http.post(
@@ -47,6 +48,7 @@ export const updateAdvance = async (id, data) => {
     amount: Number(data.amount),
     paymentMode: data.paymentMode,
     specification: data.specification,
+    date: data.date || data.receiveDate || null,
   };
 
   const res = await http.put(
