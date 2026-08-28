@@ -1,9 +1,22 @@
-import { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ShoppingCart, Boxes, Users, ChevronDown, ChartLine,Barcode,ArrowLeftRight, Wallet, ShoppingBag,BookOpen,NotepadText  } from "lucide-react";
+import { useState, useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Boxes,
+  Users,
+  ChevronDown,
+  ChartLine,
+  ArrowLeftRight,
+  Wallet,
+  ShoppingBag,
+  BookOpen,
+  NotepadText,
+} from "lucide-react";
 
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState(null);
+  const location = useLocation();
 
   const menuItems = [
     {
@@ -21,103 +34,103 @@ export default function Sidebar() {
         { name: "Purity Master", path: "/masters/purity" },
         { name: "Grade Master", path: "/masters/grade" },
         { name: "Design Master", path: "/masters/design" },
-        { name: "Product Master", path: "/masters/product"},
-        { name: "Item Master", path: "/masters/item"},
+        { name: "Product Master", path: "/masters/product" },
+        { name: "Item Master", path: "/masters/item" },
         { name: "Stone Master", path: "/masters/stone" },
-        { name: "Employee Master", path: "/masters/employee"},
-        { name: "Party Type Master", path: "/masters/partytype"},
-        { name: "Party Master", path: "/masters/party"},
-        { name: "Party Opening Bal.", path: "/masters/openingbalance"},
-        
-        
+        { name: "Employee Master", path: "/masters/employee" },
+        { name: "Party Type Master", path: "/masters/partytype" },
+        { name: "Party Master", path: "/masters/party" },
+        { name: "Party Opening Bal.", path: "/masters/openingbalance" },
       ],
     },
     {
-      name:"Rate Master",
-      icon:ChartLine,
-      children:[
-        {name:"Rate Master",path:"accounts/rate"}
-      ]
+      name: "Rate Master",
+      icon: ChartLine,
+      children: [{ name: "Rate Master", path: "/accounts/rate" }],
     },
     {
       name: "Purchase",
       icon: ShoppingCart,
-      children:[
-          {name:"Purchase",path:"purchase"},
-        ]
+      children: [{ name: "Purchase", path: "/purchase" }],
     },
     {
       name: "Inventory",
       icon: Boxes,
-      children: [
-        { name: "Inventory", path: "inventory/inventory" },
-      ],
+      children: [{ name: "Inventory", path: "/inventory/inventory" }],
     },
-    // {
-    //   name: "Barcoding",
-    //   icon: Barcode,
-    //   children:[
-    //     {name:"Gold Ornament",path:"barcoding/gold"},
-    //     {name:"Dimond Ornament",path:"barcoding/diamond"},
-    //     {name:"MRP Barcoding",path:"barcoding/mrp"},
-    //     {name:"Branded Ornament",path:"barcoding/branded"}
-    //   ]
-    // },
-    
     {
       name: "Stock Movement",
       icon: ArrowLeftRight,
-      children:[
-        {name:"Counter Transfer", path:"stock/transfer"},
-        
-      ]
+      children: [{ name: "Counter Transfer", path: "/stock/transfer" }],
     },
     {
       name: "Sales",
       icon: ShoppingBag,
-      children:[
-        {name:"Sales", path:"sales"},
-        {name:"Customer History", path:"customer/history"},
-      //   {name:"Sales Invoice", path:"sales/invoice"},
-       ]
+      children: [
+        { name: "Sales", path: "/sales" },
+        { name: "Customer History", path: "/customer/history" },
+      ],
     },
     {
       name: "Advance ",
       icon: Wallet,
-      children:[
-        {name:"Advance Recieve", path:"advance/recieve"},
-      ]
+      children: [{ name: "Advance Recieve", path: "/advance/recieve" }],
     },
-     {
+    {
       name: "Accounting",
       icon: BookOpen,
-      children:[
-        {name:"Journal Entry", path:"accounts/journal"},
-        {name:"Payment Voucher", path:"accounts/payment"},
-        {name:"Receipt Voucher", path:"accounts/receipt"},
-      ]
+      children: [
+        { name: "Journal Entry", path: "/accounts/journal" },
+        { name: "Payment Voucher", path: "/accounts/payment" },
+        { name: "Receipt Voucher", path: "/accounts/receipt" },
+      ],
     },
-      {
+    {
       name: "Reports",
       icon: NotepadText,
-      children:[
-        {name:"Sales Summary", path:"report/sales-summary"},
-        {name:"Purchase Register", path:"report/purchase-register"},
-        {name:"Purchase Reg.", path:"report/old-purchase"},
-        {name:"Advance Register", path:"report/advance-register"},
-        {name:"Sales Register", path:"report/sales-register"},
-        {name:"Old Stock Reg.", path:"report/old-stock-register"},
-        {name:"Pure Metal Reg.", path:"report/metal-register"},
-      ]
+      children: [
+        { name: "Sales Summary", path: "/report/sales-summary" },
+        { name: "Purchase Register", path: "/report/purchase-register" },
+        { name: "Purchase Reg.", path: "/report/old-purchase" },
+        { name: "Advance Register", path: "/report/advance-register" },
+        { name: "Sales Register", path: "/report/sales-register" },
+        { name: "Old Stock Reg.", path: "/report/old-stock-register" },
+        { name: "Pure Metal Reg.", path: "/report/metal-register" },
+        { name: "Reports", path: "/report/report" },
+      ],
     },
   ];
+
+  // Auto expand parent dropdown when navigating to a child path
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const activeParent = menuItems.find((item) =>
+      item.children?.some(
+        (sub) =>
+          currentPath === sub.path ||
+          (sub.path !== "/" && currentPath.startsWith(sub.path))
+      )
+    );
+    if (activeParent) {
+      setOpenMenu(activeParent.name);
+    }
+  }, [location.pathname]);
 
   const toggleMenu = (name) => {
     setOpenMenu(openMenu === name ? null : name);
   };
 
+  const isParentActive = (item) => {
+    if (!item.children) return false;
+    return item.children.some(
+      (sub) =>
+        location.pathname === sub.path ||
+        (sub.path !== "/" && location.pathname.startsWith(sub.path))
+    );
+  };
+
   return (
-    <div className="w-64 bg-slate-900 text-white h-screen flex flex-col p-4 overflow-hidden">
+    <div className="w-64 shrink-0 bg-slate-900 text-white h-screen flex flex-col p-4 overflow-hidden select-none">
       <div className="text-xl font-bold mb-6 flex-shrink-0">JewelERP</div>
 
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
@@ -128,29 +141,40 @@ export default function Sidebar() {
               <div>
                 <div
                   onClick={() => toggleMenu(item.name)}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 cursor-pointer flex-shrink-0"
+                  className={`flex items-center justify-between p-3 rounded-lg hover:bg-slate-800 cursor-pointer flex-shrink-0 transition-colors ${
+                    isParentActive(item)
+                      ? "text-white font-medium bg-slate-800/60"
+                      : "text-slate-300"
+                  }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <item.icon size={18} className="flex-shrink-0" />
                     <span className="truncate">{item.name}</span>
                   </div>
-                  <ChevronDown size={16} className="flex-shrink-0" />
+                  <ChevronDown
+                    size={16}
+                    className={`flex-shrink-0 transition-transform duration-200 ${
+                      openMenu === item.name ? "rotate-180" : ""
+                    }`}
+                  />
                 </div>
 
                 {/* Sub Menu */}
                 {openMenu === item.name && (
-                  <div className="ml-8 flex flex-col gap-1">
+                  <div className="ml-8 flex flex-col gap-1 mt-1">
                     {item.children.map((sub) => (
                       <NavLink
                         key={sub.name}
                         to={sub.path}
                         className={({ isActive }) =>
-                          `p-2 rounded hover:bg-slate-800 flex-shrink-0 ${
-                            isActive ? "bg-slate-800" : ""
+                          `p-2 rounded hover:bg-slate-800 flex-shrink-0 transition-colors text-sm ${
+                            isActive
+                              ? "bg-slate-800 text-white font-semibold"
+                              : "text-slate-400 hover:text-slate-200"
                           }`
                         }
                       >
-                        <span className="truncate">{sub.name}</span>
+                        <span className="truncate block">{sub.name}</span>
                       </NavLink>
                     ))}
                   </div>
@@ -160,8 +184,10 @@ export default function Sidebar() {
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 flex-shrink-0 ${
-                    isActive ? "bg-slate-800" : ""
+                  `flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 flex-shrink-0 transition-colors ${
+                    isActive
+                      ? "bg-slate-800 text-white font-semibold"
+                      : "text-slate-300"
                   }`
                 }
               >

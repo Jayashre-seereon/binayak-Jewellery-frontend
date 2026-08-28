@@ -49,7 +49,7 @@ export default function StockTable({
     data.length > 0 && data.every((row) => selectedIds.includes(row.id));
 
   return (
-    <div className="overflow-hidden rounded border bg-white">
+    <div className="w-full overflow-x-auto rounded border bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead className="bg-gray-50">
           <tr>

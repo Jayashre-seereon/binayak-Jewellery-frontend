@@ -1,6 +1,6 @@
 export default function StockTable({ data }) {
   return (
-    <div className="bg-white border rounded">
+    <div className="bg-white border rounded overflow-x-auto">
 
       <table className="w-full text-sm">
 

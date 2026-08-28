@@ -1,6 +1,6 @@
 export default function PurchaseRegisterTable({ data }) {
     return (
-        <div className="bg-white border rounded mt-4">
+        <div className="bg-white border rounded mt-4 overflow-x-auto">
             <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                     <tr>

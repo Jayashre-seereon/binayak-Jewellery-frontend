@@ -1,6 +1,6 @@
 export default function ReportTable({ data }) {
   return (
-    <div className="bg-white border rounded mt-4">
+    <div className="bg-white border rounded mt-4 overflow-x-auto">
 
       <table className="w-full text-sm">
 
