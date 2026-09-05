@@ -107,8 +107,8 @@ export const router = createBrowserRouter([
       // sales routes will be added here
       { path: "sales", element: <SalesPage /> },
       { path: "customer/history", element: <CustomerHistoryPage /> },
-      // advance routes will be added here
-      { path: "advance/recieve", element: <AdvancePage /> },
+      // advance routes redirect to Receipt Voucher (ADVANCE)
+      { path: "advance/recieve", element: <Navigate to="/accounts/receipt?tab=ADVANCE" replace /> },
       // accounts routes will be added here
       { path: "accounts/payment", element: <PaymentPage /> },
       { path: "accounts/receipt", element: <ReceiptPage /> },

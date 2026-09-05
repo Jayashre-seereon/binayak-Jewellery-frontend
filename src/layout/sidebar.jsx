@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   BookOpen,
   NotepadText,
+  User,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -68,35 +69,36 @@ export default function Sidebar() {
       icon: ShoppingBag,
       children: [
         { name: "Sales", path: "/sales" },
-        { name: "Customer History", path: "/customer/history" },
-      ],
-    },
-    {
-      name: "Advance ",
-      icon: Wallet,
-      children: [{ name: "Advance Recieve", path: "/advance/recieve" }],
+         ],
     },
     {
       name: "Accounting",
-      icon: BookOpen,
+      icon: Wallet,
       children: [
         { name: "Journal Entry", path: "/accounts/journal" },
         { name: "Payment Voucher", path: "/accounts/payment" },
         { name: "Receipt Voucher", path: "/accounts/receipt" },
       ],
     },
+     {
+      name: "Customer History",
+      icon: User,
+      children: [
+        { name: "Customer History", path: "/customer/history" },
+      ],
+    },
     {
       name: "Reports",
       icon: NotepadText,
       children: [
-        { name: "Sales Summary", path: "/report/sales-summary" },
-        { name: "Purchase Register", path: "/report/purchase-register" },
-        { name: "Purchase Reg.", path: "/report/old-purchase" },
-        { name: "Advance Register", path: "/report/advance-register" },
-        { name: "Sales Register", path: "/report/sales-register" },
-        { name: "Old Stock Reg.", path: "/report/old-stock-register" },
-        { name: "Pure Metal Reg.", path: "/report/metal-register" },
-        { name: "Reports", path: "/report/report" },
+        // { name: "Sales Summary", path: "/report/sales-summary" },
+        // { name: "Purchase Register", path: "/report/purchase-register" },
+        // { name: "Purchase Reg.", path: "/report/old-purchase" },
+        // { name: "Advance Register", path: "/report/advance-register" },
+        // { name: "Sales Register", path: "/report/sales-register" },
+        // { name: "Old Stock Reg.", path: "/report/old-stock-register" },
+        // { name: "Pure Metal Reg.", path: "/report/metal-register" },
+         { name: "Reports", path: "/report/report" },
       ],
     },
   ];

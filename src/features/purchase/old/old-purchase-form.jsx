@@ -617,8 +617,8 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       nextErrors.customerIdNumber = "ID number is required when ID type is selected.";
     }
     if (!form.date) nextErrors.date = "Date is required.";
-    if (Math.abs(Number(paidAmount || 0) - Number(grandTotal || 0)) > 0.01) {
-      nextErrors.payments = "Paid Amount must exactly match Total Amount.";
+    if (Number(paidAmount || 0) > Number(grandTotal || 0) + 0.01) {
+      nextErrors.payments = "Paid Amount cannot exceed Total Amount.";
     }
 
     setErrors(nextErrors);
@@ -924,6 +924,12 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <span>Paid Amount</span>
               <span>₹{paidAmount.toFixed(2)}</span>
             </div>
+            {dueAmount > 0.01 && (
+              <div className="flex justify-between text-sm text-amber-700 font-bold bg-amber-50 px-2 py-1 rounded">
+                <span>Supplier Pending Due</span>
+                <span>₹{dueAmount.toFixed(2)}</span>
+              </div>
+            )}
             {errors.payments ? (
               <div className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600">
                 {errors.payments}

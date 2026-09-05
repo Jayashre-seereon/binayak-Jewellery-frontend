@@ -662,8 +662,8 @@ export default function SalesPage() {
     }
     if (!state.placeOfSupply?.trim()) errors.placeOfSupply = "Place of supply is required";
     if (!state.items.length) errors.items = "Add at least one item to generate an invoice";
-    if (Math.abs(Number(calculations.paidAmount || 0) - Number(calculations.netPayable || 0)) > 0.01) {
-      errors.payments = "Paid Amount must exactly match Net Payable.";
+    if (Number(calculations.paidAmount || 0) > Number(calculations.netPayable || 0) + 0.01) {
+      errors.payments = "Paid Amount cannot exceed Net Payable.";
     }
 
     setValidationErrors(errors);
@@ -1930,6 +1930,14 @@ export default function SalesPage() {
                       <span>Paid Amount</span>
                       <span>₹{money(calculations.paidAmount)}</span>
                     </div>
+
+                    {/* CUSTOMER DUE AMOUNT */}
+                    {calculations.dueAmount > 0.01 && (
+                      <div className="flex justify-between py-1.5 px-2 rounded bg-amber-50 border border-amber-200 text-amber-800 font-bold">
+                        <span>Customer Due Balance</span>
+                        <span>₹{money(calculations.dueAmount)}</span>
+                      </div>
+                    )}
 
                     {validationErrors.payments && (
                       <div className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600">
