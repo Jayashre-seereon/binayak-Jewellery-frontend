@@ -68,6 +68,13 @@ export const getVoucherById = async (id) => {
   return res.data?.data || null;
 };
 
+export const getVoucherPdf = async (id) => {
+  const res = await http.get(`/api/accounting/vouchers/${id}/downloadPdf`, {
+    responseType: "blob",
+  });
+  return res.data;
+};
+
 export const cancelVoucher = async (id, reason) => {
   const res = await http.post(`/api/accounting/vouchers/${id}/cancel`, { reason });
   return res.data;

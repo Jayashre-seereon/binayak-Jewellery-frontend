@@ -6,9 +6,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X, CheckCircle, AlertCircle } from "lucide-react";
+import { Printer, Download, X, CheckCircle, AlertCircle } from "lucide-react";
 import { numberToWordsIndian } from "@/utils/numberToWords";
 import { useAuthStore } from "@/store/authStore";
+import { getVoucherPdf } from "@/api/accounting-api";
+import { notifyError } from "@/utils/notify";
 
 export default function VoucherPrintModal({ open, setOpen, voucher }) {
   const printRef = useRef(null);
@@ -59,6 +61,22 @@ export default function VoucherPrintModal({ open, setOpen, voucher }) {
     printWindow.document.close();
   };
 
+  const handleDownload = async () => {
+    try {
+      const blob = await getVoucherPdf(voucher.id);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${voucher.voucherType || "Voucher"}-${voucher.voucherNo || voucher.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+    } catch (error) {
+      notifyError(error, "Failed to download voucher PDF.");
+    }
+  };
+
   const isCancelled = voucher.status === "CANCELLED";
   const formattedDate = voucher.date ? new Date(voucher.date).toLocaleDateString("en-IN", {
     day: "2-digit",
@@ -88,6 +106,10 @@ export default function VoucherPrintModal({ open, setOpen, voucher }) {
             </span>
           </DialogTitle>
           <div className="flex items-center gap-2 pr-6">
+            <Button size="sm" variant="outline" onClick={handleDownload} className="gap-1.5">
+              <Download size={15} />
+              <span>Download PDF</span>
+            </Button>
             <Button size="sm" variant="outline" onClick={handlePrint} className="gap-1.5">
               <Printer size={15} />
               <span>Print Slip</span>
