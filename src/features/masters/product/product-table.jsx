@@ -17,6 +17,7 @@ export default function ProductTable({ data, onEdit, onDelete }) {
             <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Metal</th>
             <th className="p-3 text-left">Purity</th>
+            <th className="p-3 text-left">Grade</th>
             <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
@@ -44,6 +45,15 @@ export default function ProductTable({ data, onEdit, onDelete }) {
                 {item.purity?.name ? (
                   <span className="bg-amber-50 text-amber-800 text-xs px-2 py-0.5 rounded font-medium border border-amber-200">
                     {item.purity.name}
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </td>
+              <td className="p-3">
+                {item.grade?.name ? (
+                  <span className="bg-emerald-50 text-emerald-800 text-xs px-2 py-0.5 rounded font-medium border border-emerald-200">
+                    {item.grade.name} ({item.grade.percentage}%)
                   </span>
                 ) : (
                   "-"

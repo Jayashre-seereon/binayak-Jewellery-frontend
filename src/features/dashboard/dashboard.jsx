@@ -120,8 +120,7 @@ export default function Dashboard() {
       {/* =========================================================
           2. LIVE GOLD & SILVER RATES
       ========================================================= */}
-      <div className="bg-linear-to-r from-amber-500 via-amber-600 to-yellow-600 rounded-2xl p-4 text-white shadow-xs">
-        <div className="flex items-center justify-between border-b border-amber-400/40 pb-2.5 mb-3">
+     <div className="bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 rounded-2xl p-4 text-white shadow-xs">    <div className="flex items-center justify-between border-b border-amber-400/40 pb-2.5 mb-3">
           <div className="flex items-center gap-2">
             <Coins size={18} className="text-amber-100" />
             <span className="text-xs uppercase font-bold tracking-wider text-amber-100">

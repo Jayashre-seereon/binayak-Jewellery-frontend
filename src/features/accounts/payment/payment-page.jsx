@@ -1088,13 +1088,13 @@ export default function PaymentPage() {
             </div>
 
             {/* 5. Live Double-Entry Preview */}
-            <div className="bg-slate-900 text-white p-3 rounded-lg text-xs space-y-1">
+            <div className="bg-linear-to-r from-slate-900  via-blue-800 to-slate-900 text-white p-3 rounded-lg text-xs space-y-1">
               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">
                 Automatic Accounting Entry (Real-time preview)
               </div>
               <div className="font-mono flex justify-between">
                 <span className="text-rose-400">
-                  Dr. {formData.referenceType === "PURCHASE"
+                   {formData.referenceType === "PURCHASE"
                     ? `Supplier A/C (${formData.payTo || "Supplier"})`
                     : formData.referenceType === "SALARY"
                     ? "Salary Expense A/C"
@@ -1124,7 +1124,7 @@ export default function PaymentPage() {
             <Button
               onClick={handleSubmitVoucher}
               disabled={submitting}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               {submitting ? "Processing Payment..." : "Save & Generate Voucher"}
             </Button>

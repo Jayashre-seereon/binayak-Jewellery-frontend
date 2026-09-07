@@ -7,15 +7,13 @@ import { getEmployees } from "@/api/employee-api";
 import { getParties } from "@/api/party-api";
 import { getMetals } from "@/api/metal-api";
 import { getStones } from "@/api/stone-api";
+import { getItems } from "@/api/item-api";
+import { getRates } from "@/api/rate-api";
 import {
   PURCHASE_TYPES,
   PAYMENT_MODES,
   CUSTOMER_ID_TYPES,
 } from "@/api/old-purchase-api";
-import { getPuritiesByMetal } from "@/api/purity-api";
-import { getGradesByPurity } from "@/api/grade-api";
-import { getProductsByMetal } from "@/api/product-api";
-import { getItemsByProduct } from "@/api/item-api";
 import { getStonesByProductAndItem } from "@/api/stone-api";
 import { numberToWordsIndian } from "@/utils/numberToWords";
 
@@ -40,11 +38,12 @@ const roundMoney = (v) => Math.round((Number(v || 0) + Number.EPSILON) * 100) / 
 const roundWeight = (v) => Math.round((Number(v || 0) + Number.EPSILON) * 1000) / 1000;
 
 const ITEM_FIELDS = [
-  { key: "metalId", label: "Metal", kind: "select", options: "metals" },
-  { key: "productId", label: "Product", kind: "select", options: "products" },
-  { key: "itemId", label: "Item", kind: "select", options: "items" },
-  { key: "purityId", label: "Purity", kind: "select", options: "purities" },
-  { key: "gradeId", label: "Grade", kind: "select", options: "grades" },
+  { key: "itemId", label: "Item *", kind: "select", options: "items" },
+  { key: "categoryName", label: "Category", kind: "readonly" },
+  { key: "productName", label: "Product", kind: "readonly" },
+  { key: "metalName", label: "Metal", kind: "readonly" },
+  { key: "purityName", label: "Purity", kind: "readonly" },
+  { key: "gradeName", label: "Grade", kind: "readonly" },
   { key: "stoneId", label: "Stone", kind: "select", options: "stones" },
   { key: "pieces", label: "Pcs", kind: "number", step: "1", min: "1" },
   { key: "grossWeight", label: "Gross Wt", kind: "number", step: "0.001" },
@@ -71,16 +70,17 @@ let rowCounter = 1;
 function createRow() {
   return {
     id: rowCounter++,
-    metalId: "",
-    productId: "",
     itemId: "",
+    productId: "",
+    metalId: "",
     purityId: "",
     gradeId: "",
+    categoryName: "",
+    productName: "",
+    metalName: "",
+    purityName: "",
+    gradeName: "",
     stoneId: "",
-    products: [],
-    items: [],
-    purities: [],
-    grades: [],
     stones: [],
     pieces: 1,
     grossWeight: "",
@@ -261,35 +261,50 @@ function buildInitialItems(defaultValues) {
     return [createRow()];
   }
 
-  return rawItems.map((item, index) => ({
-    id: item.id ?? index + 1,
-    metalId: toId(item.metalId ?? item.metal?.id ?? item.product?.metalId ?? ""),
-    productId: toId(item.productId ?? item.product?.id ?? item.stone?.productId ?? ""),
-    itemId: toId(item.itemId ?? item.item?.id ?? item.stone?.itemId ?? ""),
-    purityId: toId(item.purityId ?? item.purityMaster?.id ?? item.purity?.id ?? ""),
-    gradeId: toId(item.gradeId ?? item.grade?.id ?? ""),
-    stoneId: toId(item.stoneId ?? item.stone?.id ?? ""),
-    products: [],
-    items: [],
-    purities: [],
-    grades: [],
-    stones: [],
-    pieces: Math.max(1, Number(item.pieces || 1)),
-    grossWeight: toFieldValue(item.grossWeight),
-    stoneWeight: toFieldValue(item.stoneWeight),
-    netWeight: item.netWeight ?? "",
-    purity: toFieldValue(item.purity),
-    rate: toFieldValue(item.rate),
-    metalAmount: item.metalAmount ?? "",
-    stoneAmount: toFieldValue(item.stoneAmount),
-    otherAmount: toFieldValue(item.otherAmount),
-    discount: toFieldValue(item.discount),
-    totalAmount: item.totalAmount ?? "",
-    hsnCode: toFieldValue(item.hsnCode) || "711319",
-    huidNo: toFieldValue(item.huidNo),
-    narration: toFieldValue(item.narration),
-    itemPhoto: null,
-  }));
+  return rawItems.map((item, index) => {
+    const itemObj = item.item;
+    const prodObj = item.product || itemObj?.product;
+    const catName = prodObj?.category?.name || item.category?.name || "";
+    const prodName = prodObj?.name || "";
+    const metName = prodObj?.metal?.name || item.metal?.name || "";
+    const purName = prodObj?.purity?.name || itemObj?.purity?.name || item.purityMaster?.name || item.purity?.name || "";
+    const grdName = prodObj?.grade?.name
+      ? `${prodObj.grade.name}${prodObj.grade.percentage ? ` (${prodObj.grade.percentage}%)` : ""}`
+      : item.grade?.name
+      ? `${item.grade.name}${item.grade.percentage ? ` (${item.grade.percentage}%)` : ""}`
+      : "";
+
+    return {
+      id: item.id ?? index + 1,
+      itemId: toId(item.itemId ?? itemObj?.id ?? item.stone?.itemId ?? ""),
+      productId: toId(item.productId ?? prodObj?.id ?? item.stone?.productId ?? ""),
+      metalId: toId(item.metalId ?? prodObj?.metalId ?? item.metal?.id ?? ""),
+      purityId: toId(item.purityId ?? prodObj?.purityId ?? itemObj?.purityId ?? item.purityMaster?.id ?? item.purity?.id ?? ""),
+      gradeId: toId(item.gradeId ?? prodObj?.gradeId ?? item.grade?.id ?? ""),
+      categoryName: catName,
+      productName: prodName,
+      metalName: metName,
+      purityName: purName,
+      gradeName: grdName,
+      stoneId: toId(item.stoneId ?? item.stone?.id ?? ""),
+      stones: [],
+      pieces: Math.max(1, Number(item.pieces || 1)),
+      grossWeight: toFieldValue(item.grossWeight),
+      stoneWeight: toFieldValue(item.stoneWeight),
+      netWeight: item.netWeight ?? "",
+      purity: toFieldValue(item.purity ?? prodObj?.grade?.percentage ?? item.purityMaster?.percentage ?? ""),
+      rate: toFieldValue(item.rate),
+      metalAmount: item.metalAmount ?? "",
+      stoneAmount: toFieldValue(item.stoneAmount),
+      otherAmount: toFieldValue(item.otherAmount),
+      discount: toFieldValue(item.discount),
+      totalAmount: item.totalAmount ?? "",
+      hsnCode: toFieldValue(item.hsnCode) || "711319",
+      huidNo: toFieldValue(item.huidNo),
+      narration: toFieldValue(item.narration),
+      itemPhoto: null,
+    };
+  });
 }
 
 function buildInitialPayments(defaultValues) {
@@ -322,26 +337,31 @@ function buildInitialPayments(defaultValues) {
   return [emptyPayment(0)];
 }
 
-async function hydrateRowOptions(row) {
+async function hydrateRowOptions(row, allItemsList = [], allRatesList = []) {
   const next = { ...row };
   try {
-    if (next.metalId) {
-      const [purities, products] = await Promise.all([
-        getPuritiesByMetal(next.metalId).catch(() => []),
-        getProductsByMetal(next.metalId).catch(() => []),
-      ]);
-      next.purities = normalizeList(purities);
-      next.products = normalizeList(products);
+    if (next.itemId && allItemsList.length > 0) {
+      const chosen = allItemsList.find((i) => String(i.id) === String(next.itemId));
+      if (chosen) {
+        if (!next.productId) next.productId = toId(chosen.productId);
+        if (!next.metalId) next.metalId = toId(chosen.product?.metalId);
+        if (!next.purityId) next.purityId = toId(chosen.purityId || chosen.product?.purityId);
+        if (!next.gradeId) next.gradeId = toId(chosen.product?.gradeId);
+        if (!next.categoryName) next.categoryName = chosen.product?.category?.name || "-";
+        if (!next.productName) next.productName = chosen.product?.name || "-";
+        if (!next.metalName) next.metalName = chosen.product?.metal?.name || "-";
+        if (!next.purityName) next.purityName = chosen.product?.purity?.name || chosen.purity?.name || "-";
+        if (!next.gradeName) {
+          next.gradeName = chosen.product?.grade?.name
+            ? `${chosen.product.grade.name}${chosen.product.grade.percentage ? ` (${chosen.product.grade.percentage}%)` : ""}`
+            : (chosen.product?.grade?.percentage ? `${chosen.product.grade.percentage}%` : "-");
+        }
+        if (!next.purity) {
+          next.purity = chosen.product?.grade?.percentage || chosen.purity?.percentage || "";
+        }
+      }
     }
-    if (next.productId) {
-      next.items = normalizeList(await getItemsByProduct(next.productId).catch(() => []));
-    }
-    if (next.productId && !next.itemId && next.items.length === 1) {
-      next.itemId = toId(next.items[0].id);
-    }
-    if (next.purityId) {
-      next.grades = normalizeList(await getGradesByPurity(next.purityId).catch(() => []));
-    }
+
     if (next.productId && next.itemId) {
       next.stones = normalizeList(await getStonesByProductAndItem(next.productId, next.itemId).catch(() => []));
     }
@@ -355,7 +375,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
   const [form, setForm] = useState(buildInitialForm(defaultValues));
   const [items, setItems] = useState(() => buildInitialItems(defaultValues));
   const [payments, setPayments] = useState(() => buildInitialPayments(defaultValues));
-  const [options, setOptions] = useState({ employees: [], parties: [], metals: [], stones: [] });
+  const [options, setOptions] = useState({ employees: [], parties: [], metals: [], stones: [], items: [], rates: [] });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -365,16 +385,22 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     (async () => {
       setLoading(true);
       try {
-        const [employees, parties, metals, stones] = await Promise.all([
+        const [employees, parties, metals, stones, rawItems, rawRates] = await Promise.all([
           getEmployees().catch(() => []),
           getParties().catch(() => []),
           getMetals().catch(() => []),
           getStones().catch(() => []),
+          getItems().catch(() => []),
+          getRates().catch(() => []),
         ]);
+        const itemsList = normalizeList(rawItems);
+        const ratesList = normalizeList(rawRates);
         const nextForm = buildInitialForm(defaultValues);
         const seededItems = buildInitialItems(defaultValues);
         const seededPayments = buildInitialPayments(defaultValues);
-        const hydratedItems = await Promise.all(seededItems.map((row) => hydrateRowOptions(row)));
+        const hydratedItems = await Promise.all(
+          seededItems.map((row) => hydrateRowOptions(row, itemsList, ratesList))
+        );
         if (!active) return;
         setForm(nextForm);
         setItems(hydratedItems.length > 0 ? hydratedItems : [createRow()]);
@@ -384,6 +410,8 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
           parties: normalizeList(parties),
           metals: normalizeList(metals),
           stones: normalizeList(stones),
+          items: itemsList,
+          rates: ratesList,
         });
       } catch (err) {
         console.error("Options error:", err);
@@ -434,55 +462,71 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
         if (row.id !== id) return row;
         let next = { ...row, [field]: value };
 
-        if (field === "metalId") {
-          next = {
-            ...next,
-            productId: "",
-            itemId: "",
-            purityId: "",
-            gradeId: "",
-            stoneId: "",
-            products: [],
-            items: [],
-            purities: [],
-            grades: [],
-            stones: [],
-          };
-          getPuritiesByMetal(value).then((purities) => {
-            setItems((rows) => rows.map((r) => (r.id === id ? { ...r, purities: normalizeList(purities) } : r)));
-          });
-          getProductsByMetal(value).then((products) => {
-            setItems((rows) => rows.map((r) => (r.id === id ? { ...r, products: normalizeList(products) } : r)));
-          });
-        }
-
-        if (field === "productId") {
-          next = { ...next, itemId: "", stoneId: "", items: [], stones: [] };
-          getItemsByProduct(value).then((itemsList) => {
-            setItems((rows) => rows.map((r) => (r.id === id ? { ...r, items: normalizeList(itemsList) } : r)));
-          });
-        }
-
         if (field === "itemId") {
-          next = { ...next, stoneId: "", stones: [] };
-          if (next.productId && value) {
-            getStonesByProductAndItem(next.productId, value).then((stones) => {
-              setItems((rows) => rows.map((r) => (r.id === id ? { ...r, stones: normalizeList(stones) } : r)));
-            });
+          const chosenItem = (options.items || []).find((i) => String(i.id) === String(value));
+          if (chosenItem) {
+            const prodId = toId(chosenItem.productId);
+            const metId = toId(chosenItem.product?.metalId);
+            const purId = toId(chosenItem.purityId || chosenItem.product?.purityId);
+            const grdId = toId(chosenItem.product?.gradeId);
+            const catName = chosenItem.product?.category?.name || "-";
+            const prodName = chosenItem.product?.name || "-";
+            const metName = chosenItem.product?.metal?.name || "-";
+            const purName = chosenItem.product?.purity?.name || chosenItem.purity?.name || "-";
+            const grdName = chosenItem.product?.grade?.name
+              ? `${chosenItem.product.grade.name}${chosenItem.product.grade.percentage ? ` (${chosenItem.product.grade.percentage}%)` : ""}`
+              : (chosenItem.product?.grade?.percentage ? `${chosenItem.product.grade.percentage}%` : "-");
+
+            next.productId = prodId;
+            next.metalId = metId;
+            next.purityId = purId;
+            next.gradeId = grdId;
+            next.categoryName = catName;
+            next.productName = prodName;
+            next.metalName = metName;
+            next.purityName = purName;
+            next.gradeName = grdName;
+            next.purity = chosenItem.product?.grade?.percentage || chosenItem.purity?.percentage || "";
+
+            // Auto-fetch rate based on metal + purity
+            const matchingRate = (options.rates || []).find(
+              (r) =>
+                String(r.metalId) === String(metId) &&
+                String(r.purityId) === String(purId)
+            );
+            if (matchingRate) {
+              const rateVal =
+                matchingRate.cashRate ||
+                matchingRate.saleRate ||
+                matchingRate.exchangeRate ||
+                0;
+              if (rateVal > 0) {
+                next.rate = String(rateVal);
+              }
+            }
+
+            next.stoneId = "";
+            next.stones = [];
+            if (prodId && value) {
+              getStonesByProductAndItem(prodId, value).then((stones) => {
+                setItems((rows) =>
+                  rows.map((r) => (r.id === id ? { ...r, stones: normalizeList(stones) } : r))
+                );
+              });
+            }
+          } else {
+            next.productId = "";
+            next.metalId = "";
+            next.purityId = "";
+            next.gradeId = "";
+            next.categoryName = "";
+            next.productName = "";
+            next.metalName = "";
+            next.purityName = "";
+            next.gradeName = "";
+            next.stoneId = "";
+            next.stones = [];
           }
-        }
-
-        if (field === "purityId") {
-          next = { ...next, gradeId: "" };
-          getGradesByPurity(value).then((grades) => {
-            setItems((rows) => rows.map((r) => (r.id === id ? { ...r, grades: normalizeList(grades) } : r)));
-          });
-        }
-
-        if (field === "gradeId") {
-          const gradeList = normalizeList(row.grades);
-          const g = gradeList.find((grade) => String(grade.id) === String(value));
-          if (g && !next.purity) next.purity = g.percentage;
         }
 
         return calcRow(next);
@@ -552,8 +596,32 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
 
   const renderCell = (row, field) => {
     if (field.kind === "calc") {
-      return <div className="text-sm font-medium px-1">{field.money ? "₹" : ""}{Number(row[field.key] || 0).toFixed(field.money ? 2 : 3)}</div>;
+      return (
+        <div className="h-9 w-full rounded-md border border-slate-200 bg-slate-50 px-3 flex items-center text-sm font-semibold text-slate-800">
+          {field.money ? "₹" : ""}{Number(row[field.key] || 0).toFixed(field.money ? 2 : 3)}
+        </div>
+      );
     }
+
+    if (field.kind === "readonly") {
+      const isPurity = field.key === "purityName";
+      const isGrade = field.key === "gradeName";
+      return (
+        <div
+          className={`h-9 w-full rounded-md border px-3 flex items-center text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap ${
+            isPurity
+              ? "bg-amber-50 border-amber-200 text-amber-900"
+              : isGrade
+              ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+              : "bg-slate-50 border-slate-200 text-slate-700"
+          }`}
+          title={row[field.key] || "-"}
+        >
+          {row[field.key] || "-"}
+        </div>
+      );
+    }
+
     if (field.kind === "select") {
       const list = normalizeList(row[field.options] ?? options[field.options]);
       return (
@@ -562,12 +630,23 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
           value={row[field.key]}
           onChange={(e) => updateItem(row.id, field.key, e.target.value)}
         >
-          <option value="">Select</option>
-          {list.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
+          <option value="">Select {field.label.replace(" *", "")}</option>
+          {list.map((o) => {
+            let label = o.name;
+            if (field.key === "itemId") {
+              const prodPart = o.product?.name ? ` [${o.product.name}]` : "";
+              const purPart =
+                o.product?.purity?.name || o.purity?.name
+                  ? ` - ${o.product?.purity?.name || o.purity?.name}`
+                  : "";
+              label = `${o.name}${prodPart}${purPart}`;
+            }
+            return (
+              <option key={o.id} value={o.id}>
+                {label}
+              </option>
+            );
+          })}
         </select>
       );
     }
@@ -607,6 +686,9 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     const customerIdType = String(form.customerIdType || "").trim();
     const customerIdNumber = String(form.customerIdNumber || "").trim();
 
+    if (!form.employeeId) {
+      nextErrors.employeeId = "Employee is required.";
+    }
     if (!form.partyId && !customerName) {
       nextErrors.customerName = "Customer name or Party is required.";
     }
@@ -665,8 +747,14 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
           paymentDate: p.paymentDate,
           narration: p.narration,
         })),
-      items: items.map(({ id, itemPhoto, products, items, purities, grades, stones, tagNo, ...rest }) => ({
+      items: items.map(({ id, itemPhoto, products, items: itmOpt, purities, grades, stones, categoryName, productName, metalName, purityName, gradeName, tagNo, ...rest }) => ({
         ...rest,
+        itemId: rest.itemId ? Number(rest.itemId) : null,
+        productId: rest.productId ? Number(rest.productId) : null,
+        metalId: rest.metalId ? Number(rest.metalId) : null,
+        purityId: rest.purityId ? Number(rest.purityId) : null,
+        gradeId: rest.gradeId ? Number(rest.gradeId) : null,
+        stoneId: rest.stoneId ? Number(rest.stoneId) : null,
         pieces: Math.max(1, Number(rest.pieces || 1)),
         grossWeight: Number(rest.grossWeight || 0),
         stoneWeight: Number(rest.stoneWeight || 0),
@@ -709,11 +797,12 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Employee</label>
+              <label className="text-xs text-muted-foreground">Employee <span className="text-destructive">*</span></label>
               <select className={selectCls} value={form.employeeId} onChange={(e) => updateForm("employeeId", e.target.value)}>
-                <option value="">Select</option>
+                <option value="">Select Employee</option>
                 {options.employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
+              {errors.employeeId ? <p className="text-xs text-red-500">{errors.employeeId}</p> : null}
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Reference No.</label>
@@ -787,14 +876,14 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <label className="text-xs text-muted-foreground">SGST</label>
               <Input type="number" value={form.sgst} onChange={(e) => updateForm("sgst", e.target.value)} />
             </div>
-            <div className="space-y-1">
+            {/* <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Tax Amount</label>
               <Input type="number" value={form.taxAmount} onChange={(e) => updateForm("taxAmount", e.target.value)} />
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Round Off</label>
               <Input type="number" value={form.roundOff} onChange={(e) => updateForm("roundOff", e.target.value)} />
-            </div>
+            </div> */}
           </div>
 
           <div className="grid grid-cols-4 gap-3">

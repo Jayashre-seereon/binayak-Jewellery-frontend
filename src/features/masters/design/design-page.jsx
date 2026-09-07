@@ -12,11 +12,8 @@ import {
   getDesignById,
   deleteDesign,
 } from "@/api/design-api";
-import { getCategory } from "@/api/category-api";
-
 export default function DesignPage() {
   const [designs, setDesigns] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -26,12 +23,8 @@ export default function DesignPage() {
 
   const loadData = async () => {
     try {
-      const [data, cats] = await Promise.all([
-        getDesigns(),
-        getCategory().catch(() => []),
-      ]);
+      const data = await getDesigns();
       setDesigns(Array.isArray(data) ? [...data].reverse() : []);
-      setCategories(Array.isArray(cats) ? cats : []);
     } catch (error) {
       notifyError(error, "Failed to load designs.");
     }
@@ -128,7 +121,6 @@ export default function DesignPage() {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
-        categories={categories}
       />
 
       <DeleteModal

@@ -9,7 +9,6 @@ export default function DesignTable({ data, onEdit, onDelete }) {
           <th className="p-2 border">SL No</th>
           <th className="p-2 border">Reference Image</th>
           <th className="p-2 border">Design Name</th>
-          <th className="p-2 border">Category</th>
           <th className="p-2 border">Description</th>
           <th className="p-2 border">Actions</th>
         </tr>
@@ -18,7 +17,7 @@ export default function DesignTable({ data, onEdit, onDelete }) {
       <tbody>
         {data.length === 0 ? (
           <tr>
-            <td colSpan="6" className="text-center p-3">
+            <td colSpan="5" className="text-center p-3">
               No data found
             </td>
           </tr>
@@ -40,15 +39,6 @@ export default function DesignTable({ data, onEdit, onDelete }) {
               </td>
 
               <td className="p-2 border">{item.name}</td>
-              <td className="p-2 border">
-                {item.category?.name ? (
-                  <span className="bg-slate-100 text-slate-800 text-xs px-2 py-0.5 rounded font-medium">
-                    {item.category.name}
-                  </span>
-                ) : (
-                  "-"
-                )}
-              </td>
               <td className="p-2 border">{item.description}</td>
 
               <td className="p-2 border">

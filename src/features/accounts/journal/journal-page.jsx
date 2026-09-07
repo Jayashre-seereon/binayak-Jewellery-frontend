@@ -661,7 +661,7 @@ export default function JournalPage() {
             <Button
               onClick={handleSubmitJournal}
               disabled={submitting || !isBalanced}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               {submitting ? "Saving Journal..." : "Save Journal Entry"}
             </Button>

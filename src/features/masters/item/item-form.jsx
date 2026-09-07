@@ -24,7 +24,6 @@ export default function ItemForm({
   defaultValues,
   products = [],
   designs = [],
-  purities = [],
 }) {
   const [preview, setPreview] = useState(null);
   const { register, handleSubmit, reset, setValue, watch } = useForm({
@@ -39,23 +38,8 @@ export default function ItemForm({
   });
   const productValue = watch("productId");
   const designValue = watch("designId");
-  const purityValue = watch("purityId");
 
   const selectedProduct = products.find((p) => String(p.id) === String(productValue));
-
-  // Category -> Design -> Product/Item: filter designs matching product category if product has category
-  const filteredDesigns = selectedProduct?.categoryId
-    ? designs.filter(
-        (d) => !d.categoryId || String(d.categoryId) === String(selectedProduct.categoryId)
-      )
-    : designs;
-
-  // Filter purities by product metal if product has metal
-  const filteredPurities = selectedProduct?.metalId
-    ? purities.filter(
-        (p) => !p.metalId || String(p.metalId) === String(selectedProduct.metalId)
-      )
-    : purities;
 
   useEffect(() => {
     if (open) {
@@ -66,7 +50,11 @@ export default function ItemForm({
         null;
       const prodId = defaultValues?.productId ?? defaultValues?.product?.id ?? "";
       const desId = defaultValues?.designId ?? defaultValues?.design?.id ?? "";
-      const purId = defaultValues?.purityId ?? defaultValues?.purity?.id ?? defaultValues?.product?.purityId ?? "";
+      const purId =
+        defaultValues?.purityId ??
+        defaultValues?.purity?.id ??
+        defaultValues?.product?.purityId ??
+        "";
 
       reset({
         name: defaultValues?.name || "",
@@ -86,13 +74,17 @@ export default function ItemForm({
   const handleProductChange = (val) => {
     setValue("productId", val);
     const prod = products.find((p) => String(p.id) === String(val));
-    if (prod?.purityId && !purityValue) {
-      setValue("purityId", String(prod.purityId));
-    }
+    setValue("purityId", prod?.purityId ? String(prod.purityId) : "");
   };
 
   const submit = (data) => {
-    onSave(data);
+    // Ensure purityId is synced with product if not already
+    const prod = products.find((p) => String(p.id) === String(data.productId));
+    const finalData = {
+      ...data,
+      purityId: data.purityId || (prod?.purityId ? String(prod.purityId) : ""),
+    };
+    onSave(finalData);
     reset();
     setPreview(null);
     setOpen(false);
@@ -119,51 +111,88 @@ export default function ItemForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[540px]">
         <DialogHeader>
           <DialogTitle>Item Master</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div>
-            <label className="text-sm">Item Name</label>
-           <Input
-  className="h-9"
-  {...register("name", { required: "Item name is required" })}
-/> </div>
+            <label className="text-sm font-medium">Item Name *</label>
+            <Input
+              className="h-9 mt-1"
+              placeholder="e.g. Traditional Gold Necklace"
+              {...register("name", { required: "Item name is required" })}
+            />
+          </div>
 
           <div>
-            <label className="text-sm">Product</label>
+            <label className="text-sm font-medium">Product *</label>
             <Select
               value={String(productValue || "")}
               onValueChange={handleProductChange}
             >
-              <SelectTrigger className="w-full h-9">
+              <SelectTrigger className="w-full h-9 mt-1">
                 <SelectValue placeholder="Select Product" />
               </SelectTrigger>
               <SelectContent>
                 {products.map((p) => (
                   <SelectItem key={p.id} value={String(p.id)}>
-                    {p.name} {p.category?.name ? `[${p.category.name}]` : ""}
+                    {p.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Auto-fetched Read-Only Attributes from Product */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider mb-2">
+              Auto-Fetched Product Attributes (Read-Only)
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div>
+                <span className="text-xs text-slate-500 block">Category</span>
+                <span className="font-medium text-slate-800">
+                  {selectedProduct?.category?.name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Metal</span>
+                <span className="font-medium text-slate-800">
+                  {selectedProduct?.metal?.name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Purity</span>
+                <span className="font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block text-xs font-semibold">
+                  {selectedProduct?.purity?.name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Grade</span>
+                <span className="font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block text-xs font-semibold">
+                  {selectedProduct?.grade?.name
+                    ? `${selectedProduct.grade.name}${selectedProduct.grade.percentage ? ` (${selectedProduct.grade.percentage}%)` : ""}`
+                    : "-"}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div>
-            <label className="text-sm">Design</label>
+            <label className="text-sm font-medium">Design *</label>
             <Select
               value={String(designValue || "")}
               onValueChange={(val) => setValue("designId", val)}
             >
-              <SelectTrigger className="w-full h-9">
+              <SelectTrigger className="w-full h-9 mt-1">
                 <SelectValue placeholder="Select Design" />
               </SelectTrigger>
               <SelectContent>
-                {filteredDesigns.map((d) => (
+                {designs.map((d) => (
                   <SelectItem key={d.id} value={String(d.id)}>
-                    {d.name} {d.category?.name ? `(${d.category.name})` : ""}
+                    {d.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -171,36 +200,17 @@ export default function ItemForm({
           </div>
 
           <div>
-            <label className="text-sm">Purity</label>
-            <Select
-              value={purityValue ? String(purityValue) : ""}
-              onValueChange={(val) => setValue("purityId", val === "NONE" ? "" : val)}
-            >
-              <SelectTrigger className="w-full h-9">
-                <SelectValue placeholder="Select Purity" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="NONE">-- No Purity --</SelectItem>
-                {filteredPurities.map((p) => (
-                  <SelectItem key={p.id} value={String(p.id)}>
-                    {p.name} {p.metal?.name ? `(${p.metal.name})` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium">Description</label>
+            <Textarea
+              className="min-h-[70px] mt-1"
+              placeholder="Item description or specifications..."
+              {...register("description")}
+            />
           </div>
 
           <div>
-            <label className="text-sm">Description</label>
-  <Textarea
-  className="min-h-[80px]"
-  {...register("description")}
-/>        
-          </div>
-
-          <div>
-            <label className="text-sm">Reference Image</label>
-            <Input type="file" accept="image/*" onChange={handleImageChange} />
+            <label className="text-sm font-medium">Reference Image</label>
+            <Input type="file" accept="image/*" onChange={handleImageChange} className="mt-1" />
           </div>
 
           {preview && (
@@ -211,7 +221,7 @@ export default function ItemForm({
             />
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
