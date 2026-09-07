@@ -7,6 +7,7 @@ import { createStore, deleteStore, getStoreById, getStores, updateStore } from "
 import StoreCard from "@/features/store/store-card";
 import StoreForm from "@/features/store/store-form";
 import { toast } from "sonner";
+import logo from "@/assets/logo.png";
 
 export default function StoreSelectionPage() {
   const navigate = useNavigate();
@@ -105,64 +106,83 @@ export default function StoreSelectionPage() {
   );
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <div className="max-w-4xl w-full px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Select Store</h1>
-          <p className="text-gray-600">
-            Welcome, {user?.name || user?.email || "Admin"}! Please select a store to manage.
-          </p>
-          {selectedStoreId ? (
-            <p className="text-sm text-gray-500 mt-2">Current store ID: {selectedStoreId}</p>
-          ) : null}
-        </div>
-        <div className="flex justify-end mb-4 gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              setEditingStore(null);
-              setFormOpen(true);
-            }}
-          >
-            Create Store
-          </Button>
-        </div>
-
-        {loading ? (
-          <Card>
-            <CardContent className="p-6 text-center text-gray-600">Loading stores...</CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {stores.map((store) => (
-              <StoreCard
-                key={store.id}
-                store={store}
-                onSelect={() => handleStoreSelect(store)}
-                onEdit={() => handleEdit(store)}
-                onDelete={() => handleDelete(store)}
-              />
-            ))}
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.95),_rgba(241,245,249,1)_45%,_rgba(226,232,240,1)_100%)] px-4 py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center">
+        <div className="w-full rounded-3xl border border-white/70 bg-white/80 p-6 shadow-[0_20px_80px_rgba(15,23,42,0.10)] backdrop-blur">
+          <div className="mb-8 grid gap-6 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <img src={logo} alt="Binayak Jewellers logo" className="h-full w-full object-contain p-2" />
+              </div>
+              <div>
+                <div className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                  Logged in successfully
+                </div>
+                <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
+                  Select a store
+                </h1>
+                <p className="mt-2 max-w-2xl text-sm text-slate-600 md:text-base">
+                  Welcome, {user?.name || user?.email || "Admin"}. Choose a store to continue managing inventory, sales, and accounts.
+                </p>
+                {selectedStoreId ? (
+                  <p className="mt-2 text-xs text-slate-500">Current store ID: {selectedStoreId}</p>
+                ) : null}
+              </div>
+            </div>
+            <div className="flex justify-start lg:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditingStore(null);
+                  setFormOpen(true);
+                }}
+                className="rounded-full border-slate-300 bg-white px-5 py-5 shadow-sm hover:bg-slate-50"
+              >
+                Create Store
+              </Button>
+            </div>
           </div>
-        )}
 
-        {!loading && stores.length === 0 ? (
-          <Card className="mt-4">
-            <CardContent className="p-6 text-center text-gray-600">
-              No stores available. Create one to continue.
-            </CardContent>
-          </Card>
-        ) : null}
+          {loading ? (
+            <Card className="border-slate-200/80 bg-white/90 shadow-sm">
+              <CardContent className="p-8 text-center text-slate-600">Loading stores...</CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {stores.map((store) => (
+                <StoreCard
+                  key={store.id}
+                  store={store}
+                  onSelect={() => handleStoreSelect(store)}
+                  onEdit={() => handleEdit(store)}
+                  onDelete={() => handleDelete(store)}
+                />
+              ))}
+            </div>
+          )}
 
-        <StoreForm
-          open={formOpen}
-          setOpen={(open) => {
-            setFormOpen(open);
-            if (!open) setEditingStore(null);
-          }}
-          onSave={handleSave}
-          initialValues={editingStore}
-        />
+          {!loading && stores.length === 0 ? (
+            <Card className="mt-4 border-dashed border-slate-300 bg-white/70 shadow-none">
+              <CardContent className="p-10 text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                  0
+                </div>
+                <p className="text-base font-medium text-slate-800">No stores available</p>
+                <p className="mt-1 text-sm text-slate-500">Create your first store to continue.</p>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <StoreForm
+            open={formOpen}
+            setOpen={(open) => {
+              setFormOpen(open);
+              if (!open) setEditingStore(null);
+            }}
+            onSave={handleSave}
+            initialValues={editingStore}
+          />
+        </div>
       </div>
     </div>
   );
