@@ -14,6 +14,7 @@ import {
   NotepadText,
   User,
 } from "lucide-react";
+import logo from "@/assets/logo.png";
 
 export default function Sidebar() {
   const [openMenu, setOpenMenu] = useState(null);
@@ -132,8 +133,18 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 shrink-0 bg-slate-900 text-white h-screen flex flex-col p-4 overflow-hidden select-none">
-      <div className="text-xl font-bold mb-6 flex-shrink-0">JewelERP</div>
+    <div className="w-64 shrink-0 bg-slate-950 text-white h-screen flex flex-col p-4 overflow-hidden select-none border-r border-white/10">
+      <div className="mb-6 flex-shrink-0 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg shadow-black/20">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-white">
+            <img src={logo} alt="Binayak Jewellers logo" className="h-full w-full object-contain p-1" />
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-base font-semibold tracking-wide">Binayak Jewellers</div>
+            <div className="text-xs text-slate-400">ERP Dashboard</div>
+          </div>
+        </div>
+      </div>
 
       <nav className="flex flex-col gap-1 flex-1 overflow-y-auto overflow-x-hidden">
         {menuItems.map((item) => (

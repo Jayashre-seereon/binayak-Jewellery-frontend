@@ -3,6 +3,7 @@ import { useAuthStore } from "@/store/authStore";
 import { logoutApi } from "@/api/authApi";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import logo from "@/assets/logo.png";
 
 export default function Header() {
   const logout = useAuthStore((state) => state.logout);
@@ -41,10 +42,16 @@ export default function Header() {
     }
   };
   return (
-    <div className="h-16 bg-white border-b flex items-center justify-between px-6">
+    <div className="h-16 bg-white/95 backdrop-blur border-b border-slate-200 flex items-center justify-between px-6 shadow-sm">
       {/* Left */}
-      <div className="font-semibold text-lg">
-        Vinayak Jewellers
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <img src={logo} alt="Binayak Jewellers logo" className="h-full w-full object-contain p-1" />
+        </div>
+        <div className="leading-tight">
+          <div className="font-semibold text-slate-900">Binayak Jewellers</div>
+          <div className="text-xs text-slate-500">Jewellery ERP</div>
+        </div>
       </div>
 
       {/* Right */}
