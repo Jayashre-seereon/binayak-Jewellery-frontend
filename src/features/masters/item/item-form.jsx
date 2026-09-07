@@ -22,8 +22,8 @@ export default function ItemForm({
   setOpen,
   onSave,
   defaultValues,
-  products,
-  designs,
+  products = [],
+  designs = [],
 }) {
   const [preview, setPreview] = useState(null);
   const { register, handleSubmit, reset, setValue, watch } = useForm({
@@ -31,12 +31,15 @@ export default function ItemForm({
       name: "",
       productId: "",
       designId: "",
+      purityId: "",
       description: "",
       image: null,
     },
   });
   const productValue = watch("productId");
   const designValue = watch("designId");
+
+  const selectedProduct = products.find((p) => String(p.id) === String(productValue));
 
   useEffect(() => {
     if (open) {
@@ -45,33 +48,43 @@ export default function ItemForm({
         defaultValues?.image ||
         defaultValues?.photo ||
         null;
+      const prodId = defaultValues?.productId ?? defaultValues?.product?.id ?? "";
+      const desId = defaultValues?.designId ?? defaultValues?.design?.id ?? "";
+      const purId =
+        defaultValues?.purityId ??
+        defaultValues?.purity?.id ??
+        defaultValues?.product?.purityId ??
+        "";
+
       reset({
         name: defaultValues?.name || "",
-        productId:
-          defaultValues?.productId ||
-          defaultValues?.product?.id ||
-          "",
-        designId:
-          defaultValues?.designId ||
-          defaultValues?.design?.id ||
-          "",
+        productId: prodId ? String(prodId) : "",
+        designId: desId ? String(desId) : "",
+        purityId: purId ? String(purId) : "",
         description: defaultValues?.description || "",
         image: null,
       });
       setPreview(existingImage);
-      setValue(
-        "productId",
-        defaultValues?.productId || defaultValues?.product?.id || ""
-      );
-      setValue(
-        "designId",
-        defaultValues?.designId || defaultValues?.design?.id || ""
-      );
+      setValue("productId", prodId ? String(prodId) : "");
+      setValue("designId", desId ? String(desId) : "");
+      setValue("purityId", purId ? String(purId) : "");
     }
   }, [defaultValues, open, reset, setValue]);
 
+  const handleProductChange = (val) => {
+    setValue("productId", val);
+    const prod = products.find((p) => String(p.id) === String(val));
+    setValue("purityId", prod?.purityId ? String(prod.purityId) : "");
+  };
+
   const submit = (data) => {
-    onSave(data);
+    // Ensure purityId is synced with product if not already
+    const prod = products.find((p) => String(p.id) === String(data.productId));
+    const finalData = {
+      ...data,
+      purityId: data.purityId || (prod?.purityId ? String(prod.purityId) : ""),
+    };
+    onSave(finalData);
     reset();
     setPreview(null);
     setOpen(false);
@@ -98,26 +111,28 @@ export default function ItemForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[540px]">
         <DialogHeader>
           <DialogTitle>Item Master</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(submit)} className="space-y-4">
           <div>
-            <label className="text-sm">Item Name</label>
-           <Input
-  className="h-9"
-  {...register("name", { required: "Item name is required" })}
-/> </div>
+            <label className="text-sm font-medium">Item Name *</label>
+            <Input
+              className="h-9 mt-1"
+              placeholder="e.g. Traditional Gold Necklace"
+              {...register("name", { required: "Item name is required" })}
+            />
+          </div>
 
           <div>
-            <label className="text-sm">Product</label>
+            <label className="text-sm font-medium">Product *</label>
             <Select
               value={String(productValue || "")}
-              onValueChange={(val) => setValue("productId", val)}
+              onValueChange={handleProductChange}
             >
-              <SelectTrigger className="w-full h-9">
+              <SelectTrigger className="w-full h-9 mt-1">
                 <SelectValue placeholder="Select Product" />
               </SelectTrigger>
               <SelectContent>
@@ -130,13 +145,48 @@ export default function ItemForm({
             </Select>
           </div>
 
+          {/* Auto-fetched Read-Only Attributes from Product */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <div className="text-xs font-semibold uppercase text-slate-500 tracking-wider mb-2">
+              Auto-Fetched Product Attributes (Read-Only)
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <div>
+                <span className="text-xs text-slate-500 block">Category</span>
+                <span className="font-medium text-slate-800">
+                  {selectedProduct?.category?.name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Metal</span>
+                <span className="font-medium text-slate-800">
+                  {selectedProduct?.metal?.name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Purity</span>
+                <span className="font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block text-xs font-semibold">
+                  {selectedProduct?.purity?.name || "-"}
+                </span>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Grade</span>
+                <span className="font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 inline-block text-xs font-semibold">
+                  {selectedProduct?.grade?.name
+                    ? `${selectedProduct.grade.name}${selectedProduct.grade.percentage ? ` (${selectedProduct.grade.percentage}%)` : ""}`
+                    : "-"}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <div>
-            <label className="text-sm">Design</label>
+            <label className="text-sm font-medium">Design *</label>
             <Select
               value={String(designValue || "")}
               onValueChange={(val) => setValue("designId", val)}
             >
-              <SelectTrigger className="w-full h-9">
+              <SelectTrigger className="w-full h-9 mt-1">
                 <SelectValue placeholder="Select Design" />
               </SelectTrigger>
               <SelectContent>
@@ -150,16 +200,17 @@ export default function ItemForm({
           </div>
 
           <div>
-            <label className="text-sm">Description</label>
-  <Textarea
-  className="min-h-[80px]"
-  {...register("description")}
-/>        
+            <label className="text-sm font-medium">Description</label>
+            <Textarea
+              className="min-h-[70px] mt-1"
+              placeholder="Item description or specifications..."
+              {...register("description")}
+            />
           </div>
 
           <div>
-            <label className="text-sm">Reference Image</label>
-            <Input type="file" accept="image/*" onChange={handleImageChange} />
+            <label className="text-sm font-medium">Reference Image</label>
+            <Input type="file" accept="image/*" onChange={handleImageChange} className="mt-1" />
           </div>
 
           {preview && (
@@ -170,7 +221,7 @@ export default function ItemForm({
             />
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>

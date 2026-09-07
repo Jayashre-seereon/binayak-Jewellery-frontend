@@ -10,6 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 export default function DesignForm({
   open,
   setOpen,
@@ -33,7 +41,6 @@ export default function DesignForm({
         description: defaultValues?.description || "",
         image: null,
       });
-
       setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
     }
   }, [defaultValues, open, reset]);

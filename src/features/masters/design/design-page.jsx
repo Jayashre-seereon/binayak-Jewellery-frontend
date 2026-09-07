@@ -12,7 +12,6 @@ import {
   getDesignById,
   deleteDesign,
 } from "@/api/design-api";
-
 export default function DesignPage() {
   const [designs, setDesigns] = useState([]);
   const [search, setSearch] = useState("");

@@ -5,6 +5,7 @@ import { Printer, Download, X } from "lucide-react";
 import { getSalePdf } from "./sale-estimate-api";
 import { notifyError } from "@/utils/notify";
 import { formatCharge, formatWeight } from "@/utils/units";
+import InvoiceBrandHeader from "@/components/invoice-brand-header";
 
 const money = (val) => Number(val || 0).toFixed(2);
 
@@ -97,13 +98,13 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
           className="p-8 bg-white text-black font-sans text-xs leading-tight print:p-4 print:text-[11px]"
           style={{ minHeight: "800px" }}
         >
+          <InvoiceBrandHeader store={sale.store} />
           {/* HEADER */}
-          <div className="relative mb-4">
+          <div className="relative mb-4 mt-4">
             <div className="text-center">
               <h1 className="text-lg font-bold tracking-wider uppercase">TAX INVOICE</h1>
             </div>
             <div className="absolute right-0 top-0 text-right">
-              <div className="text-sm font-bold uppercase">CUSTOMER COPY</div>
               <div className="text-xs font-semibold text-gray-700">
                 {sale.store?.storeName || "Bhubaneswar"} Branch
               </div>

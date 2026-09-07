@@ -22,8 +22,10 @@ export default function ProductForm({
   setOpen,
   onSave,
   defaultValues,
-  categories,
-  metals,
+  categories = [],
+  metals = [],
+  purities = [],
+  grades = [],
 }) {
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -31,33 +33,70 @@ export default function ProductForm({
       description: "",
       categoryId: "",
       metalId: "",
+      purityId: "",
+      gradeId: "",
       image: null,
     },
   });
   const [preview, setPreview] = useState(null);
   const categoryValue = watch("categoryId");
   const metalValue = watch("metalId");
+  const purityValue = watch("purityId");
+  const gradeValue = watch("gradeId");
+
+  const filteredPurities = metalValue
+    ? purities.filter((p) => !p.metalId || String(p.metalId) === String(metalValue))
+    : purities;
+
+  const matchedGrade = grades.find(
+    (g) =>
+      (gradeValue && String(g.id) === String(gradeValue)) ||
+      (purityValue && String(g.purityId) === String(purityValue))
+  );
 
   useEffect(() => {
     if (open) {
+      const catId = defaultValues?.categoryId || defaultValues?.category?.id || "";
+      const mId = defaultValues?.metalId || defaultValues?.metal?.id || "";
+      const pId = defaultValues?.purityId || defaultValues?.purity?.id || "";
+      let gId = defaultValues?.gradeId || defaultValues?.grade?.id || "";
+
+      if (!gId && pId && grades.length > 0) {
+        const found = grades.find((g) => String(g.purityId) === String(pId));
+        if (found) gId = found.id;
+      }
+
       reset({
         name: defaultValues?.name || "",
         description: defaultValues?.description || "",
-        categoryId:
-          defaultValues?.categoryId ||
-          defaultValues?.category?.id ||
-          "",
-        metalId: defaultValues?.metalId || defaultValues?.metal?.id || "",
+        categoryId: catId ? String(catId) : "",
+        metalId: mId ? String(mId) : "",
+        purityId: pId ? String(pId) : "",
+        gradeId: gId ? String(gId) : "",
         image: null,
       });
       setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
-      setValue(
-        "categoryId",
-        defaultValues?.categoryId || defaultValues?.category?.id || ""
-      );
-      setValue("metalId", defaultValues?.metalId || defaultValues?.metal?.id || "");
+      setValue("categoryId", catId ? String(catId) : "");
+      setValue("metalId", mId ? String(mId) : "");
+      setValue("purityId", pId ? String(pId) : "");
+      setValue("gradeId", gId ? String(gId) : "");
     }
-  }, [defaultValues, open, reset, setValue]);
+  }, [defaultValues, open, reset, setValue, grades]);
+
+  const handlePurityChange = (val) => {
+    const purityVal = val === "NONE" ? "" : val;
+    setValue("purityId", purityVal);
+    if (!purityVal) {
+      setValue("gradeId", "");
+      return;
+    }
+    const foundGrade = grades.find((g) => String(g.purityId) === String(purityVal));
+    if (foundGrade) {
+      setValue("gradeId", String(foundGrade.id));
+    } else {
+      setValue("gradeId", "");
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -109,7 +148,11 @@ export default function ProductForm({
             <label className="text-sm">Metal</label>
             <Select
               value={String(metalValue || "")}
-              onValueChange={(value) => setValue("metalId", value)}
+              onValueChange={(value) => {
+                setValue("metalId", value);
+                setValue("purityId", "");
+                setValue("gradeId", "");
+              }}
             >
               <SelectTrigger className="w-full h-9">
                 <SelectValue placeholder="Select Metal" />
@@ -122,6 +165,43 @@ export default function ProductForm({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div>
+            <label className="text-sm">Purity</label>
+            <Select
+              value={purityValue ? String(purityValue) : ""}
+              onValueChange={handlePurityChange}
+            >
+              <SelectTrigger className="w-full h-9">
+                <SelectValue placeholder="Select Purity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">-- No Purity --</SelectItem>
+                {filteredPurities.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.name} {p.metal?.name ? `(${p.metal.name})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm">Grade (Auto-populated from Purity)</label>
+            <Input
+              readOnly
+              className="h-9 bg-slate-50 text-slate-700 font-medium cursor-not-allowed"
+              value={
+                matchedGrade
+                  ? `${matchedGrade.name} (${matchedGrade.percentage}%)`
+                  : defaultValues?.grade?.name
+                  ? `${defaultValues.grade.name} (${defaultValues.grade.percentage}%)`
+                  : purityValue
+                  ? "Auto-matching Grade..."
+                  : "Auto-populated when Purity is selected"
+              }
+            />
           </div>
 
           <div>

@@ -17,6 +17,8 @@ import {
   FileText,
   DollarSign,
   TrendingDown,
+  X,
+  Check,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +38,7 @@ import {
   cancelVoucher,
   getNextVoucherNumber,
   getPendingPurchases,
+  getPendingSuppliers,
   getAccountingSummary,
 } from "@/api/accounting-api";
 import { getParties } from "@/api/party-api";
@@ -60,6 +63,13 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
+
+  // Supplier Purchase specific state
+  const [pendingSuppliers, setPendingSuppliers] = useState([]);
+  const [phoneQuery, setPhoneQuery] = useState("");
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [supplierTotalDue, setSupplierTotalDue] = useState(0);
+  const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
 
   // Filters
   const [search, setSearch] = useState("");
@@ -104,7 +114,7 @@ export default function PaymentPage() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [res, sum, partiesRes] = await Promise.all([
+      const [res, sum, partiesRes, pendSuppliersRes] = await Promise.all([
         getPaymentVouchers({
           search: search || undefined,
           referenceType: refFilter !== "ALL" ? refFilter : undefined,
@@ -113,10 +123,12 @@ export default function PaymentPage() {
         }),
         getAccountingSummary().catch(() => null),
         getParties().catch(() => []),
+        getPendingSuppliers().catch(() => []),
       ]);
       setVouchers(res?.vouchers || []);
       if (sum) setSummary(sum);
       setSuppliers(Array.isArray(partiesRes) ? partiesRes : partiesRes?.data || []);
+      setPendingSuppliers(Array.isArray(pendSuppliersRes) ? pendSuppliersRes : []);
     } catch (err) {
       console.error("Failed to load payment vouchers:", err);
       notifyError(err, "Could not load vouchers.");
@@ -132,11 +144,22 @@ export default function PaymentPage() {
   // Open Create Form
   const handleOpenCreate = async () => {
     try {
-      const nextNo = await getNextVoucherNumber("PAYMENT");
+      const [nextNo, pendSuppliers] = await Promise.all([
+        getNextVoucherNumber("PAYMENT").catch(() => "PV-000001"),
+        getPendingSuppliers().catch(() => []),
+      ]);
       setNextVoucherNo(nextNo || "PV-000001");
+      setPendingSuppliers(pendSuppliers);
     } catch (e) {
       setNextVoucherNo("PV-000001");
     }
+
+    setPhoneQuery("");
+    setSelectedSupplier(null);
+    setSupplierTotalDue(0);
+    setShowPhoneSuggestions(false);
+    setPendingPurchases([]);
+
     setFormData({
       referenceType: "PURCHASE",
       date: new Date().toISOString().slice(0, 10),
@@ -151,41 +174,68 @@ export default function PaymentPage() {
       transactionRef: "",
       narration: "",
     });
-    setPendingPurchases([]);
     setFormOpen(true);
   };
 
-  // Supplier selection -> fetch pending purchases
-  const handleSupplierSelect = async (partyId) => {
-    const pId = Number(partyId);
-    const supplier = suppliers.find((s) => s.id === pId);
-    setFormData((prev) => ({
-      ...prev,
-      partyId: pId || null,
-      payTo: supplier?.name || "",
-      partyPhone: supplier?.phone || "",
-      purchaseId: null,
-      selectedPurchase: null,
-      amount: "",
-    }));
+  // Supplier selection by Phone Number -> fetch supplier & pending purchases
+  const handleSelectSupplierByPhone = async (supplierOrPhone) => {
+    const phone = typeof supplierOrPhone === "string" ? supplierOrPhone.trim() : (supplierOrPhone.phone || "").trim();
+    const partyId = typeof supplierOrPhone === "object" ? supplierOrPhone.partyId : null;
 
-    if (!pId) {
-      setPendingPurchases([]);
-      return;
-    }
+    if (!phone && !partyId) return;
 
     setLoadingPurchases(true);
+    setShowPhoneSuggestions(false);
     try {
-      const purchases = await getPendingPurchases({ partyId: pId });
-      setPendingPurchases(purchases);
-      if (purchases.length === 0) {
-        notifyError(null, "No pending purchase invoices with due amount for this supplier.");
+      const res = await getPendingPurchases({ phone, partyId });
+      const purchasesList = Array.isArray(res.data) ? res.data : [];
+      const supp = res.supplier || (typeof supplierOrPhone === "object" ? supplierOrPhone : null);
+      const totalDue = Number(res.totalOutstandingDue ?? (typeof supplierOrPhone === "object" ? supplierOrPhone.totalDueAmount : 0));
+
+      setSelectedSupplier(supp);
+      setSupplierTotalDue(totalDue);
+      setPendingPurchases(purchasesList);
+      setPhoneQuery(phone || supp?.phone || "");
+
+      const autoPurchase = purchasesList.length === 1 ? purchasesList[0] : null;
+
+      setFormData((prev) => ({
+        ...prev,
+        partyId: supp?.id || supp?.partyId || partyId || null,
+        payTo: supp?.name || "Supplier",
+        partyPhone: phone || supp?.phone || "",
+        purchaseId: autoPurchase?.id || null,
+        selectedPurchase: autoPurchase,
+        amount: autoPurchase ? autoPurchase.dueAmount : (totalDue > 0 ? totalDue : ""),
+        narration: autoPurchase ? `Payment against Purchase Invoice ${autoPurchase.invoiceNo || `#${autoPurchase.id}`}` : "",
+      }));
+
+      if (purchasesList.length === 0) {
+        notifyError(null, "No pending purchase invoices with due amount found for this supplier.");
       }
     } catch (err) {
-      notifyError(err, "Failed to fetch pending purchase invoices.");
+      console.error("Supplier lookup error:", err);
+      notifyError(err, "Failed to fetch supplier pending purchases.");
     } finally {
       setLoadingPurchases(false);
     }
+  };
+
+  const handleClearSupplier = () => {
+    setPhoneQuery("");
+    setSelectedSupplier(null);
+    setSupplierTotalDue(0);
+    setPendingPurchases([]);
+    setFormData((prev) => ({
+      ...prev,
+      partyId: null,
+      partyPhone: "",
+      payTo: "",
+      purchaseId: null,
+      selectedPurchase: null,
+      amount: "",
+      narration: "",
+    }));
   };
 
   const handleSelectPurchase = (pur) => {
@@ -205,14 +255,22 @@ export default function PaymentPage() {
     }
 
     if (formData.referenceType === "PURCHASE") {
-      if (!formData.purchaseId || !formData.selectedPurchase) {
-        notifyError(null, "Please select a pending purchase invoice.");
+      if (!selectedSupplier && !formData.partyPhone && !formData.partyId) {
+        notifyError(null, "Please search and select a supplier with outstanding purchase dues.");
         return;
       }
-      if (Number(formData.amount) > Number(formData.selectedPurchase.dueAmount) + 0.01) {
+      if (pendingPurchases.length === 0) {
+        notifyError(null, "No pending purchase invoices found for this supplier.");
+        return;
+      }
+      const maxDue = formData.selectedPurchase
+        ? Number(formData.selectedPurchase.dueAmount)
+        : Number(supplierTotalDue);
+
+      if (Number(formData.amount) > maxDue + 0.01) {
         notifyError(
           null,
-          `Payment amount cannot exceed the pending due of ₹${money(formData.selectedPurchase.dueAmount)}.`
+          `Payment amount cannot exceed the pending due of ₹${money(maxDue)}.`
         );
         return;
       }
@@ -285,7 +343,7 @@ export default function PaymentPage() {
           </Button>
           <Button
             onClick={handleOpenCreate}
-            className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-sm font-semibold"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
           >
             <Plus size={16} />
             <span>New Payment Voucher</span>
@@ -609,105 +667,300 @@ export default function PaymentPage() {
 
             {/* 2. Supplier Purchase Flow */}
             {formData.referenceType === "PURCHASE" && (
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-                <div className="font-semibold text-slate-900 flex items-center justify-between">
-                  <span>Select Supplier to Pay</span>
-                  <span className="text-[11px] text-slate-500">Pick from registered party masters</span>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-slate-900 text-sm">Supplier Purchase Payment</h3>
+                    <p className="text-[11px] text-slate-500">
+                      Search supplier by Phone Number to view pending outstanding dues
+                    </p>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                    Pending Dues Clearance
+                  </span>
                 </div>
 
-                <div>
-                  <select
-                    value={formData.partyId || ""}
-                    onChange={(e) => handleSupplierSelect(e.target.value)}
-                    className="h-9 w-full rounded-md border border-input bg-white px-3 text-xs font-medium"
-                  >
-                    <option value="">-- Choose Supplier / Party --</option>
-                    {suppliers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} {s.phone ? `(${s.phone})` : ""} {s.partytype?.name ? `[${s.partytype.name}]` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {loadingPurchases && (
-                  <div className="text-center p-3 text-slate-500">
-                    Checking pending purchase invoices...
-                  </div>
-                )}
-
-                {/* Pending Purchases Invoices List */}
-                {pendingPurchases.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-slate-200">
-                    <div className="text-[11px] font-medium text-slate-600">
-                      Select a pending purchase invoice to pay:
-                    </div>
-                    <div className="max-h-48 overflow-y-auto space-y-1.5">
-                      {pendingPurchases.map((pur) => {
-                        const isSelected = formData.purchaseId === pur.id;
-                        return (
-                          <div
-                            key={pur.id}
-                            onClick={() => handleSelectPurchase(pur)}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all flex items-center justify-between ${
-                              isSelected
-                                ? "bg-rose-50 border-rose-500 shadow-xs"
-                                : "bg-white border-slate-200 hover:border-slate-300"
-                            }`}
-                          >
-                            <div className="space-y-0.5">
-                              <div className="font-bold text-slate-900 flex items-center gap-2">
-                                <span className="font-mono text-rose-800">
-                                  {pur.invoiceNo || pur.referenceNo || `PUR-#${pur.id}`}
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-normal">
-                                  ({new Date(pur.date).toLocaleDateString("en-IN")})
-                                </span>
-                              </div>
-                              <div className="text-[11px] text-slate-500">
-                                Type: {pur.purchaseType} | Net Total: ₹{money(pur.netPayable || pur.totalAmount)}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-[11px] text-slate-400">
-                                Paid: ₹{money(pur.paidAmount)}
-                              </div>
-                              <div className="font-mono font-bold text-amber-700 text-sm">
-                                Outstanding Due: ₹{money(pur.dueAmount)}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {formData.selectedPurchase && (
-                  <div className="bg-rose-100/60 border border-rose-300 p-2.5 rounded-lg flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-semibold text-rose-900">Selected Purchase Invoice: </span>
-                      <span className="font-mono font-bold text-rose-800">
-                        {formData.selectedPurchase.invoiceNo || `#${formData.selectedPurchase.id}`}
-                      </span>
-                      <span className="text-rose-700 ml-2">
-                        (Outstanding Due: ₹{money(formData.selectedPurchase.dueAmount)})
-                      </span>
+                {/* Supplier Phone Number Input with Suggestions */}
+                <div className="relative">
+                  <label className="text-xs font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                    <span>Supplier Phone Number *</span>
+                    {selectedSupplier && (
+                      <button
+                        type="button"
+                        onClick={handleClearSupplier}
+                        className="text-[11px] text-rose-600 hover:text-rose-700 font-normal flex items-center gap-1"
+                      >
+                        <X className="w-3 h-3" /> Clear & Search Another
+                      </button>
+                    )}
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <Input
+                        type="text"
+                        placeholder="Search supplier by phone or name..."
+                        value={phoneQuery}
+                        onChange={(e) => {
+                          setPhoneQuery(e.target.value);
+                          setShowPhoneSuggestions(true);
+                        }}
+                        onFocus={() => setShowPhoneSuggestions(true)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (phoneQuery.trim()) {
+                              handleSelectSupplierByPhone(phoneQuery.trim());
+                            }
+                          }
+                        }}
+                        className="pl-9 pr-8 text-xs font-medium bg-white h-9"
+                      />
+                      {phoneQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPhoneQuery("");
+                            setShowPhoneSuggestions(false);
+                          }}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                     <Button
                       type="button"
-                      size="sm"
                       variant="outline"
-                      onClick={() =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          amount: formData.selectedPurchase.dueAmount,
-                        }))
-                      }
-                      className="h-6 text-[11px] bg-white text-rose-800 border-rose-400"
+                      size="sm"
+                      onClick={() => {
+                        if (phoneQuery.trim()) {
+                          handleSelectSupplierByPhone(phoneQuery.trim());
+                        }
+                      }}
+                      disabled={loadingPurchases || !phoneQuery.trim()}
+                      className="h-9 px-3 text-xs bg-white cursor-pointer"
                     >
-                      Pay Full Due
+                      <Search className="w-3.5 h-3.5 mr-1" /> Search
                     </Button>
+                  </div>
+
+                  {/* Suggestions Popover for Pending Suppliers */}
+                  {showPhoneSuggestions && (
+                    <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto divide-y divide-slate-100">
+                      <div className="p-2 bg-slate-50 text-[11px] font-semibold text-slate-600 flex items-center justify-between">
+                        <span>Suppliers with Outstanding Dues ({pendingSuppliers.length})</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Click to select</span>
+                      </div>
+                      {pendingSuppliers
+                        .filter((s) => {
+                          if (!phoneQuery.trim()) return true;
+                          const q = phoneQuery.toLowerCase();
+                          return (
+                            (s.phone && s.phone.toLowerCase().includes(q)) ||
+                            (s.name && s.name.toLowerCase().includes(q))
+                          );
+                        })
+                        .map((s, idx) => (
+                          <div
+                            key={s.partyId || s.phone || idx}
+                            onClick={() => handleSelectSupplierByPhone(s)}
+                            className="p-2.5 hover:bg-rose-50 cursor-pointer flex items-center justify-between transition-colors"
+                          >
+                            <div className="space-y-0.5">
+                              <div className="font-semibold text-xs text-slate-800 flex items-center gap-2">
+                                <span className="font-mono text-rose-700 font-bold">{s.phone || "No Phone"}</span>
+                                <span className="text-slate-700 font-medium">({s.name})</span>
+                              </div>
+                              <div className="text-[10px] text-slate-500">
+                                {s.gstin ? `GST: ${s.gstin} | ` : ""}
+                                {s.invoiceCount || 0} pending {s.invoiceCount === 1 ? "invoice" : "invoices"}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                                Due: ₹{money(s.totalDueAmount)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      {pendingSuppliers.filter((s) => {
+                        if (!phoneQuery.trim()) return true;
+                        const q = phoneQuery.toLowerCase();
+                        return (
+                          (s.phone && s.phone.toLowerCase().includes(q)) ||
+                          (s.name && s.name.toLowerCase().includes(q))
+                        );
+                      }).length === 0 && (
+                        <div className="p-3 text-center text-xs text-slate-500">
+                          No pending dues found matching "{phoneQuery}".
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {loadingPurchases && (
+                  <div className="text-center p-3 text-slate-500 text-xs flex items-center justify-center gap-2">
+                    <Clock className="w-4 h-4 animate-spin text-rose-600" />
+                    Fetching supplier dues & pending purchases...
+                  </div>
+                )}
+
+                {/* Selected Supplier Info & Prominent Outstanding Amount Display */}
+                {selectedSupplier && (
+                  <div className="space-y-3">
+                    {/* Supplier details card */}
+                    <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="font-bold text-slate-900 flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-rose-600" />
+                          <span>{selectedSupplier.name}</span>
+                          {selectedSupplier.phone && (
+                            <span className="font-mono text-slate-500 font-normal">
+                              ({selectedSupplier.phone})
+                            </span>
+                          )}
+                        </div>
+                        {selectedSupplier.gstin && (
+                          <div className="text-[11px] text-slate-500">GSTIN: {selectedSupplier.gstin}</div>
+                        )}
+                        {selectedSupplier.address && (
+                          <div className="text-[11px] text-slate-500">Address: {selectedSupplier.address}</div>
+                        )}
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">
+                        {pendingPurchases.length} Pending {pendingPurchases.length === 1 ? "Bill" : "Bills"}
+                      </span>
+                    </div>
+
+                    {/* Prominent Outstanding Amount Banner */}
+                    <div className="bg-gradient-to-r from-blue-900 to-slate-950 text-white rounded-xl p-4 shadow-sm flex items-center justify-between">
+                      <div className="space-y-1">
+                        <div className="text-[11px] uppercase tracking-wider font-semibold opacity-90">
+                          Supplier Current Outstanding Due
+                        </div>
+                        <div className="text-2xl font-black tracking-tight font-mono">
+                          ₹{money(supplierTotalDue)}
+                        </div>
+                        <div className="text-[11px] opacity-80">
+                          {formData.selectedPurchase
+                            ? `Selected Invoice Due: ₹${money(formData.selectedPurchase.dueAmount)}`
+                            : "Total across all pending purchase bills"}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            amount: formData.selectedPurchase
+                              ? formData.selectedPurchase.dueAmount
+                              : supplierTotalDue,
+                          }))
+                        }
+                        className="bg-white text-blue-700 hover:bg-blue-50 font-bold text-xs shadow-xs"
+                      >
+                        Pay Full Due (₹{money(formData.selectedPurchase ? formData.selectedPurchase.dueAmount : supplierTotalDue)})
+                      </Button>
+                    </div>
+
+                    {/* Pending Purchase Invoices Selection */}
+                    {pendingPurchases.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                          <span>Pending Purchase Invoices ({pendingPurchases.length})</span>
+                          <span className="text-[11px] text-slate-400 font-normal">
+                            Click to select invoice, or leave unselected for overall settlement
+                          </span>
+                        </div>
+
+                        <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
+                          {/* Option to apply to overall due */}
+                          <div
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                purchaseId: null,
+                                selectedPurchase: null,
+                                amount: supplierTotalDue,
+                                narration: `Payment against overall supplier purchase dues`,
+                              }))
+                            }
+                            className={`p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between text-xs ${
+                              !formData.purchaseId
+                                ? "bg-rose-50/80 border-rose-500 shadow-2xs font-semibold"
+                                : "bg-white border-slate-200 hover:border-slate-300"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                  !formData.purchaseId ? "border-rose-600 bg-rose-600 text-white" : "border-slate-300"
+                                }`}
+                              >
+                                {!formData.purchaseId && <Check className="w-3 h-3" />}
+                              </div>
+                              <div>
+                                <div className="text-slate-900">Apply to Overall Balance (FIFO)</div>
+                                <div className="text-[10px] text-slate-500 font-normal">
+                                  Automatically distributes payment to oldest pending invoices
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right font-mono font-bold text-amber-700">
+                              Total: ₹{money(supplierTotalDue)}
+                            </div>
+                          </div>
+
+                          {/* Specific Invoices */}
+                          {pendingPurchases.map((pur) => {
+                            const isSelected = formData.purchaseId === pur.id;
+                            return (
+                              <div
+                                key={pur.id}
+                                onClick={() => handleSelectPurchase(pur)}
+                                className={`p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between text-xs ${
+                                  isSelected
+                                    ? "bg-rose-50/80 border-rose-500 shadow-2xs"
+                                    : "bg-white border-slate-200 hover:border-slate-300"
+                                }`}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                      isSelected ? "border-rose-600 bg-rose-600 text-white" : "border-slate-300"
+                                    }`}
+                                  >
+                                    {isSelected && <Check className="w-3 h-3" />}
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    <div className="font-bold text-slate-900 flex items-center gap-2">
+                                      <span className="font-mono text-rose-800 font-bold">
+                                        {pur.invoiceNo || pur.referenceNo || `PUR-#${pur.id}`}
+                                      </span>
+                                      <span className="text-[10px] text-slate-400 font-normal">
+                                        ({new Date(pur.date).toLocaleDateString("en-IN")})
+                                      </span>
+                                    </div>
+                                    <div className="text-[10px] text-slate-500">
+                                      Net Total: ₹{money(pur.netPayable || pur.totalAmount)} | Paid: ₹{money(pur.paidAmount)}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-[10px] text-slate-400">Due Balance</div>
+                                  <div className="font-mono font-bold text-amber-700">
+                                    ₹{money(pur.dueAmount)}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -758,11 +1011,23 @@ export default function PaymentPage() {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Payment Amount (₹) *</label>
+                <label className="font-semibold text-slate-700 block mb-1">
+                  Payment Amount (₹) *
+                  {formData.referenceType === "PURCHASE" && (supplierTotalDue > 0 || formData.selectedPurchase) && (
+                    <span className="text-[10px] text-amber-700 font-semibold ml-1">
+                      (Max Due: ₹{money(formData.selectedPurchase ? formData.selectedPurchase.dueAmount : supplierTotalDue)})
+                    </span>
+                  )}
+                </label>
                 <Input
                   type="number"
                   step="0.01"
-                  min="1"
+                  min="0.01"
+                  max={
+                    formData.referenceType === "PURCHASE"
+                      ? (formData.selectedPurchase ? formData.selectedPurchase.dueAmount : supplierTotalDue)
+                      : undefined
+                  }
                   placeholder="0.00"
                   value={formData.amount}
                   onChange={(e) => setFormData((p) => ({ ...p, amount: e.target.value }))}
@@ -823,13 +1088,13 @@ export default function PaymentPage() {
             </div>
 
             {/* 5. Live Double-Entry Preview */}
-            <div className="bg-slate-900 text-white p-3 rounded-lg text-xs space-y-1">
+            <div className="bg-linear-to-r from-slate-900  via-blue-800 to-slate-900 text-white p-3 rounded-lg text-xs space-y-1">
               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">
                 Automatic Accounting Entry (Real-time preview)
               </div>
               <div className="font-mono flex justify-between">
                 <span className="text-rose-400">
-                  Dr. {formData.referenceType === "PURCHASE"
+                   {formData.referenceType === "PURCHASE"
                     ? `Supplier A/C (${formData.payTo || "Supplier"})`
                     : formData.referenceType === "SALARY"
                     ? "Salary Expense A/C"
@@ -859,7 +1124,7 @@ export default function PaymentPage() {
             <Button
               onClick={handleSubmitVoucher}
               disabled={submitting}
-              className="bg-rose-600 hover:bg-rose-700 text-white font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               {submitting ? "Processing Payment..." : "Save & Generate Voucher"}
             </Button>

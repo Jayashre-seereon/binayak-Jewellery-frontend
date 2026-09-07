@@ -30,9 +30,14 @@ export default function ItemPage() {
 
   const loadData = async () => {
     try {
-      setItems(await getItems());
-      setProducts(await getProducts());
-      setDesigns(await getDesigns());
+      const [itms, prods, dsgs] = await Promise.all([
+        getItems(),
+        getProducts().catch(() => []),
+        getDesigns().catch(() => []),
+      ]);
+      setItems(Array.isArray(itms) ? itms : []);
+      setProducts(Array.isArray(prods) ? prods : []);
+      setDesigns(Array.isArray(dsgs) ? dsgs : []);
     } catch (error) {
       notifyError(error, "Failed to load items.");
     }

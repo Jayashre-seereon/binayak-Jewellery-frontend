@@ -327,17 +327,10 @@ export default function ReceiptPage() {
             <RotateCcw size={14} />
             <span>Refresh</span>
           </Button>
-          <Button
-            onClick={() => handleOpenCreate("ADVANCE")}
-            variant="outline"
-            className="gap-1.5 text-xs border-blue-200 text-blue-700 hover:bg-blue-50 hover:text-blue-800 shadow-xs font-semibold"
-          >
-            <Plus size={15} />
-            <span>Record Advance</span>
-          </Button>
+         
           <Button
             onClick={() => handleOpenCreate("SALE_INVOICE")}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold text-xs"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold text-xs"
           >
             <Plus size={16} />
             <span>New Receipt Voucher</span>
@@ -1181,13 +1174,13 @@ export default function ReceiptPage() {
             </div>
 
             {/* 5. Live Double-Entry Preview */}
-            <div className="bg-slate-900 text-white p-3 rounded-lg text-xs space-y-1">
+            <div className="bg-linear-to-r from-slate-900  via-blue-800 to-slate-900 text-white p-3 rounded-lg text-xs space-y-1">
               <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">
                 Automatic Accounting Entry (Real-time preview)
               </div>
               <div className="font-mono flex justify-between">
                 <span className="text-emerald-400">
-                  Dr. {formData.paymentMode === "CASH" ? "Cash in Hand A/C" : "Bank / UPI A/C"}
+                  {formData.paymentMode === "CASH" ? "Cash in Hand A/C" : "Bank / UPI A/C"}
                 </span>
                 <span className="font-bold">₹{money(formData.amount || 0)}</span>
               </div>
@@ -1211,7 +1204,7 @@ export default function ReceiptPage() {
             <Button
               onClick={handleSubmitVoucher}
               disabled={submitting}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
             >
               {submitting ? "Saving Voucher..." : "Save & Generate Voucher"}
             </Button>

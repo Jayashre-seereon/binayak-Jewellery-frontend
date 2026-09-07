@@ -9,7 +9,6 @@ export const getNextVoucherNumber = async (type = "RECEIPT") => {
   const res = await http.get("/api/accounting/next-number", { params: { type } });
   return res.data?.nextNumber || "";
 };
-
 export const getAccounts = async () => {
   const res = await http.get("/api/accounting/accounts");
   return res.data?.data || [];
@@ -22,10 +21,15 @@ export const getPendingSales = async ({ customerId, phone } = {}) => {
   return res.data?.data || [];
 };
 
-export const getPendingPurchases = async ({ partyId } = {}) => {
+export const getPendingPurchases = async ({ partyId, phone } = {}) => {
   const res = await http.get("/api/accounting/pending-purchases", {
-    params: { partyId },
+    params: { partyId, phone },
   });
+  return res.data || { data: [], supplier: null, totalOutstandingDue: 0 };
+};
+
+export const getPendingSuppliers = async () => {
+  const res = await http.get("/api/accounting/pending-suppliers");
   return res.data?.data || [];
 };
 
@@ -62,6 +66,13 @@ export const createJournalEntry = async (data) => {
 export const getVoucherById = async (id) => {
   const res = await http.get(`/api/accounting/vouchers/${id}`);
   return res.data?.data || null;
+};
+
+export const getVoucherPdf = async (id) => {
+  const res = await http.get(`/api/accounting/vouchers/${id}/downloadPdf`, {
+    responseType: "blob",
+  });
+  return res.data;
 };
 
 export const cancelVoucher = async (id, reason) => {

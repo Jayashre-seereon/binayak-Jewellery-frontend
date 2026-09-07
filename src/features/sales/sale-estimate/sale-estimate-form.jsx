@@ -30,7 +30,7 @@ export default function SalesForm({ open, setOpen, onSave, defaultValues }) {
   const addRow = () => {
     setItems([
       ...items,
-      { product: "", item: "", grossWt: 0, rate: 0, amount: 0 },
+      { product: "", item: "", purity: "", grossWt: 0, rate: 0, amount: 0 },
     ]);
   };
 
@@ -93,6 +93,7 @@ export default function SalesForm({ open, setOpen, onSave, defaultValues }) {
                   <tr>
                     <th>Product</th>
                     <th>Item</th>
+                    <th>Purity</th>
                     <th>Gross Wt</th>
                     <th>Rate</th>
                     <th>Amount</th>
@@ -104,8 +105,25 @@ export default function SalesForm({ open, setOpen, onSave, defaultValues }) {
                   {items.map((row, i) => (
                     <tr key={i} className="border-t">
 
-                      <td><Input /></td>
-                      <td><Input /></td>
+                      <td>
+                        <Input
+                          value={row.product}
+                          onChange={(e) => updateItem(i, "product", e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          value={row.item}
+                          onChange={(e) => updateItem(i, "item", e.target.value)}
+                        />
+                      </td>
+                      <td>
+                        <Input
+                          value={row.purity}
+                          placeholder="e.g. 22K (916)"
+                          onChange={(e) => updateItem(i, "purity", e.target.value)}
+                        />
+                      </td>
 
                       <td>
                         <Input onChange={(e)=>updateItem(i,"grossWt",e.target.value)} />
