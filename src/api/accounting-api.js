@@ -9,7 +9,6 @@ export const getNextVoucherNumber = async (type = "RECEIPT") => {
   const res = await http.get("/api/accounting/next-number", { params: { type } });
   return res.data?.nextNumber || "";
 };
-
 export const getAccounts = async () => {
   const res = await http.get("/api/accounting/accounts");
   return res.data?.data || [];
