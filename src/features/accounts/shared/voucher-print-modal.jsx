@@ -11,6 +11,7 @@ import { numberToWordsIndian } from "@/utils/numberToWords";
 import { useAuthStore } from "@/store/authStore";
 import { getVoucherPdf } from "@/api/accounting-api";
 import { notifyError } from "@/utils/notify";
+import InvoiceBrandHeader from "@/components/invoice-brand-header";
 
 export default function VoucherPrintModal({ open, setOpen, voucher }) {
   const printRef = useRef(null);
@@ -30,9 +31,13 @@ export default function VoucherPrintModal({ open, setOpen, voucher }) {
           <style>
             @page { size: A5 landscape; margin: 12mm; }
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #0f172a; margin: 0; padding: 0; font-size: 13px; }
-            .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; }
-            .store-name { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
-            .store-sub { font-size: 11px; color: #475569; margin-top: 2px; }
+            .invoice-brand-header { min-height: 72px !important; color: white; display: flex; align-items: center; background: #1f2357; }
+            .invoice-brand-header > div:first-child, .invoice-brand-header > div:last-of-type { width: 14px !important; background: #c9a24a; align-self: stretch; }
+            .invoice-brand-circle, .invoice-since-badge { width: 48px !important; height: 48px !important; border-radius: 50%; }
+            .invoice-brand-header .truncate { font-size: 16px; font-weight: 700; }
+            .invoice-brand-header .text-\[10px\] { font-size: 8px; }
+            .invoice-brand-header .text-\[8px\] { font-size: 7px; }
+            .invoice-brand-header .text-\[4\.5px\] { font-size: 4.5px; }
             .voucher-title { font-size: 14px; font-weight: bold; text-align: center; background: #f1f5f9; padding: 4px; margin: 8px 0; border: 1px solid #cbd5e1; border-radius: 4px; text-transform: uppercase; }
             .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
             .meta-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px dashed #e2e8f0; }
@@ -118,19 +123,8 @@ export default function VoucherPrintModal({ open, setOpen, voucher }) {
         </DialogHeader>
 
         <div className="p-6 overflow-y-auto flex-1">
-          <div ref={printRef} className="bg-white p-6 border rounded-lg shadow-xs text-slate-800">
-            {/* Header */}
-            <div className="header text-center pb-3 border-b-2 border-slate-900 mb-4">
-              <div className="store-name text-2xl font-black tracking-wide text-slate-900">
-                {selectedStore?.storeName || "BINAYAK JEWELLER"}
-              </div>
-              <div className="store-sub text-xs text-slate-600">
-                {selectedStore?.address || "Main Road, Market Complex"}
-                {selectedStore?.city ? `, ${selectedStore.city}` : ""}
-                {selectedStore?.phone ? ` | Ph: ${selectedStore.phone}` : ""}
-                {selectedStore?.gstNo ? ` | GSTIN: ${selectedStore.gstNo}` : ""}
-              </div>
-            </div>
+            <div ref={printRef} className="bg-white p-6 border rounded-lg shadow-xs text-slate-800">
+            <InvoiceBrandHeader store={selectedStore} />
 
             {/* Cancelled Banner */}
             {isCancelled && (

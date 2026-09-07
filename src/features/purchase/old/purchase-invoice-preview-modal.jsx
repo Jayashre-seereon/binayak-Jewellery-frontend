@@ -5,6 +5,7 @@ import { Printer, Download } from "lucide-react";
 import { getPurchasePdf } from "@/api/old-purchase-api";
 import { notifyError } from "@/utils/notify";
 import { numberToWordsIndian } from "@/utils/numberToWords";
+import InvoiceBrandHeader from "@/components/invoice-brand-header";
 
 const money = (val) => Number(val || 0).toFixed(2);
 const weightStr = (val) => Number(val || 0).toFixed(3);
@@ -117,13 +118,13 @@ export default function PurchaseInvoicePreviewModal({ open, onOpenChange, purcha
           className="p-8 bg-white text-black font-sans text-xs leading-tight print:p-4 print:text-[11px]"
           style={{ minHeight: "800px" }}
         >
+          <InvoiceBrandHeader store={purchase.store} />
           {/* HEADER */}
-          <div className="relative mb-4">
+          <div className="relative mb-4 mt-4">
             <div className="text-center">
               <h1 className="text-lg font-bold tracking-wider uppercase">PURCHASE INVOICE</h1>
             </div>
             <div className="absolute right-0 top-0 text-right">
-              <div className="text-sm font-bold uppercase">PURCHASE COPY</div>
               <div className="text-xs font-semibold text-gray-700">
                 {purchase.store?.storeName || "Bhubaneswar"} Branch
               </div>
