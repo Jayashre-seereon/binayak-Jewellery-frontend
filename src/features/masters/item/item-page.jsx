@@ -15,11 +15,13 @@ import {
 
 import { getProducts } from "@/api/product-api";
 import { getDesigns } from "@/api/design-api";
+import { getPurities } from "@/api/purity-api";
 
 export default function ItemPage() {
   const [items, setItems] = useState([]);
   const [products, setProducts] = useState([]);
   const [designs, setDesigns] = useState([]);
+  const [purities, setPurities] = useState([]);
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -30,9 +32,16 @@ export default function ItemPage() {
 
   const loadData = async () => {
     try {
-      setItems(await getItems());
-      setProducts(await getProducts());
-      setDesigns(await getDesigns());
+      const [itms, prods, dsgs, purs] = await Promise.all([
+        getItems(),
+        getProducts().catch(() => []),
+        getDesigns().catch(() => []),
+        getPurities().catch(() => []),
+      ]);
+      setItems(Array.isArray(itms) ? itms : []);
+      setProducts(Array.isArray(prods) ? prods : []);
+      setDesigns(Array.isArray(dsgs) ? dsgs : []);
+      setPurities(Array.isArray(purs) ? purs : purs?.data || []);
     } catch (error) {
       notifyError(error, "Failed to load items.");
     }
@@ -127,6 +136,7 @@ export default function ItemPage() {
         defaultValues={editData}
         products={products}
         designs={designs}
+        purities={purities}
       />
 
       <DeleteModal

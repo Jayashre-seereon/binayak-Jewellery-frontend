@@ -337,7 +337,7 @@ export default function ReceiptPage() {
           </Button>
           <Button
             onClick={() => handleOpenCreate("SALE_INVOICE")}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold text-xs"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold text-xs"
           >
             <Plus size={16} />
             <span>New Receipt Voucher</span>

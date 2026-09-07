@@ -21,10 +21,15 @@ export const getPendingSales = async ({ customerId, phone } = {}) => {
   return res.data?.data || [];
 };
 
-export const getPendingPurchases = async ({ partyId } = {}) => {
+export const getPendingPurchases = async ({ partyId, phone } = {}) => {
   const res = await http.get("/api/accounting/pending-purchases", {
-    params: { partyId },
+    params: { partyId, phone },
   });
+  return res.data || { data: [], supplier: null, totalOutstandingDue: 0 };
+};
+
+export const getPendingSuppliers = async () => {
+  const res = await http.get("/api/accounting/pending-suppliers");
   return res.data?.data || [];
 };
 

@@ -28,6 +28,10 @@ export const addProduct = async (data) => {
     formData.append("metalId", String(Number(data.metalId)));
   }
 
+  if (data.purityId !== undefined && data.purityId !== null && data.purityId !== "" && data.purityId !== "NONE") {
+    formData.append("purityId", String(Number(data.purityId)));
+  }
+
   if (data.image) {
     formData.append("image", data.image);
   }
@@ -49,6 +53,12 @@ export const updateProduct = async (id, data) => {
 
   if (data.metalId !== undefined && data.metalId !== null && data.metalId !== "") {
     formData.append("metalId", String(Number(data.metalId)));
+  }
+
+  if (data.purityId !== undefined && data.purityId !== null && data.purityId !== "" && data.purityId !== "NONE") {
+    formData.append("purityId", String(Number(data.purityId)));
+  } else if (data.purityId === "" || data.purityId === null || data.purityId === "NONE") {
+    formData.append("purityId", "");
   }
 
   if (data.image) {

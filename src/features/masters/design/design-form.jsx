@@ -10,33 +10,46 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 export default function DesignForm({
   open,
   setOpen,
   onSave,
   defaultValues,
+  categories = [],
 }) {
-  const { register, handleSubmit, reset, setValue } = useForm({
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       name: "",
+      categoryId: "",
       description: "",
       image: null,
     },
   });
 
   const [preview, setPreview] = useState(null);
+  const categoryValue = watch("categoryId");
 
   useEffect(() => {
     if (open) {
+      const catId = defaultValues?.categoryId || defaultValues?.category?.id || "";
       reset({
         name: defaultValues?.name || "",
+        categoryId: catId ? String(catId) : "",
         description: defaultValues?.description || "",
         image: null,
       });
-
+      setValue("categoryId", catId ? String(catId) : "");
       setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
     }
-  }, [defaultValues, open, reset]);
+  }, [defaultValues, open, reset, setValue]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -64,6 +77,26 @@ export default function DesignForm({
           <div>
             <label className="text-sm">Design Name</label>
             <Input className="h-9" {...register("name")} />
+          </div>
+
+          <div>
+            <label className="text-sm">Category</label>
+            <Select
+              value={categoryValue ? String(categoryValue) : ""}
+              onValueChange={(val) => setValue("categoryId", val === "NONE" ? "" : val)}
+            >
+              <SelectTrigger className="w-full h-9">
+                <SelectValue placeholder="Select Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">-- No Category --</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={String(c.id)}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>

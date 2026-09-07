@@ -19,8 +19,17 @@ const buildItemFormData = (data) => {
   const formData = new FormData();
 
   formData.append("name", data.name || "");
-  formData.append("productId", String(Number(data.productId || "")));
-  formData.append("designId", String(Number(data.designId || "")));
+  if (data.productId) {
+    formData.append("productId", String(Number(data.productId)));
+  }
+  if (data.designId) {
+    formData.append("designId", String(Number(data.designId)));
+  }
+  if (data.purityId !== undefined && data.purityId !== null && data.purityId !== "" && data.purityId !== "NONE") {
+    formData.append("purityId", String(Number(data.purityId)));
+  } else if (data.purityId === "" || data.purityId === null || data.purityId === "NONE") {
+    formData.append("purityId", "");
+  }
   formData.append("description", data.description || "");
 
   if (data.image) {

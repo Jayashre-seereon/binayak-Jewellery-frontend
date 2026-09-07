@@ -16,6 +16,7 @@ export default function ProductTable({ data, onEdit, onDelete }) {
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Metal</th>
+            <th className="p-3 text-left">Purity</th>
             <th className="p-3 text-left">Description</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
@@ -39,6 +40,15 @@ export default function ProductTable({ data, onEdit, onDelete }) {
               <td className="p-3">{item.name}</td>
               <td className="p-3">{getCategoryLabel(item)}</td>
               <td className="p-3">{getMetalLabel(item)}</td>
+              <td className="p-3">
+                {item.purity?.name ? (
+                  <span className="bg-amber-50 text-amber-800 text-xs px-2 py-0.5 rounded font-medium border border-amber-200">
+                    {item.purity.name}
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </td>
               <td className="p-3">{item.description}</td>
               <td className="p-3">
                 <div className="flex gap-2">

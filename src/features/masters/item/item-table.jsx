@@ -34,6 +34,7 @@ export default function ItemTable({ data, onEdit, onDelete }) {
             <th className="p-3 text-left">Reference Image</th>
             <th className="p-3 text-left">Product</th>
             <th className="p-3 text-left">Design</th>
+            <th className="p-3 text-left">Purity</th>
             <th className="p-3 text-left">Actions</th>
           </tr>
         </thead>
@@ -56,6 +57,15 @@ export default function ItemTable({ data, onEdit, onDelete }) {
               </td>
               <td className="p-3">{getLabel(item.product?.name || item.product)}</td>
               <td className="p-3">{getLabel(item.design?.name || item.design)}</td>
+              <td className="p-3">
+                {item.purity?.name || item.product?.purity?.name ? (
+                  <span className="bg-amber-50 text-amber-800 text-xs px-2 py-0.5 rounded font-medium border border-amber-200">
+                    {item.purity?.name || item.product?.purity?.name}
+                  </span>
+                ) : (
+                  "-"
+                )}
+              </td>
 
               <td className="p-3">
                 <div className="flex gap-2">

@@ -267,7 +267,7 @@ export default function JournalPage() {
           </Button>
           <Button
             onClick={handleOpenCreate}
-            className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm font-semibold"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-semibold"
           >
             <Plus size={16} />
             <span>New Journal Entry</span>

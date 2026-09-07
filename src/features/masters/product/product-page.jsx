@@ -14,11 +14,13 @@ import {
 } from "@/api/product-api";
 import { getCategory } from "@/api/category-api";
 import { getMetals } from "@/api/metal-api";
+import { getPurities } from "@/api/purity-api";
 
 export default function ProductPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [metals, setMetals] = useState([]);
+  const [purities, setPurities] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -28,13 +30,17 @@ export default function ProductPage() {
 
   const loadData = async () => {
     try {
-      const productData = await getProducts();
-      const categoryData = await getCategory();
-      const metalData = await getMetals();
+      const [productData, categoryData, metalData, purityData] = await Promise.all([
+        getProducts(),
+        getCategory().catch(() => []),
+        getMetals().catch(() => []),
+        getPurities().catch(() => []),
+      ]);
 
       setProducts(Array.isArray(productData) ? [...productData].reverse() : []);
       setCategories(categoryData);
       setMetals(metalData);
+      setPurities(Array.isArray(purityData) ? purityData : purityData?.data || []);
     } catch (error) {
       notifyError(error, "Failed to load products.");
     }
@@ -119,6 +125,7 @@ export default function ProductPage() {
         defaultValues={editData}
         categories={categories}
         metals={metals}
+        purities={purities}
       />
 
       <DeleteModal

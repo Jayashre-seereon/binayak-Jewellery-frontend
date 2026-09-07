@@ -7,13 +7,17 @@ export const getDesigns = async () => {
 
 export const getDesignById = async (id) => {
   const res = await http.get(`/api/designs/getById/${id}`);
-  return res.data?.data ?? null;
+  return res.data?.design ?? res.data?.data ?? null;
 };
 
 export const addDesign = async (data) => {
   const formData = new FormData();
-  formData.append("name", data.name);
-  formData.append("description", data.description);
+  formData.append("name", data.name || "");
+  formData.append("description", data.description || "");
+
+  if (data.categoryId !== undefined && data.categoryId !== null && data.categoryId !== "" && data.categoryId !== "NONE") {
+    formData.append("categoryId", String(Number(data.categoryId)));
+  }
 
   if (data.image) {
     formData.append("image", data.image);
@@ -28,8 +32,14 @@ export const addDesign = async (data) => {
 
 export const updateDesign = async (id, data) => {
   const formData = new FormData();
-  formData.append("name", data.name);
-  formData.append("description", data.description);
+  formData.append("name", data.name || "");
+  formData.append("description", data.description || "");
+
+  if (data.categoryId !== undefined && data.categoryId !== null && data.categoryId !== "" && data.categoryId !== "NONE") {
+    formData.append("categoryId", String(Number(data.categoryId)));
+  } else if (data.categoryId === "" || data.categoryId === null || data.categoryId === "NONE") {
+    formData.append("categoryId", "");
+  }
 
   if (data.image) {
     formData.append("image", data.image);

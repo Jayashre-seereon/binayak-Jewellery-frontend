@@ -22,8 +22,9 @@ export default function ProductForm({
   setOpen,
   onSave,
   defaultValues,
-  categories,
-  metals,
+  categories = [],
+  metals = [],
+  purities = [],
 }) {
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -31,12 +32,18 @@ export default function ProductForm({
       description: "",
       categoryId: "",
       metalId: "",
+      purityId: "",
       image: null,
     },
   });
   const [preview, setPreview] = useState(null);
   const categoryValue = watch("categoryId");
   const metalValue = watch("metalId");
+  const purityValue = watch("purityId");
+
+  const filteredPurities = metalValue
+    ? purities.filter((p) => !p.metalId || String(p.metalId) === String(metalValue))
+    : purities;
 
   useEffect(() => {
     if (open) {
@@ -48,6 +55,7 @@ export default function ProductForm({
           defaultValues?.category?.id ||
           "",
         metalId: defaultValues?.metalId || defaultValues?.metal?.id || "",
+        purityId: defaultValues?.purityId || defaultValues?.purity?.id ? String(defaultValues?.purityId || defaultValues?.purity?.id) : "",
         image: null,
       });
       setPreview(defaultValues?.image || defaultValues?.imageUrl || null);
@@ -56,6 +64,10 @@ export default function ProductForm({
         defaultValues?.categoryId || defaultValues?.category?.id || ""
       );
       setValue("metalId", defaultValues?.metalId || defaultValues?.metal?.id || "");
+      setValue(
+        "purityId",
+        defaultValues?.purityId || defaultValues?.purity?.id ? String(defaultValues?.purityId || defaultValues?.purity?.id) : ""
+      );
     }
   }, [defaultValues, open, reset, setValue]);
 
@@ -118,6 +130,26 @@ export default function ProductForm({
                 {metals.map((m) => (
                   <SelectItem key={m.id} value={String(m.id)}>
                     {m.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-sm">Purity</label>
+            <Select
+              value={purityValue ? String(purityValue) : ""}
+              onValueChange={(value) => setValue("purityId", value === "NONE" ? "" : value)}
+            >
+              <SelectTrigger className="w-full h-9">
+                <SelectValue placeholder="Select Purity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NONE">-- No Purity --</SelectItem>
+                {filteredPurities.map((p) => (
+                  <SelectItem key={p.id} value={String(p.id)}>
+                    {p.name} {p.metal?.name ? `(${p.metal.name})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
