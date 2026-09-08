@@ -381,6 +381,7 @@ export default function StockForm({ open, setOpen, onSave, defaultValues, purcha
 
             <Section title="Inventory Details">
               <div className="grid gap-4 md:grid-cols-3">
+                <DisplayField label="Status" value={defaultValues?.status || "AVAILABLE"} />
                 <Field label="Inventory Code" name="inventoryCode" register={register} disabled />
                 <Field label="Purchase Item Code" name="purchaseItemCode" register={register} disabled />
                 <Field label="Purchase Type" name="purchaseType" register={register} disabled />

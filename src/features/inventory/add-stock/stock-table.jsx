@@ -1,14 +1,5 @@
 import { PencilLine, Printer, Trash2 } from "lucide-react";
 
-const ALLOWED_NEXT_STATUSES = {
-  AVAILABLE: ["RESERVED", "SOLD", "MELTED", "REFINED", "DAMAGED"],
-  RESERVED: ["AVAILABLE", "SOLD"],
-  PENDING: [],
-  SOLD: [],
-  MELTED: ["AVAILABLE"],
-  REFINED: ["AVAILABLE"],
-  DAMAGED: ["AVAILABLE"],
-};
 
 const label = (value) => {
   if (!value) return "-";
@@ -114,9 +105,6 @@ export default function StockTable({
                   {(() => {
                     const currentStatus = row.status || "AVAILABLE";
 
-                    const allowedStatuses =
-                      ALLOWED_NEXT_STATUSES[currentStatus] || [];
-
                     const STATUS_COLORS = {
                       AVAILABLE: "border-green-300 bg-green-50 text-green-700",
                       RESERVED: "border-yellow-300 bg-yellow-50 text-yellow-700",
@@ -132,23 +120,11 @@ export default function StockTable({
                       "border-gray-300 bg-white text-gray-700";
 
                     return (
-                      <select
-                        value={currentStatus}
-                        onChange={(e) =>
-                          onStatusChange?.(row.id, e.target.value)
-                        }
-                        className={`min-w-36 rounded-md border px-3 py-1.5 text-sm font-medium outline-none ${statusColor}`}
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${statusColor}`}
                       >
-                        {/* Current status */}
-                        <option value={currentStatus}>{currentStatus}</option>
-
-                        {/* Only allowed next statuses */}
-                        {allowedStatuses.map((status) => (
-                          <option key={status} value={status}>
-                            {status}
-                          </option>
-                        ))}
-                      </select>
+                        {currentStatus}
+                      </span>
                     );
                   })()}
                 </td>

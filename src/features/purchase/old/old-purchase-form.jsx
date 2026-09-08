@@ -733,7 +733,7 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
       netPayable: grandTotal,
       paymentMode: payments[0]?.paymentMode || "CASH",
       paidAmount,
-      dueAmount: 0,
+      dueAmount,
       narration: form.narration,
       payments: payments
         .filter((p) => Number(p.amount || 0) > 0)
