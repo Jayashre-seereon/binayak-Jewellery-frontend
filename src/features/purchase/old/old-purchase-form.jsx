@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { onlyDecimal, onlyDigits, onlyAlphaNumeric } from "@/utils/validation";
+import { onlyDecimal, onlyDigits, onlyAlphaNumeric, validateAadhaar, validatePan, validatePhone } from "@/utils/validation";
 import { getEmployees } from "@/api/employee-api";
 import { getParties } from "@/api/party-api";
 import { getMetals } from "@/api/metal-api";
@@ -692,15 +692,62 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     if (!form.partyId && !customerName) {
       nextErrors.customerName = "Customer name or Party is required.";
     }
-    if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
-      nextErrors.customerPhone = "Phone must be exactly 10 digits.";
+    if (customerPhone) {
+      const cleanPhone = customerPhone.replace(/\D/g, "");
+      if (!validatePhone(cleanPhone)) {
+        nextErrors.customerPhone = "Phone must be a valid 10-digit mobile number starting with 6-9.";
+      }
     }
     if (customerIdType && !customerIdNumber) {
       nextErrors.customerIdNumber = "ID number is required when ID type is selected.";
+    } else if (customerIdType === "AADHAR" && customerIdNumber) {
+      if (!validateAadhaar(customerIdNumber)) {
+        nextErrors.customerIdNumber = "Aadhaar number must be exactly 12 digits.";
+      }
+    } else if (customerIdType === "PAN" && customerIdNumber) {
+      if (!validatePan(customerIdNumber)) {
+        nextErrors.customerIdNumber = "PAN format is invalid (e.g. ABCDE1234F).";
+      }
     }
+
+    // Validate Items (weights, rate, discount)
+    if (!items || items.length === 0) {
+      nextErrors.items = "Please add at least one purchase item.";
+    } else {
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const gWt = parseFloat(it.grossWeight) || 0;
+        const sWt = parseFloat(it.stoneWeight) || 0;
+        const rate = parseFloat(it.rate) || 0;
+        const itmDisc = parseFloat(it.discount) || 0;
+        const itmPreTotal = (parseFloat(it.metalAmount) || 0) + (parseFloat(it.stoneAmount) || 0) + (parseFloat(it.otherAmount) || 0);
+
+        if (gWt <= 0) {
+          nextErrors.items = `Row #${i + 1}: Gross Weight must be greater than 0g.`;
+          break;
+        }
+        if (sWt > gWt) {
+          nextErrors.items = `Row #${i + 1}: Stone Weight cannot exceed Gross Weight.`;
+          break;
+        }
+        if (rate <= 0) {
+          nextErrors.items = `Row #${i + 1}: Rate must be greater than 0.`;
+          break;
+        }
+        if (itmDisc > itmPreTotal && itmPreTotal > 0) {
+          nextErrors.items = `Row #${i + 1}: Discount cannot exceed item amount (₹${itmPreTotal.toFixed(2)}).`;
+          break;
+        }
+      }
+    }
+
+    if (invoiceDiscount > subTotal) {
+      nextErrors.discount = `Invoice discount (₹${invoiceDiscount.toFixed(2)}) cannot exceed gross amount (₹${subTotal.toFixed(2)}).`;
+    }
+
     if (!form.date) nextErrors.date = "Date is required.";
     if (Number(paidAmount || 0) > Number(grandTotal || 0) + 0.01) {
-      nextErrors.payments = "Paid Amount cannot exceed Total Amount.";
+      nextErrors.payments = `Paid Amount (₹${paidAmount.toFixed(2)}) cannot exceed Total Amount (₹${grandTotal.toFixed(2)}).`;
     }
 
     setErrors(nextErrors);
@@ -859,8 +906,19 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <label className="text-xs text-muted-foreground">ID Number</label>
               <Input
                 value={form.customerIdNumber}
-                onChange={(e) => updateForm("customerIdNumber", onlyAlphaNumeric(e.target.value))}
-                placeholder="ID Number"
+                onChange={(e) => {
+                  const val = onlyAlphaNumeric(e.target.value);
+                  updateForm("customerIdNumber", val);
+                  if (form.customerIdType === "AADHAR" && val && !validateAadhaar(val)) {
+                    setErrors((prev) => ({ ...prev, customerIdNumber: "Please input a valid 12-digit Aadhaar number" }));
+                  } else if (form.customerIdType === "PAN" && val && !validatePan(val)) {
+                    setErrors((prev) => ({ ...prev, customerIdNumber: "Please input a valid 10-character PAN (e.g. ABCDE1234F)" }));
+                  } else {
+                    setErrors((prev) => ({ ...prev, customerIdNumber: null }));
+                  }
+                }}
+                placeholder={form.customerIdType === "AADHAR" ? "12-digit Aadhaar" : form.customerIdType === "PAN" ? "10-digit PAN" : "ID Number"}
+                className={errors.customerIdNumber ? "border-red-500" : ""}
               />
               {errors.customerIdNumber ? <p className="text-xs text-red-500">{errors.customerIdNumber}</p> : null}
             </div>
@@ -986,7 +1044,26 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Input type="text" inputMode="decimal" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", normalizeDecimalInput(e.target.value))} />
+              <div className="space-y-1">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Discount"
+                  value={form.discount}
+                  onChange={(e) => {
+                    const val = normalizeDecimalInput(e.target.value);
+                    updateForm("discount", val);
+                    const numDisc = parseFloat(val) || 0;
+                    if (numDisc > subTotal) {
+                      setErrors((prev) => ({ ...prev, discount: `Discount cannot exceed Gross Amount (₹${subTotal.toFixed(2)})` }));
+                    } else {
+                      setErrors((prev) => ({ ...prev, discount: null }));
+                    }
+                  }}
+                  className={errors.discount ? "border-red-500" : ""}
+                />
+                {errors.discount ? <p className="text-xs text-red-500">{errors.discount}</p> : null}
+              </div>
               <Input placeholder="Narration" value={form.narration} onChange={(e) => updateForm("narration", e.target.value)} />
             </div>
           </div>

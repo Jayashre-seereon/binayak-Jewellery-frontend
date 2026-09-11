@@ -41,6 +41,7 @@ import {
   getAccountingSummary,
 } from "@/api/accounting-api";
 import VoucherPrintModal from "../shared/voucher-print-modal";
+import { validatePhone, onlyDigits } from "@/utils/validation";
 
 const roundMoney = (v) => Math.round((Number(v || 0) + Number.EPSILON) * 100) / 100;
 const money = (v) => roundMoney(v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -243,6 +244,14 @@ export default function ReceiptPage() {
       return;
     }
 
+    if (formData.partyPhone) {
+      const cleanPhone = formData.partyPhone.replace(/\D/g, "");
+      if (cleanPhone && !validatePhone(cleanPhone)) {
+        notifyError(null, "Please enter a valid 10-digit mobile number starting with 6-9.");
+        return;
+      }
+    }
+
     if (formData.referenceType === "SALE_INVOICE") {
       if (!formData.saleId || !formData.selectedSale) {
         notifyError(null, "Please select a pending sale invoice.");
@@ -258,6 +267,15 @@ export default function ReceiptPage() {
     } else if (formData.referenceType === "ADVANCE") {
       if (!formData.receivedFrom?.trim()) {
         notifyError(null, "Customer name is required for advance receipt.");
+        return;
+      }
+      if (!formData.partyPhone?.trim()) {
+        notifyError(null, "Mobile number is required for customer advance tracking.");
+        return;
+      }
+      const cleanPhone = formData.partyPhone.trim().replace(/\D/g, "");
+      if (!validatePhone(cleanPhone)) {
+        notifyError(null, "Please provide a valid 10-digit mobile number starting with 6-9.");
         return;
       }
     } else {
@@ -1113,12 +1131,19 @@ export default function ReceiptPage() {
                 <Input
                   type="number"
                   step="0.01"
-                  min="1"
+                  min="0.01"
                   placeholder="0.00"
                   value={formData.amount}
                   onChange={(e) => setFormData((p) => ({ ...p, amount: e.target.value }))}
                   className="text-xs font-mono font-bold text-emerald-800"
                 />
+                {formData.referenceType === "SALE_INVOICE" &&
+                  formData.selectedSale &&
+                  Number(formData.amount || 0) > Number(formData.selectedSale.dueAmount) && (
+                    <span className="text-[10px] text-red-600 font-bold block mt-1">
+                      Amount cannot exceed pending due of ₹{money(formData.selectedSale.dueAmount)}
+                    </span>
+                  )}
               </div>
 
               <div>
