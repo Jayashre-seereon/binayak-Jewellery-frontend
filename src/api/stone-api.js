@@ -18,9 +18,14 @@ export const getStoneById = async (id) => {
 export const addStone = async (data) => {
   const res = await http.post("/api/stones/create", {
     name: data.name || "",
+    stoneType: data.stoneType || null,
+    shape: data.shape || null,
+    color: data.color || null,
+    clarity: data.clarity || null,
+    size: data.size || null,
+    unit: data.unit || "PCS",
     description: data.description || "",
-    productId: Number(data.productId),
-    itemId: Number(data.itemId),
+    status: data.status || "ACTIVE",
   });
   return res.data;
 };
@@ -28,9 +33,14 @@ export const addStone = async (data) => {
 export const updateStone = async (id, data) => {
   const res = await http.put(`/api/stones/update/${id}`, {
     name: data.name || "",
+    stoneType: data.stoneType || null,
+    shape: data.shape || null,
+    color: data.color || null,
+    clarity: data.clarity || null,
+    size: data.size || null,
+    unit: data.unit || "PCS",
     description: data.description || "",
-    productId: Number(data.productId),
-    itemId: Number(data.itemId),
+    status: data.status || "ACTIVE",
   });
   return res.data;
 };

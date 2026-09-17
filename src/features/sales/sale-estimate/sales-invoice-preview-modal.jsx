@@ -223,7 +223,24 @@ export default function SalesInvoicePreviewModal({ open, onOpenChange, sale }) {
                       <td className="p-1.5 border-r border-gray-300 text-center">{idx + 1}</td>
                       <td className="p-1.5 border-r border-gray-300">
                         <div className="font-bold">{prodName}</div>
-                        <div className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                        {(it.designName || inv?.item?.design?.name || inv?.design?.name) && (
+                          <div className="text-[10px] text-purple-700 font-semibold">
+                            Design: {it.designName || inv?.item?.design?.name || inv?.design?.name}
+                          </div>
+                        )}
+                        {((it.stones && it.stones.length > 0) || (inv?.purchaseItem?.stones && inv.purchaseItem.stones.length > 0) || (inv?.item?.design?.designStones && inv.item.design.designStones.length > 0)) && (
+                          <div className="text-[9px] text-gray-600 mt-0.5 space-y-0.5">
+                            {(it.stones?.length > 0 ? it.stones : (inv?.purchaseItem?.stones?.length > 0 ? inv.purchaseItem.stones : inv?.item?.design?.designStones || [])).map((st, sidx) => (
+                              <div key={sidx} className="flex items-center gap-1">
+                                <span className="font-medium text-slate-800">• {st.stoneName || st.stone?.name || "Stone"}:</span>
+                                <span>{st.actualPieces ?? st.expectedPieces ?? st.pieces ?? 0} pcs,</span>
+                                <span>{st.actualWeight ?? st.expectedWeight ?? 0} {st.unit || "ct"}</span>
+                                {Number(st.rate || 0) > 0 && <span>(@ ₹{st.rate})</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
                           {codeStr && <span>{codeStr}</span>}
                           {huidStr && <span className="font-mono font-semibold text-blue-900">| HUID: {huidStr}</span>}
                         </div>

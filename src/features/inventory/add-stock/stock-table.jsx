@@ -56,6 +56,8 @@ export default function StockTable({
             <th className="p-3 text-left">Purchase Type</th>
             <th className="p-3 text-left">Purchase Item</th>
             <th className="p-3 text-left">Product</th>
+            <th className="p-3 text-left">Design</th>
+            <th className="p-3 text-left">Stones</th>
             <th className="p-3 text-center">Pcs</th>
             <th className="p-3 text-right">Gross Wt</th>
             <th className="p-3 text-right">Net Wt</th>
@@ -94,6 +96,32 @@ export default function StockTable({
                     "-"}
                 </td>
                 <td className="p-3">{getProductName(row)}</td>
+                <td className="p-3">
+                  {row.item?.design?.name || row.design?.name ? (
+                    <span className="font-semibold text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 text-xs">
+                      {row.item?.design?.name || row.design?.name}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
+                </td>
+                <td className="p-3">
+                  {(() => {
+                    const stones = (row.purchaseItem?.stones && row.purchaseItem.stones.length > 0)
+                      ? row.purchaseItem.stones
+                      : (row.item?.design?.designStones || []);
+                    if (!stones.length) return <span className="text-gray-400 text-xs">-</span>;
+                    return (
+                      <div className="flex flex-wrap gap-1">
+                        {stones.map((st, i) => (
+                          <span key={i} className="bg-purple-50 text-purple-700 text-xs px-2 py-0.5 rounded border border-purple-200 font-medium">
+                            {st.stoneName || st.stone?.name || "Stone"} ({st.actualPieces ?? st.pieces ?? 0} pcs, {st.actualWeight ?? st.expectedWeight ?? 0} {st.unit || "ct"})
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </td>
                 <td className="p-3 text-center font-semibold">{row.pieces ?? row.purchaseItem?.pieces ?? 1}</td>
                 <td className="p-3 text-right">{Number(row.grossWeight ?? row.purchaseItem?.grossWeight ?? 0).toFixed(3)}g</td>
                 <td className="p-3 text-right font-medium text-blue-900">{Number(row.netWeight ?? row.purchaseItem?.netWeight ?? 0).toFixed(3)}g</td>

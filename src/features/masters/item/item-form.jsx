@@ -199,6 +199,63 @@ export default function ItemForm({
             </Select>
           </div>
 
+          {/* Auto-fetched Stone Details from Selected Design */}
+          {(() => {
+            const selectedDesign = designs.find((d) => String(d.id) === String(designValue));
+            const selectedDesignStones = selectedDesign?.designStones || selectedDesign?.stones || [];
+
+            return (
+              <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold uppercase text-blue-900 tracking-wider">
+                    Auto-Fetched Stone Details from Design (Read-Only)
+                  </span>
+                  {selectedDesignStones.length > 0 && (
+                    <span className="text-[11px] font-bold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded">
+                      {selectedDesignStones.length} Stone Type(s) Configured
+                    </span>
+                  )}
+                </div>
+
+                {selectedDesignStones.length === 0 ? (
+                  <div className="text-xs text-slate-500 italic py-1">
+                    {selectedDesign
+                      ? "This design has no stone configuration."
+                      : "Select a design to auto-fetch stone details."}
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {selectedDesignStones.map((st, idx) => {
+                      const name = st.stone?.name || st.name || "Stone";
+                      const pcs = st.pieces || 1;
+                      const wt = st.expectedWeight !== undefined ? st.expectedWeight : st.weight;
+                      const unit = st.unit || "ct";
+                      return (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between text-xs bg-white border border-blue-100 rounded px-3 py-1.5 shadow-xs"
+                        >
+                          <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                            <span>{name}</span>
+                            {st.stone?.shape && (
+                              <span className="text-[10px] text-slate-500 font-normal">({st.stone.shape})</span>
+                            )}
+                          </div>
+                          <div className="font-medium text-slate-700">
+                            <span className="font-bold text-blue-800">{pcs} PCS</span>
+                            <span className="mx-1 text-slate-300">—</span>
+                            <span className="text-slate-600">Expected <strong className="text-slate-900">{wt} {unit}</strong></span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <div>
             <label className="text-sm font-medium">Description</label>
             <Textarea

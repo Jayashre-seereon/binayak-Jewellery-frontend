@@ -14,11 +14,8 @@ import {
   deleteStone,
 } from "@/api/stone-api";
 
-import { getProducts } from "@/api/product-api";
-
 export default function StonePage() {
   const [stones, setStones] = useState([]);
-  const [products, setProducts] = useState([]);
 
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
@@ -30,15 +27,14 @@ export default function StonePage() {
   const loadData = async () => {
     try {
       const stoneData = await getStones();
-      const productData = await getProducts();
 
-     setStones(
-  Array.isArray(stoneData)
-    ? [...stoneData].sort(
-        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
-      )
-    : []
-);  setProducts(productData);
+      setStones(
+        Array.isArray(stoneData)
+          ? [...stoneData].sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            )
+          : []
+      );
     } catch (error) {
       notifyError(error, "Failed to load stones.");
     }
@@ -114,7 +110,6 @@ export default function StonePage() {
 </div>
       <StoneTable
         data={filteredData}
-        products={products}
         onEdit={async (item) => {
           try {
             const stone = await getStoneById(item.id);
@@ -132,7 +127,6 @@ export default function StonePage() {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
-        products={products}
       />
 
       <DeleteModal

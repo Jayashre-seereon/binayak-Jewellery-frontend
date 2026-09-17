@@ -14,6 +14,14 @@ export const addDesign = async (data) => {
   const formData = new FormData();
   formData.append("name", data.name || "");
   formData.append("description", data.description || "");
+  if (data.productId) {
+    formData.append("productId", String(data.productId));
+  }
+
+  const stonesList = data.stones || data.designStones;
+  if (Array.isArray(stonesList)) {
+    formData.append("stones", JSON.stringify(stonesList));
+  }
 
   if (data.image) {
     formData.append("image", data.image);
@@ -30,6 +38,14 @@ export const updateDesign = async (id, data) => {
   const formData = new FormData();
   formData.append("name", data.name || "");
   formData.append("description", data.description || "");
+  if (data.productId !== undefined) {
+    formData.append("productId", data.productId ? String(data.productId) : "");
+  }
+
+  const stonesList = data.stones || data.designStones;
+  if (Array.isArray(stonesList)) {
+    formData.append("stones", JSON.stringify(stonesList));
+  }
 
   if (data.image) {
     formData.append("image", data.image);

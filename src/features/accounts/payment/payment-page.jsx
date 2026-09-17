@@ -1033,6 +1033,13 @@ export default function PaymentPage() {
                   onChange={(e) => setFormData((p) => ({ ...p, amount: e.target.value }))}
                   className="text-xs font-mono font-bold text-rose-800"
                 />
+                {formData.referenceType === "PURCHASE" &&
+                  Number(formData.amount || 0) >
+                    (formData.selectedPurchase ? Number(formData.selectedPurchase.dueAmount) : Number(supplierTotalDue)) && (
+                    <span className="text-[10px] text-red-600 font-bold block mt-1">
+                      Amount cannot exceed pending due of ₹{money(formData.selectedPurchase ? formData.selectedPurchase.dueAmount : supplierTotalDue)}
+                    </span>
+                  )}
               </div>
 
               <div>

@@ -12,8 +12,13 @@ import {
   getDesignById,
   deleteDesign,
 } from "@/api/design-api";
+import { getProducts } from "@/api/product-api";
+import { getStones } from "@/api/stone-api";
+
 export default function DesignPage() {
   const [designs, setDesigns] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [stones, setStones] = useState([]);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editData, setEditData] = useState(null);
@@ -23,8 +28,14 @@ export default function DesignPage() {
 
   const loadData = async () => {
     try {
-      const data = await getDesigns();
-      setDesigns(Array.isArray(data) ? [...data].reverse() : []);
+      const [designsData, productsData, stonesData] = await Promise.all([
+        getDesigns().catch(() => []),
+        getProducts().catch(() => []),
+        getStones().catch(() => []),
+      ]);
+      setDesigns(Array.isArray(designsData) ? [...designsData].reverse() : []);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setStones(Array.isArray(stonesData) ? stonesData : []);
     } catch (error) {
       notifyError(error, "Failed to load designs.");
     }
@@ -121,6 +132,8 @@ export default function DesignPage() {
         setOpen={setOpen}
         onSave={handleSave}
         defaultValues={editData}
+        products={products}
+        stoneOptions={stones}
       />
 
       <DeleteModal

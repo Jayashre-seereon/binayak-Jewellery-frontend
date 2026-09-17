@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { onlyDecimal, onlyDigits, onlyAlphaNumeric } from "@/utils/validation";
+import { onlyDecimal, onlyDigits, onlyAlphaNumeric, validateAadhaar, validatePan, validatePhone } from "@/utils/validation";
 import { getEmployees } from "@/api/employee-api";
 import { getParties } from "@/api/party-api";
 import { getMetals } from "@/api/metal-api";
@@ -42,19 +42,22 @@ const ITEM_FIELDS = [
   { key: "categoryName", label: "Category", kind: "readonly" },
   { key: "productName", label: "Product", kind: "readonly" },
   { key: "metalName", label: "Metal", kind: "readonly" },
+  { key: "designName", label: "Design", kind: "readonly" },
   { key: "purityName", label: "Purity", kind: "readonly" },
   { key: "gradeName", label: "Grade", kind: "readonly" },
-  { key: "stoneId", label: "Stone", kind: "select", options: "stones" },
+  { key: "stoneName", label: "Stone", kind: "readonly" },
+  { key: "expStoneDetails", label: "Exp Stone (Pcs/Wt)", kind: "readonly" },
   { key: "pieces", label: "Pcs", kind: "number", step: "1", min: "1" },
-  { key: "grossWeight", label: "Gross Wt", kind: "number", step: "0.001" },
-  { key: "stoneWeight", label: "Stone Wt", kind: "number", step: "0.001" },
-  { key: "netWeight", label: "Net Wt", kind: "calc" },
-  { key: "rate", label: "Rate", kind: "number", step: "1" },
-  { key: "metalAmount", label: "Metal Amt", kind: "calc", money: true },
-  { key: "stoneAmount", label: "Stone Amt", kind: "number", step: "0.01" },
-  { key: "otherAmount", label: "Other Amt", kind: "number", step: "0.01" },
-  { key: "discount", label: "Discount", kind: "number", step: "0.01" },
-  { key: "totalAmount", label: "Total", kind: "calc", money: true },
+  { key: "grossWeight", label: "Gross Wt (g)", kind: "number", step: "0.001" },
+  { key: "stoneWeight", label: "Stone Wt (g)", kind: "number", step: "0.001" },
+  { key: "netWeight", label: "Net Wt (g)", kind: "calc" },
+  { key: "rate", label: "Metal Rate (₹/g)", kind: "number", step: "1" },
+  { key: "metalAmount", label: "Metal Amt (₹)", kind: "calc", money: true },
+  { key: "stoneRate", label: "Stone Rate (₹)", kind: "number", step: "0.01" },
+  { key: "stoneAmount", label: "Stone Amt (₹)", kind: "number", step: "0.01" },
+  { key: "otherAmount", label: "Other Amt (₹)", kind: "number", step: "0.01" },
+  { key: "discount", label: "Discount (₹)", kind: "number", step: "0.01" },
+  { key: "totalAmount", label: "Total (₹)", kind: "calc", money: true },
   { key: "hsnCode", label: "HSN/SAC", kind: "text" },
   { key: "huidNo", label: "HUID No.", kind: "text" },
   { key: "itemPhoto", label: "Photo", kind: "file" },
@@ -75,12 +78,16 @@ function createRow() {
     metalId: "",
     purityId: "",
     gradeId: "",
+    designId: "",
     categoryName: "",
     productName: "",
     metalName: "",
+    designName: "",
     purityName: "",
     gradeName: "",
     stoneId: "",
+    stoneName: "",
+    expStoneDetails: "",
     stones: [],
     pieces: 1,
     grossWeight: "",
@@ -89,6 +96,7 @@ function createRow() {
     purity: "",
     rate: "",
     metalAmount: "",
+    stoneRate: "",
     stoneAmount: "",
     otherAmount: "",
     discount: "",
@@ -105,6 +113,7 @@ function calcRow(row) {
     row.grossWeight !== "" ||
     row.stoneWeight !== "" ||
     row.rate !== "" ||
+    row.stoneRate !== "" ||
     row.stoneAmount !== "" ||
     row.otherAmount !== "" ||
     row.discount !== "";
@@ -113,7 +122,13 @@ function calcRow(row) {
   const grossWeight = parseFloat(row.grossWeight) || 0;
   const stoneWeight = parseFloat(row.stoneWeight) || 0;
   const rate = parseFloat(row.rate) || 0;
-  const stoneAmount = parseFloat(row.stoneAmount) || 0;
+  const stoneRate = parseFloat(row.stoneRate) || 0;
+
+  let stoneAmount = parseFloat(row.stoneAmount) || 0;
+  if (stoneRate > 0 && !row.isManualStoneAmount) {
+    stoneAmount = roundMoney(stoneWeight * stoneRate);
+  }
+
   const otherAmount = parseFloat(row.otherAmount) || 0;
   const discount = parseFloat(row.discount) || 0;
 
@@ -128,6 +143,7 @@ function calcRow(row) {
       grossWeight: "",
       stoneWeight: "",
       rate: "",
+      stoneRate: "",
       stoneAmount: "",
       otherAmount: "",
       discount: "",
@@ -143,7 +159,8 @@ function calcRow(row) {
     grossWeight,
     stoneWeight,
     rate,
-    stoneAmount,
+    stoneRate,
+    stoneAmount: stoneAmount || (row.stoneAmount === "0" ? 0 : (row.stoneAmount !== "" ? stoneAmount : "")),
     otherAmount,
     discount,
     netWeight,
@@ -264,15 +281,41 @@ function buildInitialItems(defaultValues) {
   return rawItems.map((item, index) => {
     const itemObj = item.item;
     const prodObj = item.product || itemObj?.product;
+    const designObj = itemObj?.design || item.design;
     const catName = prodObj?.category?.name || item.category?.name || "";
     const prodName = prodObj?.name || "";
     const metName = prodObj?.metal?.name || item.metal?.name || "";
+    const designName = designObj?.name || "";
     const purName = prodObj?.purity?.name || itemObj?.purity?.name || item.purityMaster?.name || item.purity?.name || "";
     const grdName = prodObj?.grade?.name
       ? `${prodObj.grade.name}${prodObj.grade.percentage ? ` (${prodObj.grade.percentage}%)` : ""}`
       : item.grade?.name
       ? `${item.grade.name}${item.grade.percentage ? ` (${item.grade.percentage}%)` : ""}`
       : "";
+
+    const rawStones = Array.isArray(item.stones) && item.stones.length > 0
+      ? item.stones
+      : (Array.isArray(designObj?.designStones) ? designObj.designStones : []);
+
+    const stones = rawStones.map((st) => ({
+      stoneId: toId(st.stoneId || st.stone?.id || ""),
+      stoneName: st.stoneName || st.stone?.name || "Stone",
+      expectedPieces: st.expectedPieces !== undefined ? st.expectedPieces : (st.pieces || 0),
+      expectedWeight: st.expectedWeight !== undefined ? st.expectedWeight : (st.weight || 0),
+      actualPieces: st.actualPieces !== undefined ? st.actualPieces : (st.pieces || 0),
+      actualWeight: st.actualWeight !== undefined ? st.actualWeight : (st.weight || 0),
+      unit: st.unit || st.stone?.unit || "ct",
+      rate: toFieldValue(st.rate),
+      amount: toFieldValue(st.amount),
+    }));
+
+    const stoneName = (stones.length > 0)
+      ? stones.map((s) => s.stoneName || s.stone?.name || "Stone").join(", ")
+      : (item.stone?.name || item.stoneName || "");
+    const expPcs = stones.reduce((sum, s) => sum + Number(s.expectedPieces || s.pieces || 0), 0);
+    const expWt = stones.reduce((sum, s) => sum + Number(s.expectedWeight || s.weight || 0), 0);
+    const unit = stones[0]?.unit || "ct";
+    const expStoneDetails = stones.length > 0 ? `${expPcs} pcs / ${expWt} ${unit}` : "-";
 
     return {
       id: item.id ?? index + 1,
@@ -281,13 +324,17 @@ function buildInitialItems(defaultValues) {
       metalId: toId(item.metalId ?? prodObj?.metalId ?? item.metal?.id ?? ""),
       purityId: toId(item.purityId ?? prodObj?.purityId ?? itemObj?.purityId ?? item.purityMaster?.id ?? item.purity?.id ?? ""),
       gradeId: toId(item.gradeId ?? prodObj?.gradeId ?? item.grade?.id ?? ""),
+      designId: toId(itemObj?.designId ?? item.designId ?? ""),
       categoryName: catName,
       productName: prodName,
       metalName: metName,
+      designName: designName,
       purityName: purName,
       gradeName: grdName,
       stoneId: toId(item.stoneId ?? item.stone?.id ?? ""),
-      stones: [],
+      stoneName: stoneName || "-",
+      expStoneDetails,
+      stones,
       pieces: Math.max(1, Number(item.pieces || 1)),
       grossWeight: toFieldValue(item.grossWeight),
       stoneWeight: toFieldValue(item.stoneWeight),
@@ -295,6 +342,7 @@ function buildInitialItems(defaultValues) {
       purity: toFieldValue(item.purity ?? prodObj?.grade?.percentage ?? item.purityMaster?.percentage ?? ""),
       rate: toFieldValue(item.rate),
       metalAmount: item.metalAmount ?? "",
+      stoneRate: toFieldValue(item.stoneRate || (stones[0]?.rate ?? "")),
       stoneAmount: toFieldValue(item.stoneAmount),
       otherAmount: toFieldValue(item.otherAmount),
       discount: toFieldValue(item.discount),
@@ -347,9 +395,11 @@ async function hydrateRowOptions(row, allItemsList = [], allRatesList = []) {
         if (!next.metalId) next.metalId = toId(chosen.product?.metalId);
         if (!next.purityId) next.purityId = toId(chosen.purityId || chosen.product?.purityId);
         if (!next.gradeId) next.gradeId = toId(chosen.product?.gradeId);
+        if (!next.designId) next.designId = toId(chosen.designId);
         if (!next.categoryName) next.categoryName = chosen.product?.category?.name || "-";
         if (!next.productName) next.productName = chosen.product?.name || "-";
         if (!next.metalName) next.metalName = chosen.product?.metal?.name || "-";
+        if (!next.designName) next.designName = chosen.design?.name || "-";
         if (!next.purityName) next.purityName = chosen.product?.purity?.name || chosen.purity?.name || "-";
         if (!next.gradeName) {
           next.gradeName = chosen.product?.grade?.name
@@ -359,11 +409,43 @@ async function hydrateRowOptions(row, allItemsList = [], allRatesList = []) {
         if (!next.purity) {
           next.purity = chosen.product?.grade?.percentage || chosen.purity?.percentage || "";
         }
-      }
-    }
+        const dStones = chosen.design?.designStones || [];
+        if (dStones.length > 0) {
+          const names = dStones.map((ds) => ds.stone?.name || "Stone").join(", ");
+          const expPcs = dStones.reduce((sum, ds) => sum + Number(ds.pieces || 0), 0);
+          const expWt = dStones.reduce((sum, ds) => sum + Number(ds.expectedWeight || 0), 0);
+          const unit = dStones[0]?.unit || "ct";
 
-    if (next.productId && next.itemId) {
-      next.stones = normalizeList(await getStonesByProductAndItem(next.productId, next.itemId).catch(() => []));
+          next.stoneName = names;
+          next.expStoneDetails = `${expPcs} pcs / ${expWt} ${unit}`;
+          if (!next.stones || next.stones.length === 0) {
+            next.stones = dStones.map((ds) => ({
+              stoneId: toId(ds.stoneId),
+              stoneName: ds.stone?.name || "Stone",
+              expectedPieces: ds.pieces || 0,
+              expectedWeight: ds.expectedWeight || 0,
+              actualPieces: ds.pieces || 0,
+              actualWeight: ds.expectedWeight || 0,
+              unit: ds.unit || ds.stone?.unit || "ct",
+              rate: "",
+              amount: "",
+            }));
+          }
+
+          let totalStoneWeightGrams = 0;
+          dStones.forEach((ds) => {
+            const wt = parseFloat(ds.expectedWeight) || 0;
+            const wtInGm = (ds.unit || "ct").toLowerCase() === "ct" ? wt * 0.2 : wt;
+            totalStoneWeightGrams += wtInGm;
+          });
+          if (totalStoneWeightGrams > 0 && !next.stoneWeight) {
+            next.stoneWeight = String(roundWeight(totalStoneWeightGrams));
+          }
+        } else {
+          next.stoneName = "-";
+          next.expStoneDetails = "-";
+        }
+      }
     }
   } catch (e) {
     console.error("Hydrate error:", e);
@@ -469,9 +551,11 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             const metId = toId(chosenItem.product?.metalId);
             const purId = toId(chosenItem.purityId || chosenItem.product?.purityId);
             const grdId = toId(chosenItem.product?.gradeId);
+            const dsnId = toId(chosenItem.designId);
             const catName = chosenItem.product?.category?.name || "-";
             const prodName = chosenItem.product?.name || "-";
             const metName = chosenItem.product?.metal?.name || "-";
+            const dsnName = chosenItem.design?.name || "-";
             const purName = chosenItem.product?.purity?.name || chosenItem.purity?.name || "-";
             const grdName = chosenItem.product?.grade?.name
               ? `${chosenItem.product.grade.name}${chosenItem.product.grade.percentage ? ` (${chosenItem.product.grade.percentage}%)` : ""}`
@@ -481,9 +565,11 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             next.metalId = metId;
             next.purityId = purId;
             next.gradeId = grdId;
+            next.designId = dsnId;
             next.categoryName = catName;
             next.productName = prodName;
             next.metalName = metName;
+            next.designName = dsnName;
             next.purityName = purName;
             next.gradeName = grdName;
             next.purity = chosenItem.product?.grade?.percentage || chosenItem.purity?.percentage || "";
@@ -505,28 +591,172 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               }
             }
 
-            next.stoneId = "";
-            next.stones = [];
-            if (prodId && value) {
-              getStonesByProductAndItem(prodId, value).then((stones) => {
-                setItems((rows) =>
-                  rows.map((r) => (r.id === id ? { ...r, stones: normalizeList(stones) } : r))
-                );
+            // Auto-populate stones from chosenItem.design.designStones
+            const dStones = chosenItem.design?.designStones || [];
+            if (dStones.length > 0) {
+              const names = dStones.map((ds) => ds.stone?.name || "Stone").join(", ");
+              const expPcs = dStones.reduce((sum, ds) => sum + Number(ds.pieces || 0), 0);
+              const expWt = dStones.reduce((sum, ds) => sum + Number(ds.expectedWeight || 0), 0);
+              const unit = dStones[0]?.unit || "ct";
+
+              next.stoneId = toId(dStones[0]?.stoneId || "");
+              next.stoneName = names;
+              next.expStoneDetails = `${expPcs} pcs / ${expWt} ${unit}`;
+              next.stones = dStones.map((ds) => ({
+                stoneId: toId(ds.stoneId),
+                stoneName: ds.stone?.name || "Stone",
+                expectedPieces: ds.pieces || 0,
+                expectedWeight: ds.expectedWeight || 0,
+                actualPieces: ds.pieces || 0,
+                actualWeight: ds.expectedWeight || 0,
+                unit: ds.unit || ds.stone?.unit || "ct",
+                rate: "",
+                amount: "",
+              }));
+
+              let totalStoneWeightGrams = 0;
+              dStones.forEach((ds) => {
+                const wt = parseFloat(ds.expectedWeight) || 0;
+                const wtInGm = (ds.unit || "ct").toLowerCase() === "ct" ? wt * 0.2 : wt;
+                totalStoneWeightGrams += wtInGm;
               });
+              if (totalStoneWeightGrams > 0) {
+                next.stoneWeight = String(roundWeight(totalStoneWeightGrams));
+              }
+            } else {
+              next.stoneId = "";
+              next.stoneName = "-";
+              next.expStoneDetails = "-";
+              next.stones = [];
+              next.stoneWeight = "";
             }
           } else {
             next.productId = "";
             next.metalId = "";
             next.purityId = "";
             next.gradeId = "";
+            next.designId = "";
             next.categoryName = "";
             next.productName = "";
             next.metalName = "";
+            next.designName = "";
             next.purityName = "";
             next.gradeName = "";
             next.stoneId = "";
             next.stones = [];
           }
+        }
+
+        if (field === "stoneAmount") {
+          next.isManualStoneAmount = true;
+        } else if (field === "stoneRate") {
+          next.isManualStoneAmount = false;
+        }
+
+        return calcRow(next);
+      })
+    );
+  };
+
+  const updateItemStone = (rowId, stoneIndex, field, value) => {
+    setItems((prev) =>
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        const updatedStones = [...(row.stones || [])];
+        const currentStone = { ...updatedStones[stoneIndex], [field]: value };
+
+        if (field === "stoneId") {
+          const matchingStone = (options.stones || []).find((s) => String(s.id) === String(value));
+          if (matchingStone) {
+            currentStone.stoneName = matchingStone.name;
+            currentStone.unit = matchingStone.unit || currentStone.unit || "ct";
+          }
+        }
+
+        const actWeight = parseFloat(currentStone.actualWeight) || 0;
+        const stRate = parseFloat(currentStone.rate) || 0;
+
+        if (field === "actualWeight" || field === "rate") {
+          if (stRate > 0) {
+            currentStone.amount = String(roundMoney(actWeight * stRate));
+          }
+        }
+
+        updatedStones[stoneIndex] = currentStone;
+
+        // Recalculate total stone weight in grams
+        let totalStoneWeightGrams = 0;
+        let totalStoneAmount = 0;
+        updatedStones.forEach((st) => {
+          const wt = parseFloat(st.actualWeight) || 0;
+          const wtInGm = (st.unit || "ct").toLowerCase() === "ct" ? wt * 0.2 : wt;
+          totalStoneWeightGrams += wtInGm;
+          const amt = parseFloat(st.amount) || 0;
+          totalStoneAmount += amt;
+        });
+
+        let next = {
+          ...row,
+          stones: updatedStones,
+          stoneWeight: String(roundWeight(totalStoneWeightGrams)),
+        };
+
+        if (totalStoneAmount > 0) {
+          next.stoneAmount = String(roundMoney(totalStoneAmount));
+        }
+
+        return calcRow(next);
+      })
+    );
+  };
+
+  const addItemStone = (rowId) => {
+    setItems((prev) =>
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        const newStone = {
+          stoneId: "",
+          stoneName: "",
+          expectedPieces: 0,
+          expectedWeight: 0,
+          actualPieces: 1,
+          actualWeight: "",
+          unit: "ct",
+          rate: "",
+          amount: "",
+        };
+        return {
+          ...row,
+          stones: [...(row.stones || []), newStone],
+        };
+      })
+    );
+  };
+
+  const removeItemStone = (rowId, stoneIndex) => {
+    setItems((prev) =>
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        const updatedStones = (row.stones || []).filter((_, i) => i !== stoneIndex);
+
+        let totalStoneWeightGrams = 0;
+        let totalStoneAmount = 0;
+        updatedStones.forEach((st) => {
+          const wt = parseFloat(st.actualWeight) || 0;
+          const wtInGm = (st.unit || "ct").toLowerCase() === "ct" ? wt * 0.2 : wt;
+          totalStoneWeightGrams += wtInGm;
+          const amt = parseFloat(st.amount) || 0;
+          totalStoneAmount += amt;
+        });
+
+        let next = {
+          ...row,
+          stones: updatedStones,
+          stoneWeight: String(roundWeight(totalStoneWeightGrams)),
+        };
+
+        if (totalStoneAmount > 0) {
+          next.stoneAmount = String(roundMoney(totalStoneAmount));
         }
 
         return calcRow(next);
@@ -606,6 +836,10 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     if (field.kind === "readonly") {
       const isPurity = field.key === "purityName";
       const isGrade = field.key === "gradeName";
+      const isDesign = field.key === "designName";
+      const isStone = field.key === "stoneName";
+      const isExpStone = field.key === "expStoneDetails";
+
       return (
         <div
           className={`h-9 w-full rounded-md border px-3 flex items-center text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap ${
@@ -613,6 +847,10 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               ? "bg-amber-50 border-amber-200 text-amber-900"
               : isGrade
               ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+              : isDesign || isStone
+              ? "bg-purple-50 border-purple-200 text-purple-900 font-semibold"
+              : isExpStone
+              ? "bg-slate-50 border-slate-200 text-slate-600 font-medium"
               : "bg-slate-50 border-slate-200 text-slate-700"
           }`}
           title={row[field.key] || "-"}
@@ -692,15 +930,62 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
     if (!form.partyId && !customerName) {
       nextErrors.customerName = "Customer name or Party is required.";
     }
-    if (customerPhone && !/^\d{10}$/.test(customerPhone)) {
-      nextErrors.customerPhone = "Phone must be exactly 10 digits.";
+    if (customerPhone) {
+      const cleanPhone = customerPhone.replace(/\D/g, "");
+      if (!validatePhone(cleanPhone)) {
+        nextErrors.customerPhone = "Phone must be a valid 10-digit mobile number starting with 6-9.";
+      }
     }
     if (customerIdType && !customerIdNumber) {
       nextErrors.customerIdNumber = "ID number is required when ID type is selected.";
+    } else if (customerIdType === "AADHAR" && customerIdNumber) {
+      if (!validateAadhaar(customerIdNumber)) {
+        nextErrors.customerIdNumber = "Aadhaar number must be exactly 12 digits.";
+      }
+    } else if (customerIdType === "PAN" && customerIdNumber) {
+      if (!validatePan(customerIdNumber)) {
+        nextErrors.customerIdNumber = "PAN format is invalid (e.g. ABCDE1234F).";
+      }
     }
+
+    // Validate Items (weights, rate, discount)
+    if (!items || items.length === 0) {
+      nextErrors.items = "Please add at least one purchase item.";
+    } else {
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        const gWt = parseFloat(it.grossWeight) || 0;
+        const sWt = parseFloat(it.stoneWeight) || 0;
+        const rate = parseFloat(it.rate) || 0;
+        const itmDisc = parseFloat(it.discount) || 0;
+        const itmPreTotal = (parseFloat(it.metalAmount) || 0) + (parseFloat(it.stoneAmount) || 0) + (parseFloat(it.otherAmount) || 0);
+
+        if (gWt <= 0) {
+          nextErrors.items = `Row #${i + 1}: Gross Weight must be greater than 0g.`;
+          break;
+        }
+        if (sWt > gWt) {
+          nextErrors.items = `Row #${i + 1}: Stone Weight cannot exceed Gross Weight.`;
+          break;
+        }
+        if (rate <= 0) {
+          nextErrors.items = `Row #${i + 1}: Rate must be greater than 0.`;
+          break;
+        }
+        if (itmDisc > itmPreTotal && itmPreTotal > 0) {
+          nextErrors.items = `Row #${i + 1}: Discount cannot exceed item amount (₹${itmPreTotal.toFixed(2)}).`;
+          break;
+        }
+      }
+    }
+
+    if (invoiceDiscount > subTotal) {
+      nextErrors.discount = `Invoice discount (₹${invoiceDiscount.toFixed(2)}) cannot exceed gross amount (₹${subTotal.toFixed(2)}).`;
+    }
+
     if (!form.date) nextErrors.date = "Date is required.";
     if (Number(paidAmount || 0) > Number(grandTotal || 0) + 0.01) {
-      nextErrors.payments = "Paid Amount cannot exceed Total Amount.";
+      nextErrors.payments = `Paid Amount (₹${paidAmount.toFixed(2)}) cannot exceed Total Amount (₹${grandTotal.toFixed(2)}).`;
     }
 
     setErrors(nextErrors);
@@ -747,27 +1032,63 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
           paymentDate: p.paymentDate,
           narration: p.narration,
         })),
-      items: items.map(({ id, itemPhoto, products, items: itmOpt, purities, grades, stones, categoryName, productName, metalName, purityName, gradeName, tagNo, ...rest }) => ({
-        ...rest,
-        itemId: rest.itemId ? Number(rest.itemId) : null,
-        productId: rest.productId ? Number(rest.productId) : null,
-        metalId: rest.metalId ? Number(rest.metalId) : null,
-        purityId: rest.purityId ? Number(rest.purityId) : null,
-        gradeId: rest.gradeId ? Number(rest.gradeId) : null,
-        stoneId: rest.stoneId ? Number(rest.stoneId) : null,
-        pieces: Math.max(1, Number(rest.pieces || 1)),
-        grossWeight: Number(rest.grossWeight || 0),
-        stoneWeight: Number(rest.stoneWeight || 0),
-        netWeight: Number(rest.netWeight || 0),
-        rate: Number(rest.rate || 0),
-        metalAmount: Number(rest.metalAmount || 0),
-        stoneAmount: Number(rest.stoneAmount || 0),
-        otherAmount: Number(rest.otherAmount || 0),
-        discount: Number(rest.discount || 0),
-        totalAmount: Number(rest.totalAmount || 0),
-        hsnCode: rest.hsnCode || "711319",
-        huidNo: rest.huidNo || null,
-      })),
+      items: items.map(({ id, itemPhoto, products, items: itmOpt, purities, grades, stones, categoryName, productName, metalName, purityName, gradeName, designName, stoneName, expStoneDetails, tagNo, isManualStoneAmount, ...rest }) => {
+        const sWt = Number(rest.stoneWeight || 0);
+        const sRate = Number(rest.stoneRate || 0);
+        const sAmt = Number(rest.stoneAmount || 0);
+
+        let finalStones = [];
+        if (Array.isArray(stones) && stones.length > 0) {
+          finalStones = stones.map((st) => ({
+            stoneId: st.stoneId ? Number(st.stoneId) : null,
+            stoneName: st.stoneName || "",
+            expectedPieces: Number(st.expectedPieces || 0),
+            expectedWeight: Number(st.expectedWeight || 0),
+            actualPieces: Number(st.actualPieces || 0) || Number(st.expectedPieces || 0) || 1,
+            actualWeight: sWt > 0 ? sWt : Number(st.expectedWeight || 0),
+            rate: sRate,
+            amount: sAmt,
+            unit: st.unit || "ct",
+          }));
+        } else if (sWt > 0 || sAmt > 0) {
+          finalStones = [
+            {
+              stoneId: rest.stoneId ? Number(rest.stoneId) : null,
+              stoneName: stoneName && stoneName !== "-" ? stoneName : "Stone",
+              expectedPieces: 1,
+              expectedWeight: sWt,
+              actualPieces: 1,
+              actualWeight: sWt,
+              rate: sRate,
+              amount: sAmt,
+              unit: "ct",
+            },
+          ];
+        }
+
+        return {
+          ...rest,
+          itemId: rest.itemId ? Number(rest.itemId) : null,
+          productId: rest.productId ? Number(rest.productId) : null,
+          metalId: rest.metalId ? Number(rest.metalId) : null,
+          purityId: rest.purityId ? Number(rest.purityId) : null,
+          gradeId: rest.gradeId ? Number(rest.gradeId) : null,
+          stoneId: rest.stoneId ? Number(rest.stoneId) : null,
+          pieces: Math.max(1, Number(rest.pieces || 1)),
+          grossWeight: Number(rest.grossWeight || 0),
+          stoneWeight: sWt,
+          netWeight: Number(rest.netWeight || 0),
+          rate: Number(rest.rate || 0),
+          metalAmount: Number(rest.metalAmount || 0),
+          stoneAmount: sAmt,
+          otherAmount: Number(rest.otherAmount || 0),
+          discount: Number(rest.discount || 0),
+          totalAmount: Number(rest.totalAmount || 0),
+          hsnCode: rest.hsnCode || "711319",
+          huidNo: rest.huidNo || null,
+          stones: finalStones,
+        };
+      }),
     };
 
     const fd = new FormData();
@@ -859,8 +1180,19 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
               <label className="text-xs text-muted-foreground">ID Number</label>
               <Input
                 value={form.customerIdNumber}
-                onChange={(e) => updateForm("customerIdNumber", onlyAlphaNumeric(e.target.value))}
-                placeholder="ID Number"
+                onChange={(e) => {
+                  const val = onlyAlphaNumeric(e.target.value);
+                  updateForm("customerIdNumber", val);
+                  if (form.customerIdType === "AADHAR" && val && !validateAadhaar(val)) {
+                    setErrors((prev) => ({ ...prev, customerIdNumber: "Please input a valid 12-digit Aadhaar number" }));
+                  } else if (form.customerIdType === "PAN" && val && !validatePan(val)) {
+                    setErrors((prev) => ({ ...prev, customerIdNumber: "Please input a valid 10-character PAN (e.g. ABCDE1234F)" }));
+                  } else {
+                    setErrors((prev) => ({ ...prev, customerIdNumber: null }));
+                  }
+                }}
+                placeholder={form.customerIdType === "AADHAR" ? "12-digit Aadhaar" : form.customerIdType === "PAN" ? "10-digit PAN" : "ID Number"}
+                className={errors.customerIdNumber ? "border-red-500" : ""}
               />
               {errors.customerIdNumber ? <p className="text-xs text-red-500">{errors.customerIdNumber}</p> : null}
             </div>
@@ -986,7 +1318,26 @@ export default function OldPurchaseForm({ open, setOpen, onSave, defaultValues }
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Input type="text" inputMode="decimal" placeholder="Discount" value={form.discount} onChange={(e) => updateForm("discount", normalizeDecimalInput(e.target.value))} />
+              <div className="space-y-1">
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Discount"
+                  value={form.discount}
+                  onChange={(e) => {
+                    const val = normalizeDecimalInput(e.target.value);
+                    updateForm("discount", val);
+                    const numDisc = parseFloat(val) || 0;
+                    if (numDisc > subTotal) {
+                      setErrors((prev) => ({ ...prev, discount: `Discount cannot exceed Gross Amount (₹${subTotal.toFixed(2)})` }));
+                    } else {
+                      setErrors((prev) => ({ ...prev, discount: null }));
+                    }
+                  }}
+                  className={errors.discount ? "border-red-500" : ""}
+                />
+                {errors.discount ? <p className="text-xs text-red-500">{errors.discount}</p> : null}
+              </div>
               <Input placeholder="Narration" value={form.narration} onChange={(e) => updateForm("narration", e.target.value)} />
             </div>
           </div>

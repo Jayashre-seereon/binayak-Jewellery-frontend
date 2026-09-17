@@ -48,6 +48,14 @@ import { lookupCustomerByPhone } from "@/api/customer-api";
 import SalesInvoicePreviewModal from "./sales-invoice-preview-modal";
 import CustomerHistoryTracking from "./customer-history-tracking";
 import { formatCharge, formatWeight } from "@/utils/units";
+import {
+  validateAadhaar,
+  validatePan,
+  validateGst,
+  validatePhone,
+  validationMessages,
+  onlyDigits,
+} from "@/utils/validation";
 
 const roundMoney = (val) =>
   Math.round((Number(val || 0) + Number.EPSILON) * 100) / 100;
@@ -95,6 +103,7 @@ const initialState = () => ({
   customerAddress: "",
   customerCity: "Bhubaneswar - 766001",
   customerPan: "",
+  customerAadhaar: "",
   customerGst: "",
   customerState: "ODISHA",
   placeOfSupply: "ODISHA",
@@ -227,6 +236,7 @@ export default function SalesPage() {
             customerAddress: prev.customerAddress || cust?.address || "",
             customerCity: prev.customerCity || cust?.city || "Bhubaneswar - 766001",
             customerPan: prev.customerPan || cust?.pan || "",
+            customerAadhaar: prev.customerAadhaar || (cust?.idType === "AADHAR" ? cust?.idNumber : "") || "",
             customerGst: prev.customerGst || cust?.gst || "",
             customerState: cust?.state || prev.customerState || "ODISHA",
             placeOfSupply: cust?.state || prev.placeOfSupply || "ODISHA",
@@ -399,9 +409,18 @@ export default function SalesPage() {
       metalAmount + makingCharges + stoneAmount + otherCharges - discount
     );
 
+    const designName = inv.item?.design?.name || inv.design?.name || "";
+    const stones = (inv.purchaseItem?.stones && inv.purchaseItem.stones.length > 0)
+      ? inv.purchaseItem.stones
+      : (inv.item?.design?.designStones && inv.item.design.designStones.length > 0
+          ? inv.item.design.designStones
+          : []);
+
     const newItem = {
       inventoryId: inv.id,
       particulars: inv.item?.name || inv.product?.name || "Jewellery Item",
+      designName,
+      stones,
       itemCode: inv.barcodeNo || inv.tagNo || inv.inventoryCode || "",
       huidNo: inv.huidNo || "",
       hsnCode: inv.hsnCode || "711319",
@@ -657,13 +676,78 @@ export default function SalesPage() {
   const validateForm = () => {
     const errors = {};
     if (!state.customerName?.trim()) errors.customerName = "Customer Name is required";
-    if (state.customerPhone && state.customerPhone.trim().length !== 10) {
-      errors.customerPhone = "Contact number must be exactly 10 digits";
+    if (state.customerPhone) {
+      const cleanPhone = String(state.customerPhone).trim().replace(/\D/g, "");
+      if (!validatePhone(cleanPhone)) {
+        errors.customerPhone = "Please enter a valid 10-digit mobile number starting with 6-9";
+      }
+    }
+    if (state.customerAadhaar) {
+      const cleanAadhaar = String(state.customerAadhaar).trim().replace(/\D/g, "");
+      if (!validateAadhaar(cleanAadhaar)) {
+        errors.customerAadhaar = "Please enter a valid 12-digit Aadhaar number";
+      }
+    }
+    if (state.customerPan) {
+      const cleanPan = String(state.customerPan).trim().toUpperCase();
+      if (!validatePan(cleanPan)) {
+        errors.customerPan = "Please enter a valid 10-character PAN (e.g. ABCDE1234F)";
+      }
+    }
+    if (state.customerGst) {
+      const cleanGst = String(state.customerGst).trim().toUpperCase();
+      if (!validateGst(cleanGst)) {
+        errors.customerGst = "Please enter a valid 15-character GSTIN (e.g. 21AAFCA3795A1Z5)";
+      }
     }
     if (!state.placeOfSupply?.trim()) errors.placeOfSupply = "Place of supply is required";
-    if (!state.items.length) errors.items = "Add at least one item to generate an invoice";
+    if (!state.items.length) {
+      errors.items = "Add at least one jewellery item to generate an invoice";
+    } else {
+      // Validate item level weights, rates, discounts
+      for (let i = 0; i < state.items.length; i++) {
+        const item = state.items[i];
+        const gWt = Number(item.grossWeight || 0);
+        const sWt = Number(item.stoneWeight || 0);
+        const rate = Number(item.rate || 0);
+        const pcs = Number(item.pieces || 1);
+        const disc = Number(item.discount || 0);
+        const metalAmt = Number(item.metalAmount || 0);
+        const makingCh = Number(item.makingCharges || 0);
+        const stoneAmt = Number(item.stoneAmount || 0);
+        const otherCh = Number(item.otherCharges || 0);
+        const preTotal = metalAmt + makingCh + stoneAmt + otherCh;
+
+        if (gWt <= 0) {
+          errors.items = `Row #${i + 1}: Gross Weight must be greater than 0g.`;
+          break;
+        }
+        if (sWt > gWt) {
+          errors.items = `Row #${i + 1}: Stone Weight cannot exceed Gross Weight.`;
+          break;
+        }
+        if (rate <= 0) {
+          errors.items = `Row #${i + 1}: Metal Rate must be greater than 0.`;
+          break;
+        }
+        if (pcs < 1) {
+          errors.items = `Row #${i + 1}: Pieces must be at least 1.`;
+          break;
+        }
+        if (disc > preTotal && preTotal > 0) {
+          errors.items = `Row #${i + 1}: Item discount (₹${disc}) cannot exceed item gross total (₹${preTotal}).`;
+          break;
+        }
+      }
+    }
+
+    const totalDiscounts = roundMoney(Number(state.offerDiscount || 0) + Number(state.discount || 0));
+    if (totalDiscounts > Number(calculations.grossAmount || 0)) {
+      errors.discount = `Total discount (₹${totalDiscounts}) cannot exceed Gross Amount (₹${money(calculations.grossAmount)}).`;
+    }
+
     if (Number(calculations.paidAmount || 0) > Number(calculations.netPayable || 0) + 0.01) {
-      errors.payments = "Paid Amount cannot exceed Net Payable.";
+      errors.payments = `Paid Amount (₹${money(calculations.paidAmount)}) cannot exceed Net Payable (₹${money(calculations.netPayable)}).`;
     }
 
     setValidationErrors(errors);
@@ -716,6 +800,7 @@ export default function SalesPage() {
         customerAddress: state.customerAddress?.trim() || null,
         customerCity: state.customerCity?.trim() || "Bhubaneswar - 766001",
         customerPan: state.customerPan?.trim().toUpperCase() || null,
+        customerAadhaar: state.customerAadhaar?.trim().replace(/\D/g, "") || null,
         customerGst: state.customerGst?.trim().toUpperCase() || null,
         customerState: state.customerState?.trim().toUpperCase() || "ODISHA",
         placeOfSupply: state.placeOfSupply?.trim().toUpperCase() || "ODISHA",
@@ -993,7 +1078,7 @@ export default function SalesPage() {
                     <option value="">-- Or Select Available Stock --</option>
                     {availableInventories.map((inv) => (
                       <option key={inv.id} value={inv.id}>
-                        {inv.barcodeNo || inv.inventoryCode} | {inv.item?.name || inv.product?.name} ({inv.netWeight || inv.grossWeight}g)
+                        {inv.barcodeNo || inv.inventoryCode} | {inv.item?.name || inv.product?.name}{inv.item?.design?.name ? ` [${inv.item.design.name}]` : ""} ({inv.netWeight || inv.grossWeight}g)
                       </option>
                     ))}
                   </select>
@@ -1126,9 +1211,43 @@ export default function SalesPage() {
                     placeholder="e.g. ABCDE1234F"
                     value={state.customerPan}
                     maxLength={10}
-                    onChange={(e) => updateField("customerPan", e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      updateField("customerPan", val);
+                      if (val && !validatePan(val)) {
+                        setValidationErrors((prev) => ({ ...prev, customerPan: "Invalid PAN format (e.g. ABCDE1234F)" }));
+                      } else {
+                        setValidationErrors((prev) => ({ ...prev, customerPan: null }));
+                      }
+                    }}
                     className={`h-9 text-xs uppercase ${validationErrors.customerPan ? "border-red-500 focus-visible:ring-red-400" : ""}`}
                   />
+                  {validationErrors.customerPan && (
+                    <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.customerPan}</span>
+                  )}
+                </div>
+
+                {/* AADHAAR NUMBER */}
+                <div>
+                  <label className="text-slate-600 font-semibold block mb-1">Customer Aadhaar No.</label>
+                  <Input
+                    placeholder="12-digit Aadhaar number"
+                    value={state.customerAadhaar}
+                    maxLength={12}
+                    onChange={(e) => {
+                      const val = onlyDigits(e.target.value).slice(0, 12);
+                      updateField("customerAadhaar", val);
+                      if (val && !validateAadhaar(val)) {
+                        setValidationErrors((prev) => ({ ...prev, customerAadhaar: "Aadhaar must be exactly 12 digits" }));
+                      } else {
+                        setValidationErrors((prev) => ({ ...prev, customerAadhaar: null }));
+                      }
+                    }}
+                    className={`h-9 text-xs ${validationErrors.customerAadhaar ? "border-red-500 focus-visible:ring-red-400" : ""}`}
+                  />
+                  {validationErrors.customerAadhaar && (
+                    <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.customerAadhaar}</span>
+                  )}
                 </div>
 
                 {/* GSTIN */}
@@ -1138,9 +1257,20 @@ export default function SalesPage() {
                     placeholder="15-digit GSTIN"
                     value={state.customerGst}
                     maxLength={15}
-                    onChange={(e) => updateField("customerGst", e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      updateField("customerGst", val);
+                      if (val && !validateGst(val)) {
+                        setValidationErrors((prev) => ({ ...prev, customerGst: "Invalid GSTIN format (15 characters)" }));
+                      } else {
+                        setValidationErrors((prev) => ({ ...prev, customerGst: null }));
+                      }
+                    }}
                     className={`h-9 text-xs uppercase ${validationErrors.customerGst ? "border-red-500 focus-visible:ring-red-400" : ""}`}
                   />
+                  {validationErrors.customerGst && (
+                    <span className="text-[10px] text-red-500 font-medium block mt-0.5">{validationErrors.customerGst}</span>
+                  )}
                 </div>
 
                 {/* PLACE OF SUPPLY */}
@@ -1435,7 +1565,26 @@ export default function SalesPage() {
                       {state.items.map((it, idx) => (
                         <tr key={it.inventoryId || idx} className="hover:bg-blue-50/20">
                           <td className="p-2 text-center font-semibold text-slate-400">{idx + 1}</td>
-                          <td className="p-2 font-medium text-slate-900">{it.particulars}</td>
+                          <td className="p-2 font-medium text-slate-900">
+                            <div>{it.particulars}</div>
+                            {it.designName && (
+                              <div className="text-[10px] text-purple-700 font-semibold">
+                                Design: {it.designName}
+                              </div>
+                            )}
+                            {it.stones && it.stones.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {it.stones.map((st, sidx) => (
+                                  <span
+                                    key={sidx}
+                                    className="bg-purple-50 text-purple-700 text-[9px] px-1 py-0.2 rounded border border-purple-200"
+                                  >
+                                    {st.stoneName || st.stone?.name || "Stone"} ({st.actualPieces ?? st.pieces ?? 0} pcs, {st.actualWeight ?? st.expectedWeight ?? 0} {st.unit || "ct"})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
                           <td className="p-2 font-mono text-[11px] text-blue-700">{it.itemCode}</td>
                           <td className="p-2 font-semibold text-amber-700">{it.purityName}</td>
                           <td className="p-2">
@@ -1625,14 +1774,26 @@ export default function SalesPage() {
                             value={pRow.amount}
                             onChange={(e) => {
                               const val = e.target.value;
+                              const updatedPayments = state.payments.map((p, i) =>
+                                i === pIdx ? { ...p, amount: val } : p
+                              );
+                              const totalPaid = roundMoney(
+                                updatedPayments.reduce((s, p) => s + Number(p.amount || 0), 0)
+                              );
                               setState((prev) => ({
                                 ...prev,
-                                payments: prev.payments.map((p, i) =>
-                                  i === pIdx ? { ...p, amount: val } : p
-                                ),
+                                payments: updatedPayments,
                               }));
+                              if (totalPaid > Number(calculations.netPayable || 0) + 0.01) {
+                                setValidationErrors((prev) => ({
+                                  ...prev,
+                                  payments: `Paid Amount (₹${money(totalPaid)}) cannot exceed Net Payable (₹${money(calculations.netPayable)})`,
+                                }));
+                              } else {
+                                setValidationErrors((prev) => ({ ...prev, payments: null }));
+                              }
                             }}
-                            className="h-8 text-xs font-bold text-slate-900"
+                            className={`h-8 text-xs font-bold text-slate-900 ${validationErrors.payments ? "border-red-500 ring-1 ring-red-400" : ""}`}
                           />
                         </div>
 
@@ -1756,8 +1917,20 @@ export default function SalesPage() {
                         step="0.01"
                         min="0"
                         value={state.offerDiscount}
-                        onChange={(e) => updateField("offerDiscount", e.target.value)}
-                        className="w-28 h-7 text-right text-xs font-semibold text-red-600 focus-visible:ring-red-400"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateField("offerDiscount", val);
+                          const totalDisc = roundMoney(Number(val || 0) + Number(state.discount || 0));
+                          if (totalDisc > Number(calculations.grossAmount || 0)) {
+                            setValidationErrors((prev) => ({
+                              ...prev,
+                              discount: `Discount cannot exceed Gross Amount (₹${money(calculations.grossAmount)})`,
+                            }));
+                          } else {
+                            setValidationErrors((prev) => ({ ...prev, discount: null }));
+                          }
+                        }}
+                        className={`w-28 h-7 text-right text-xs font-semibold text-red-600 focus-visible:ring-red-400 ${validationErrors.discount ? "border-red-500 ring-1 ring-red-400" : ""}`}
                       />
                     </div>
 
@@ -1769,10 +1942,27 @@ export default function SalesPage() {
                         step="0.01"
                         min="0"
                         value={state.discount}
-                        onChange={(e) => updateField("discount", e.target.value)}
-                        className="w-28 h-7 text-right text-xs font-semibold text-red-600 focus-visible:ring-red-400"
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          updateField("discount", val);
+                          const totalDisc = roundMoney(Number(state.offerDiscount || 0) + Number(val || 0));
+                          if (totalDisc > Number(calculations.grossAmount || 0)) {
+                            setValidationErrors((prev) => ({
+                              ...prev,
+                              discount: `Discount cannot exceed Gross Amount (₹${money(calculations.grossAmount)})`,
+                            }));
+                          } else {
+                            setValidationErrors((prev) => ({ ...prev, discount: null }));
+                          }
+                        }}
+                        className={`w-28 h-7 text-right text-xs font-semibold text-red-600 focus-visible:ring-red-400 ${validationErrors.discount ? "border-red-500 ring-1 ring-red-400" : ""}`}
                       />
                     </div>
+                    {validationErrors.discount && (
+                      <div className="rounded border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-600">
+                        {validationErrors.discount}
+                      </div>
+                    )}
 
                     {/* TAXABLE AMOUNT */}
                     <div className="flex justify-between py-1.5 font-bold bg-blue-50/60 px-2 rounded text-blue-950">

@@ -2,9 +2,11 @@ export const validationPatterns = {
   alphaSpace: /^[A-Za-z\s.]+$/,
   alphaNumericSpace: /^[A-Za-z0-9\s.-]+$/,
   digitsOnly: /^\d+$/,
-  phone10: /^\d{10}$/,
-  email:
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  phone10: /^[6-9]\d{9}$/,
+  aadhaar: /^\d{12}$/,
+  pan: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+  gst: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 };
 
 export const validationMessages = {
@@ -12,9 +14,18 @@ export const validationMessages = {
   alphaSpace: (label) => `${label} can contain only letters`,
   alphaNumericSpace: (label) => `${label} can contain only letters and numbers`,
   digitsOnly: (label) => `${label} must contain only numbers`,
-  phone10: (label) => `${label} must be 10 digits`,
+  phone10: (label) => `${label} must be a valid 10-digit mobile number`,
+  aadhaar: (label = "Aadhaar number") => `${label} must be exactly 12 digits`,
+  pan: (label = "PAN number") => `${label} must be a valid 10-character PAN (e.g. ABCDE1234F)`,
+  gst: (label = "GSTIN") => `${label} must be a valid 15-character GSTIN (e.g. 21AAFCA3795A1Z5)`,
   email: (label) => `Invalid email address`,
 };
+
+export const validateAadhaar = (val) => validationPatterns.aadhaar.test(String(val || "").trim());
+export const validatePan = (val) => validationPatterns.pan.test(String(val || "").trim().toUpperCase());
+export const validateGst = (val) => validationPatterns.gst.test(String(val || "").trim().toUpperCase());
+export const validatePhone = (val) => validationPatterns.phone10.test(String(val || "").trim());
+export const validateEmail = (val) => validationPatterns.email.test(String(val || "").trim());
 
 export const onlyDigits = (value = "") => String(value).replace(/\D/g, "");
 export const onlyDecimal = (value = "") => {
