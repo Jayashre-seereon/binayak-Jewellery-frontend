@@ -409,9 +409,18 @@ export default function SalesPage() {
       metalAmount + makingCharges + stoneAmount + otherCharges - discount
     );
 
+    const designName = inv.item?.design?.name || inv.design?.name || "";
+    const stones = (inv.purchaseItem?.stones && inv.purchaseItem.stones.length > 0)
+      ? inv.purchaseItem.stones
+      : (inv.item?.design?.designStones && inv.item.design.designStones.length > 0
+          ? inv.item.design.designStones
+          : []);
+
     const newItem = {
       inventoryId: inv.id,
       particulars: inv.item?.name || inv.product?.name || "Jewellery Item",
+      designName,
+      stones,
       itemCode: inv.barcodeNo || inv.tagNo || inv.inventoryCode || "",
       huidNo: inv.huidNo || "",
       hsnCode: inv.hsnCode || "711319",
@@ -1069,7 +1078,7 @@ export default function SalesPage() {
                     <option value="">-- Or Select Available Stock --</option>
                     {availableInventories.map((inv) => (
                       <option key={inv.id} value={inv.id}>
-                        {inv.barcodeNo || inv.inventoryCode} | {inv.item?.name || inv.product?.name} ({inv.netWeight || inv.grossWeight}g)
+                        {inv.barcodeNo || inv.inventoryCode} | {inv.item?.name || inv.product?.name}{inv.item?.design?.name ? ` [${inv.item.design.name}]` : ""} ({inv.netWeight || inv.grossWeight}g)
                       </option>
                     ))}
                   </select>
@@ -1556,7 +1565,26 @@ export default function SalesPage() {
                       {state.items.map((it, idx) => (
                         <tr key={it.inventoryId || idx} className="hover:bg-blue-50/20">
                           <td className="p-2 text-center font-semibold text-slate-400">{idx + 1}</td>
-                          <td className="p-2 font-medium text-slate-900">{it.particulars}</td>
+                          <td className="p-2 font-medium text-slate-900">
+                            <div>{it.particulars}</div>
+                            {it.designName && (
+                              <div className="text-[10px] text-purple-700 font-semibold">
+                                Design: {it.designName}
+                              </div>
+                            )}
+                            {it.stones && it.stones.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {it.stones.map((st, sidx) => (
+                                  <span
+                                    key={sidx}
+                                    className="bg-purple-50 text-purple-700 text-[9px] px-1 py-0.2 rounded border border-purple-200"
+                                  >
+                                    {st.stoneName || st.stone?.name || "Stone"} ({st.actualPieces ?? st.pieces ?? 0} pcs, {st.actualWeight ?? st.expectedWeight ?? 0} {st.unit || "ct"})
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
                           <td className="p-2 font-mono text-[11px] text-blue-700">{it.itemCode}</td>
                           <td className="p-2 font-semibold text-amber-700">{it.purityName}</td>
                           <td className="p-2">

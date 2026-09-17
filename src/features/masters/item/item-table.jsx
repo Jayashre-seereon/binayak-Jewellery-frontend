@@ -36,6 +36,7 @@ export default function ItemTable({ data, onEdit, onDelete }) {
             <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Metal</th>
             <th className="p-3 text-left">Design</th>
+            <th className="p-3 text-left">Stones</th>
             <th className="p-3 text-left">Purity</th>
             <th className="p-3 text-left">Grade</th>
             <th className="p-3 text-left">Actions</th>
@@ -62,6 +63,22 @@ export default function ItemTable({ data, onEdit, onDelete }) {
               <td className="p-3">{getLabel(item.product?.category?.name || "-")}</td>
               <td className="p-3">{getLabel(item.product?.metal?.name || "-")}</td>
               <td className="p-3">{getLabel(item.design?.name || item.design)}</td>
+              <td className="p-3">
+                {item.design?.designStones && item.design.designStones.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {item.design.designStones.map((ds, i) => (
+                      <span
+                        key={i}
+                        className="bg-purple-50 text-purple-700 text-xs px-2 py-0.5 rounded border border-purple-200"
+                      >
+                        {ds.stone?.name || "Stone"} ({ds.pieces || 0} pcs, {ds.expectedWeight || 0} {ds.unit || "ct"})
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-gray-400 text-xs">No Stones</span>
+                )}
+              </td>
               <td className="p-3">
                 {item.purity?.name || item.product?.purity?.name ? (
                   <span className="bg-amber-50 text-amber-800 text-xs px-2 py-0.5 rounded font-medium border border-amber-200">

@@ -10,6 +10,8 @@ export default function StockTable({ data }) {
             <th className="p-3 text-left">Item</th>
             <th className="p-3 text-left">Category</th>
             <th className="p-3 text-left">Product</th>
+            <th className="p-3 text-left">Design</th>
+            <th className="p-3 text-left">Stones</th>
             <th className="p-3 text-left">Purity</th>
             <th className="p-3 text-left">Gross Wt (gm)</th>
             <th className="p-3 text-left">Net Wt (gm)</th>
@@ -26,6 +28,8 @@ export default function StockTable({ data }) {
               <td className="p-3">{item.item}</td>
               <td className="p-3">{item.category}</td>
               <td className="p-3">{item.product}</td>
+              <td className="p-3">{item.design || item.item?.design?.name || "-"}</td>
+              <td className="p-3">{item.stones || "-"}</td>
               <td className="p-3">{item.purity}</td>
               <td className="p-3">{item.grossWt}</td>
               <td className="p-3">{item.netWt}</td>
